@@ -1,0 +1,2 @@
+instance,seed,n_vars,n_clauses,hard_violations,soft_unsat,best_weight,runtime_s,flips,ls_calls,status,config_id
+HG-3SAT-V250-C1000-1.cnf,1,250,1000,0,7.0,993.0,183.5718114376068,1526319,0,OK,configs/cfgH2.yaml

@@ -1,0 +1,179 @@
+walksat.run()
+
+unzip ~/tmp/maxsat_patch_20251005_054710.zip -d ~/tmp/maxsat_patch1
+
+
+what the following results mean: 
+instance,seed,elapsed_sec,best_soft_weight,hard_violations,total_flips,flips_per_sec,restarts,final_noise,config_hash,wall_sec
+mini.wcnf,1,24.0513756275177,7722.749763136507,2,1000003,41577.788126841064,50,0.5,f24fb00776,24.051563262939453
+
+
+walksat._pick_var_to_flip
+
+walksat.run_satlike
+line 159     clauses: List[ClauseInfo] = [] walksat
+
+def _freeze_hard_units(state: SatState) -> None:  line 201 walksat
+
+line 354 walksat    if hard_facts:
+        changed = False
+        walksat                 c.true_cnt = state._compute_clause_true_count(c.lits),     
+line 427 walksat         target = pick_unsat_clause_index()
+
+line 432 walksat                if not state.clauses[target].is_hard:
+            state.bump_clause(target, bump)
+
+
+walksat line 453
+        if explore:
+            if hv_now > 0:
+
+walksat line 456. state line 149            flip_var_hard_delta
+
+walksat line 458                        chosen_gain, _ = state.flip_var_effect(v)
+
+
+walksat line 499 else:
+    best_v = None
+            best_gain = float("-inf")
+            best_break = math.inf
+
+run_ea.py
+# -------- Main CLI --------
+def main(argv=None) -> int:
+
+
+    # Run EA
+    t0 = time.time()
+    res = run_memetic(wcnf, cfg, rng_seed=args.seed)
+
+
+memetic.py
+def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
+    """
+    Minimal memetic loop:
+      - JW seeding
+      - tournament selection, clause-aware crossover, mutation
+      - (stub) short polish
+      - elitist replacement
+    Fitness evaluates *assignments directly* (soft weight, penalize hard violations).
+    """
+
+line 47     pop = Population(n_vars=wcnf.n_vars, size=pop_size, rng=rng)
+actually ->  line 48     pop.init_seeds(wcnf, cfg)
+
+population.py
+       pri = jw_priors(wcnf) line 99 in     def init_seeds(self, wcnf, cfg: Dict[str, Any]) -> None:
+
+
+       to read : https://chatgpt.com/share/6919e2d2-c664-800e-9dd5-df1612f894dc
+
+
+        for lit in cl.lits:
+            v = abs(lit)
+
+            line 36 population.py
+
+
+line 50 memetic
+    # initial evaluation
+    for ind in pop.members:
+        pop.evaluate(wcnf, ind)
+
+
+line 110: population.py        else:
+            soft, hv = evaluate_assignment(wcnf, ind.assign01)
+
+
+memetic.py  line 55     best = pop.best().copy() line 56
+
+memetic.py line   66
+    while (time.time() - start_t) < time_cap and gen < max_gens:
+        gen += 1
+
+
+memetic.py line 77-78
+       # Fill the rest
+        while len(new_members) < pop_size:
+
+
+
+        memetic.py line 81
+        child_bits = clause_aware_crossover(p1, p2, wcnf, rng)
+
+
+operators.py  line 42
+def clause_aware_crossover(p1: Individual, p2: Individual, wcnf, rng: random.Random) -> List[bool]:
+    """
+    Per-variable choice guided by soft occurrence scores; then hard repair.
+    """
+
+
+def clause_aware_crossover1 line 139 operators.py
+
+
+to read src.cli.run_experiment1.py
+line 163 # -------- Instance discovery -------- run_experiment1
+
+line 189 # -------- Core experiment logic -------- run_experiment1
+
+
+
+
+# ==========================================
+# 2. CORE: Fitness & Analysis Functions
+# ==========================================
+line 141 from gemini
+
+def run_evolution():
+    # Settings
+    N_VARS = 50
+    N_CLAUSES = 200
+    POP_SIZE = 10
+    GENERATIONS = 15
+    
+    # Init Problem
+    formula, n_vars = generate_random_maxsat(N_VARS, N_CLAUSES)
+    print(f"--- Problem Generated: {N_VARS} vars, {N_CLAUSES} clauses ---")
+
+    # Init Population (Random assignments)
+
+line 242   from_gemini
+
+            # THE MAGIC STEP: LLM attempts to improve the parent
+            child_genes = llm_mutation_operator(parent_genes, formula, bad_clauses)
+            next_gen.append(child_genes)
+            
+        population = next_gen
+
+line 288
+
+
+ChatGpt LLM for Max-Sat Optimiztion
+
+1) Use a MaxSAT-appropriate objective (WCNF)
+
+For WCNF, treat fitness as lexicographic:
+
+minimize hard_violations
+
+maximize soft_satisfied_weight (or minimize unsatisfied soft weight)
+
+So comparisons are stable and you never “trade” hard satisfaction for soft.
+
+Example (conceptually):
+
+fitness(x) = (hard_unsat_count(x), -soft_unsat_weight(x)) (lower is better)
+
+
+___________________________
+3) The operator contract: “suggest flips”, then verify
+
+Your EA/memetic loop should do:
+
+build context for the current individual
+
+ask LLM for flip_indices
+
+
+

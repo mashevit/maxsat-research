@@ -1,0 +1,116 @@
+.
+├── README_PATCH.txt
+├── configs
+│   ├── 2.yaml
+│   ├── 3.yaml
+│   ├── 4.yaml
+│   ├── cfg.yaml
+│   ├── cfg2.yaml
+│   ├── cfg250.yaml
+│   ├── cfg3.yaml
+│   ├── default.yaml
+│   └── ea_cfg.yaml
+├── data
+│   └── unsat_exp
+│       ├── uuf250-01.cnf
+│       ├── uuf50-01.cnf
+│       └── uuf50-02.cnf
+├── experiments
+│   ├── a0.csv
+│   ├── o.csv
+│   ├── toy_results.csv
+│   ├── toy_results1.csv
+│   ├── toy_results_tmp.csv
+│   └── toy_results_tmp5.csv
+├── from_gemini.py
+├── garbage
+│   ├── in1.txt
+│   ├── in2.txt
+│   ├── test.py
+│   └── txt.txt
+├── notes.MD
+├── requirements.txt
+├── results
+│   ├── dev_250h.csv
+│   ├── dev_250h1.csv
+│   ├── dev_small_cfg2_5min.csv
+│   ├── dev_small_cfg2_5min_with_opt.csv
+│   ├── dev_small_cfg3.csv
+│   ├── dev_small_rc2.csv
+│   ├── dev_small_rc2_1.csv
+│   └── dev_small_rc2_2.csv
+├── runs
+│   ├── mini.ea.json
+│   ├── mini1.ea.json
+│   ├── uf20-0411.ea.json
+│   └── uf50-0511.ea.json
+├── src
+│   ├── bench
+│   │   ├── __pycache__
+│   │   │   └── harness.cpython-311.pyc
+│   │   ├── harness.py
+│   │   └── harness.py.bak
+│   ├── cli
+│   │   ├── __pycache__
+│   │   │   ├── batch_opt_rc2.cpython-311.pyc
+│   │   │   ├── batch_opt_rc2.cpython-312.pyc
+│   │   │   ├── polish.cpython-311.pyc
+│   │   │   ├── polish.cpython-312.pyc
+│   │   │   ├── run_ea.cpython-311.pyc
+│   │   │   ├── run_experiment.cpython-311.pyc
+│   │   │   ├── run_experiment1.cpython-311.pyc
+│   │   │   ├── run_opt_rc2.cpython-311.pyc
+│   │   │   ├── run_opt_rc2.cpython-312.pyc
+│   │   │   ├── run_pipeline_opt_vs_memetic.cpython-311.pyc
+│   │   │   ├── run_pipeline_opt_vs_memetic.cpython-312.pyc
+│   │   │   ├── solve.cpython-311.pyc
+│   │   │   ├── solve_batch.cpython-311.pyc
+│   │   │   └── solve_batch.cpython-312.pyc
+│   │   ├── batch_opt_rc2.py
+│   │   ├── polish.py
+│   │   ├── run_ea.py
+│   │   ├── run_experiment.py
+│   │   ├── run_experiment1.py
+│   │   ├── run_opt_rc2.py
+│   │   ├── run_pipeline_opt_vs_memetic.py
+│   │   ├── solve.py
+│   │   ├── solve_batch.py
+│   │   └── solve_batch.py.bak
+│   ├── evo
+│   │   ├── __pycache__
+│   │   │   ├── memetic.cpython-311.pyc
+│   │   │   ├── operators.cpython-311.pyc
+│   │   │   └── population.cpython-311.pyc
+│   │   ├── memetic.py
+│   │   ├── memetic0.py
+│   │   ├── operators.py
+│   │   └── population.py
+│   ├── evo_v_1
+│   │   └── 1.py
+│   ├── llm
+│   │   ├── advisor.py
+│   │   ├── prompt.py
+│   │   └── providers
+│   │       ├── noop.py
+│   │       └── ollama.py
+│   └── sat
+│       ├── __pycache__
+│       │   ├── cnf.cpython-311.pyc
+│       │   ├── cnf.cpython-312.pyc
+│       │   ├── state.cpython-311.pyc
+│       │   ├── state.cpython-312.pyc
+│       │   ├── walksat.cpython-311.pyc
+│       │   └── walksat.cpython-312.pyc
+│       ├── cnf.py
+│       ├── state.py
+│       ├── state.py.bak
+│       ├── walksat.bak.py
+│       └── walksat.py
+├── stopped.txt
+├── tests
+│   └── test_cnf.py
+├── todo.txt
+├── tree.txt
+└── tree1.txt
+
+45 directories, 2839 files

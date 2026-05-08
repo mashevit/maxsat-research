@@ -1,0 +1,13 @@
+ea:
+  enabled: true
+  pop_size: 75
+  elitism: True
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 0.5
+  flip_budget: 12500
+io:
+  out_json: "runs/{stem}HH.ea.json"   # where to write results
+  quiet: false      
+  
+time_limit_s: 600             # suppress human summary on stderr if true
