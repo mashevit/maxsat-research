@@ -1,0 +1,19 @@
+# Install PyTorch via conda first (not pip):
+#   conda install pytorch pytorch-cuda=12.1 -c pytorch -c nvidia
+
+# Then install these via pip inside the conda env:
+datasets
+trl>=0.10
+scipy
+tqdm
+
+# Unsloth — install separately with the extra matching your CUDA/PyTorch:
+#   pip install "unsloth[cu121-torch230] @ git+https://github.com/unslothai/unsloth.git"
+# Common extras:
+#   cu121-torch230   CUDA 12.1 + PyTorch 2.3
+#   cu121-torch240   CUDA 12.1 + PyTorch 2.4
+#   cu124-torch240   CUDA 12.4 + PyTorch 2.4
+# See https://github.com/unslothai/unsloth#installation for the current list.
+
+# Unsloth pulls in transformers, peft, bitsandbytes, accelerate as deps —
+# no need to install those separately.

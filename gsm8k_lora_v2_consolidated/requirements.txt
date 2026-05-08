@@ -1,0 +1,20 @@
+# Install PyTorch via conda first (not pip):
+#   conda install pytorch pytorch-cuda=12.1 -c pytorch -c nvidia
+
+# Then install these via pip inside the conda env:
+datasets
+trl>=0.20            # >=0.20 has SFTConfig.completion_only_loss
+                     # (DataCollatorForCompletionOnlyLM was removed in this range)
+scipy
+tqdm
+
+# Unsloth — for RTX 50x / 6000 / Blackwell GPUs, plain pip install works
+# and pulls a compatible torch automatically:
+#   pip install unsloth
+#
+# For older GPUs or pinned torch versions, use an explicit extra:
+#   pip install "unsloth[cu121-ampere-torch250] @ git+https://github.com/unslothai/unsloth.git"
+# See https://github.com/unslothai/unsloth#installation for the current list.
+
+# Unsloth pulls in transformers, peft, bitsandbytes, accelerate as deps —
+# no need to install those separately.

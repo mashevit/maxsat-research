@@ -1,0 +1,203 @@
+------------------------------------
+Mon 04 May 2026 09:40:49 IDT
+SLURM_JOBID:		17333969
+SLURM_JOB_NODELIST:	ee-l40s-02
+SLURM_SCRATCH_DIR:	/scratch/mashevit/17333969
+Allocated Resouces:	cpu - 6 / mem - 20480 MB / gpu - 6
+SLURM_GPU_INDEX:	6
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+Mon 04 May 2026 09:40:49 IDT
+
+SLURM_JOBID:		 17333969
+SLURM_JOB_NODELIST:	 ee-l40s-02 
+
+🦥 Unsloth: Will patch your computer to enable 2x faster free finetuning.
+Unsloth: Your Flash Attention 2 installation seems to be broken. Using Xformers instead. No performance changes will be seen.
+🦥 Unsloth Zoo will now patch everything to make training faster!
+
+============================================================
+GSM8K Evaluation
+============================================================
+  Model:        unsloth/llama-3.2-3b-bnb-4bit
+  Adapter:      ./gsm8k_lora_model
+  Test size:    30
+  Samples/q:    1 (greedy)
+  GPU 0: NVIDIA L40S  (47.7 GB, CC 8.9)
+  PyTorch:  2.10.0+cu128
+  CUDA:     12.8
+============================================================
+
+Loading GSM8K test set...
+Testing on 30 examples
+
+Loading base model: unsloth/llama-3.2-3b-bnb-4bit
+==((====))==  Unsloth 2026.4.8: Fast Llama patching. Transformers: 5.5.0.
+   \\   /|    NVIDIA L40S. Num GPUs = 1. Max memory: 44.392 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.10.0+cu128. CUDA: 8.9. CUDA Toolkit: 12.8. Triton: 3.6.0
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.35. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights:   0%|          | 1/254 [00:05<24:06,  5.72s/it]Loading weights:   1%|          | 3/254 [00:05<06:28,  1.55s/it]Loading weights:   3%|▎         | 7/254 [00:06<02:07,  1.93it/s]Loading weights:   4%|▍         | 10/254 [00:06<01:19,  3.07it/s]Loading weights:   5%|▌         | 13/254 [00:06<00:54,  4.42it/s]Loading weights:   7%|▋         | 18/254 [00:06<00:32,  7.32it/s]Loading weights:   8%|▊         | 21/254 [00:06<00:25,  9.20it/s]Loading weights:  11%|█         | 27/254 [00:06<00:16, 13.77it/s]Loading weights:  13%|█▎        | 32/254 [00:06<00:12, 18.42it/s]Loading weights:  14%|█▍        | 36/254 [00:07<00:10, 20.27it/s]Loading weights:  16%|█▌        | 40/254 [00:07<00:09, 21.88it/s]Loading weights:  18%|█▊        | 46/254 [00:07<00:08, 25.08it/s]Loading weights:  20%|█▉        | 50/254 [00:07<00:08, 22.92it/s]Loading weights:  22%|██▏       | 55/254 [00:07<00:07, 25.52it/s]Loading weights:  23%|██▎       | 58/254 [00:07<00:08, 24.22it/s]Loading weights:  26%|██▌       | 66/254 [00:08<00:05, 33.88it/s]Loading weights:  28%|██▊       | 70/254 [00:08<00:06, 27.83it/s]Loading weights:  30%|██▉       | 75/254 [00:08<00:06, 28.64it/s]Loading weights:  31%|███       | 79/254 [00:08<00:06, 26.69it/s]Loading weights:  32%|███▏      | 82/254 [00:08<00:07, 22.74it/s]Loading weights:  33%|███▎      | 85/254 [00:09<00:08, 20.86it/s]Loading weights:  36%|███▌      | 91/254 [00:09<00:06, 26.46it/s]Loading weights:  37%|███▋      | 94/254 [00:09<00:06, 25.42it/s]Loading weights:  39%|███▉      | 99/254 [00:09<00:05, 30.61it/s]Loading weights:  41%|████      | 103/254 [00:09<00:05, 26.00it/s]Loading weights:  42%|████▏     | 107/254 [00:09<00:05, 28.82it/s]Loading weights:  44%|████▎     | 111/254 [00:10<00:07, 19.34it/s]Loading weights:  46%|████▋     | 118/254 [00:10<00:05, 25.92it/s]Loading weights:  48%|████▊     | 122/254 [00:10<00:04, 27.48it/s]Loading weights:  51%|█████     | 129/254 [00:10<00:05, 23.88it/s]Loading weights:  53%|█████▎    | 134/254 [00:10<00:04, 27.22it/s]Loading weights:  54%|█████▍    | 138/254 [00:10<00:04, 27.06it/s]Loading weights:  56%|█████▌    | 142/254 [00:11<00:03, 28.34it/s]Loading weights:  57%|█████▋    | 146/254 [00:11<00:03, 28.93it/s]Loading weights:  59%|█████▉    | 150/254 [00:11<00:04, 25.85it/s]Loading weights:  61%|██████    | 154/254 [00:11<00:03, 27.38it/s]Loading weights:  62%|██████▏   | 157/254 [00:11<00:04, 20.28it/s]Loading weights:  64%|██████▍   | 163/254 [00:12<00:03, 23.45it/s]Loading weights:  65%|██████▌   | 166/254 [00:12<00:04, 18.54it/s]Loading weights:  68%|██████▊   | 172/254 [00:12<00:03, 22.83it/s]Loading weights:  69%|██████▉   | 175/254 [00:12<00:03, 23.82it/s]Loading weights:  71%|███████▏  | 181/254 [00:12<00:02, 29.82it/s]Loading weights:  73%|███████▎  | 185/254 [00:12<00:02, 27.62it/s]Loading weights:  76%|███████▌  | 192/254 [00:13<00:02, 28.61it/s]Loading weights:  78%|███████▊  | 199/254 [00:13<00:01, 34.35it/s]Loading weights:  80%|███████▉  | 203/254 [00:13<00:01, 30.08it/s]Loading weights:  81%|████████▏ | 207/254 [00:13<00:01, 31.69it/s]Loading weights:  83%|████████▎ | 211/254 [00:13<00:02, 19.51it/s]Loading weights:  85%|████████▌ | 217/254 [00:14<00:01, 24.56it/s]Loading weights:  87%|████████▋ | 221/254 [00:14<00:01, 23.35it/s]Loading weights:  89%|████████▊ | 225/254 [00:14<00:01, 24.74it/s]Loading weights:  90%|████████▉ | 228/254 [00:14<00:01, 23.28it/s]Loading weights:  91%|█████████▏| 232/254 [00:14<00:00, 26.44it/s]Loading weights:  93%|█████████▎| 235/254 [00:14<00:00, 22.90it/s]Loading weights:  96%|█████████▌| 244/254 [00:15<00:00, 28.09it/s]Loading weights:  97%|█████████▋| 247/254 [00:15<00:00, 22.00it/s]Loading weights: 100%|██████████| 254/254 [00:15<00:00, 16.48it/s]
+Unsloth: Will load unsloth/llama-3.2-3b-bnb-4bit as a legacy tokenizer.
+Base:   0%|          | 0/30 [00:00<?, ?it/s]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:71: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:281: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:71: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:281: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+Base:   3%|▎         | 1/30 [00:08<04:08,  8.58s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:71: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+/home/mashevit/.conda/envs/gsm8k_lora/lib/python3.11/site-packages/transformers/modeling_attn_mask_utils.py:281: FutureWarning: The attention mask API under `transformers.modeling_attn_mask_utils` (`AttentionMaskConverter`) is deprecated and will be removed in Transformers v5.10. Please use the new API in `transformers.masking_utils`.
+  warnings.warn(DEPRECATION_MESSAGE, FutureWarning)
+Base:   7%|▋         | 2/30 [00:12<02:44,  5.87s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  10%|█         | 3/30 [00:16<02:10,  4.82s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  13%|█▎        | 4/30 [00:19<01:52,  4.32s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  17%|█▋        | 5/30 [00:20<01:20,  3.22s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  20%|██        | 6/30 [00:24<01:20,  3.35s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  23%|██▎       | 7/30 [00:28<01:18,  3.43s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  27%|██▋       | 8/30 [00:31<01:16,  3.47s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  30%|███       | 9/30 [00:35<01:13,  3.51s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  33%|███▎      | 10/30 [00:36<00:57,  2.86s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  37%|███▋      | 11/30 [00:40<00:58,  3.08s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  40%|████      | 12/30 [00:43<00:58,  3.23s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  43%|████▎     | 13/30 [00:47<00:56,  3.33s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  47%|████▋     | 14/30 [00:50<00:54,  3.40s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  50%|█████     | 15/30 [00:54<00:50,  3.34s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  53%|█████▎    | 16/30 [00:57<00:47,  3.41s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  57%|█████▋    | 17/30 [00:58<00:35,  2.73s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  60%|██████    | 18/30 [00:59<00:26,  2.23s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  63%|██████▎   | 19/30 [01:03<00:28,  2.63s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  67%|██████▋   | 20/30 [01:07<00:29,  2.91s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  70%|███████   | 21/30 [01:10<00:28,  3.11s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  73%|███████▎  | 22/30 [01:11<00:19,  2.38s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  77%|███████▋  | 23/30 [01:14<00:19,  2.74s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  80%|████████  | 24/30 [01:15<00:13,  2.22s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  83%|████████▎ | 25/30 [01:19<00:13,  2.63s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  87%|████████▋ | 26/30 [01:20<00:08,  2.14s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  90%|█████████ | 27/30 [01:24<00:07,  2.58s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  93%|█████████▎| 28/30 [01:27<00:05,  2.87s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base:  97%|█████████▋| 29/30 [01:29<00:02,  2.49s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+Base: 100%|██████████| 30/30 [01:29<00:00,  1.88s/it]Base: 100%|██████████| 30/30 [01:29<00:00,  2.99s/it]
+
+============================================================
+  BASE MODEL (no LoRA)
+============================================================
+  Accuracy:             0.00% (0/30)
+  No answer extracted:  0
+  Samples per question: 1
+============================================================
+
+--- Sample predictions (Base) ---
+
+❌ Q: Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...
+   Gold: 109  |  Pred: 77
+   Out:   Darrell's age is 7 times Allen's age. So, Darrell's age is 7 times 11 years. Darrell's age is 77 years. Allen's age is 11 times 11 years. Allen's age is 121 years. Darrell's age 10 years from now is ...
+
+❌ Q: Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...
+   Gold: 89  |  Pred: 4
+   Out:   Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons. She trades 50% of her large stickers for large buttons and trades the rest of the...
+---
+
+
+Loading LoRA adapter: ./gsm8k_lora_model
+==((====))==  Unsloth 2026.4.8: Fast Llama patching. Transformers: 5.5.0.
+   \\   /|    NVIDIA L40S. Num GPUs = 1. Max memory: 44.392 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.10.0+cu128. CUDA: 8.9. CUDA Toolkit: 12.8. Triton: 3.6.0
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.35. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights:  20%|█▉        | 50/254 [00:00<00:00, 499.72it/s]Loading weights:  59%|█████▉    | 150/254 [00:00<00:00, 793.89it/s]Loading weights:  97%|█████████▋| 247/254 [00:00<00:00, 873.79it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 836.24it/s]
+Unsloth: Will load unsloth/llama-3.2-3b-bnb-4bit as a legacy tokenizer.
+Unsloth 2026.4.8 patched 28 layers with 28 QKV layers, 28 O layers and 28 MLP layers.
+LoRA:   0%|          | 0/30 [00:00<?, ?it/s]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:   3%|▎         | 1/30 [00:01<00:33,  1.16s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:   7%|▋         | 2/30 [00:05<01:30,  3.24s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  10%|█         | 3/30 [00:07<01:06,  2.45s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  13%|█▎        | 4/30 [00:09<00:57,  2.22s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  17%|█▋        | 5/30 [00:11<00:53,  2.14s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  20%|██        | 6/30 [00:13<00:49,  2.08s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  23%|██▎       | 7/30 [00:15<00:46,  2.00s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  27%|██▋       | 8/30 [00:16<00:38,  1.76s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  30%|███       | 9/30 [00:17<00:31,  1.52s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  33%|███▎      | 10/30 [00:18<00:30,  1.53s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  37%|███▋      | 11/30 [00:22<00:42,  2.22s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  40%|████      | 12/30 [00:24<00:35,  1.98s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  43%|████▎     | 13/30 [00:28<00:47,  2.81s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  47%|████▋     | 14/30 [00:30<00:40,  2.51s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  50%|█████     | 15/30 [00:31<00:32,  2.15s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  53%|█████▎    | 16/30 [00:32<00:24,  1.72s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  57%|█████▋    | 17/30 [00:37<00:34,  2.62s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  60%|██████    | 18/30 [00:38<00:24,  2.06s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  63%|██████▎   | 19/30 [00:38<00:18,  1.66s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  67%|██████▋   | 20/30 [00:39<00:13,  1.38s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  70%|███████   | 21/30 [00:41<00:13,  1.48s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  73%|███████▎  | 22/30 [00:41<00:09,  1.22s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  77%|███████▋  | 23/30 [00:43<00:09,  1.40s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  80%|████████  | 24/30 [00:48<00:14,  2.38s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  83%|████████▎ | 25/30 [00:49<00:09,  1.98s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  87%|████████▋ | 26/30 [00:51<00:07,  1.96s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  90%|█████████ | 27/30 [00:54<00:06,  2.33s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  93%|█████████▎| 28/30 [00:56<00:04,  2.36s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA:  97%|█████████▋| 29/30 [00:58<00:02,  2.25s/it]Both `max_new_tokens` (=256) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+LoRA: 100%|██████████| 30/30 [00:59<00:00,  1.73s/it]LoRA: 100%|██████████| 30/30 [00:59<00:00,  1.98s/it]
+
+============================================================
+  LORA MODEL (fine-tuned)
+============================================================
+  Accuracy:             16.67% (5/30)
+  No answer extracted:  0
+  Samples per question: 1
+============================================================
+
+--- Sample predictions (LoRA) ---
+
+✅ Q: Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...
+   Gold: 109  |  Pred: 109
+   Out:   Darrell's age now is 7/18 * 162 = 63
+Allen's age now is 11/18 * 162 = 99
+Allen's age 10 years from now is 99 + 10 = 109
+#### 109...
+
+✅ Q: Gunther, the gorilla, had 48 bananas hidden under a fern branch.  When Gunther wasn't looking, Arnold, the chimpanzee, s...
+   Gold: 43  |  Pred: 43
+   Out:   Gunther had 48 bananas on the first day.
+Arnold stole half of the bananas, so he had 24 bananas on the second day.
+Gunther added 25 bananas on the second day, so he had 49 bananas on the third day.
+A...
+
+❌ Q: Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...
+   Gold: 89  |  Pred: 30
+   Out:   Lorraine starts with 30 small stickers and 40 large stickers.
+She trades 90% of her small stickers for large buttons.
+She trades 50% of her large stickers for large buttons and trades the rest of the...
+
+❌ Q: Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. How man...
+   Gold: 13  |  Pred: 10
+   Out:   Indras' name has 6 letters.
+Indras' name has 6/2 = 3 letters in the first half.
+Indras' name has 6-3 = 3 letters in the second half.
+Indras' name has 3+3 = 6 letters in total.
+Indras' sister's name h...
+---
+
+
+============================================================
+  IMPROVEMENT: +16.67%
+  Base: 0.00%  →  LoRA: 16.67%
+============================================================
+
+  Per-example breakdown:
+  Both correct:       0
+  Both wrong:         25
+  LoRA fixed:         5  (base wrong → LoRA right)
+  LoRA broke:         0  (base right → LoRA wrong)
+  Net fixes:          +5
+
+Results saved to eval_results.json
+
+Evaluation finished at: Mon 04 May 2026 09:44:45 IDT
