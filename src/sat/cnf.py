@@ -16,9 +16,10 @@ class WCNF:
     - For WCNF: "p wcnf n m top" header; clauses with weight >= top are hard.
       Clause lines: "<weight> lit1 lit2 ... 0"
     """
-    def __init__(self, n_vars: int, hard_weight: int):
+    def __init__(self, n_vars: int, hard_weight: int, is_wcnf: bool = True):
         self.n_vars = n_vars
         self.hard_weight = hard_weight
+        self.is_wcnf = is_wcnf
         self.clauses: List[Clause] = []
         # Occurrence lists (1-indexed by variable id)
         self.pos_adj: List[List[int]] = [[] for _ in range(n_vars + 1)]
@@ -52,7 +53,12 @@ class WCNF:
                         if len(toks) >= 5:
                             top = int(toks[4])
                         else:
-                            raise ValueError("WCNF requires 'top' in header")
+                            # Old-style WCNF header without `top` (e.g. Selman's
+                            # rwms generator, *.clq.wcnf, ram_*.ra1.wcnf). By
+                            # convention this means "no hard clauses" — every
+                            # clause is soft. Pick a sentinel that no real
+                            # weight will ever reach.
+                            top = 10**18
                     elif fmt != "cnf":
                         raise ValueError(f"Unknown DIMACS format: {fmt}")
                     continue
@@ -88,7 +94,11 @@ class WCNF:
             # Here we only check and proceed.
             pass
 
-        inst = WCNF(n_vars=n_vars, hard_weight=top if top is not None else 10**9)
+        inst = WCNF(
+            n_vars=n_vars,
+            hard_weight=top if top is not None else 10**9,
+            is_wcnf=is_wcnf,
+        )
         for cl in clauses:
             cid = len(inst.clauses)
             inst.clauses.append(cl)
