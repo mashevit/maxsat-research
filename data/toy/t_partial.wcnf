@@ -1,7 +1,7 @@
-c Toy: partial MaxSAT. Hard clause forces x1 = true.
+c Toy: partial MaxSAT. Hard clause (weight == top == 100) forces x1 = true.
 c Soft clauses (x2) and (-x2) cannot both hold; optimum cost = 1.
-c Useful to verify hard/soft split is parsed correctly.
-h 1 0
+p wcnf 3 4 100
+100 1 0
 1 2 0
 1 -2 0
 1 3 0

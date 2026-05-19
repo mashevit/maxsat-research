@@ -1,6 +1,6 @@
-c Toy: small soft conflict on x1, free choices on x2 and x3.
+c Toy: soft conflict on x1, free choices on x2 and x3.
 c Soft clauses (x1) and (-x1) cannot both hold; optimum cost = 1.
-c Useful to check that final_cost > 0 is recorded correctly.
+p wcnf 3 4 100
 1 1 0
 1 -1 0
 1 2 0

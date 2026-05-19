@@ -1,26 +1,28 @@
 """
-Profile instance hardness against an RC2 anytime baseline and assign tiers.
+Profile MaxSAT instances against an RC2 (exact) baseline and assign tiers.
 
-Reads MaxSAT instances (.wcnf or .cnf), runs RC2 with a wall-clock cap,
-records first-feasible time, last-improvement time, and the cost at
-checkpoints, then assigns a tier:
+RC2 is an exact MaxSAT solver: it either proves an optimum within the
+wall-clock cap or it doesn't. The honest hardness signal is therefore
+*time-to-solve*, not a ratio. Tiers are time-based:
 
-    T1 — RC2 dominant.       Feasible within 60-300s AND ratio <= 1.1.
-    T2a — research zone.     1.1 < ratio <= 2.0.
-    T2b — prime training.    ratio > 2.0.
-    T3 — no signal.          No feasible solution within the cap.
+    T1  — RC2 solves to optimum within 60 s. Regression / smoke tier.
+    T2a — solves within 60-300 s. Research zone.
+    T2b — solves within 300-600 s. High research interest.
+    T3  — does not solve within the cap. Prime LLM-guided target.
 
-The ratio is `final_cost / best_known_cost`. Without a `--bestknown` CSV,
-records are written with tier="T2_prov" or "T3" only (feasibility known,
-ratio sub-split deferred until best-known is available).
+If a `--bestknown` CSV is supplied, the ratio (final_cost / best_known)
+is recorded as a *secondary annotation* for sanity-checking. For RC2 it
+should be ~1.0 when it solves. A later pass with an anytime solver
+(NuWLS-c, your memetic_ea, etc.) will compute the ratio that actually
+matters for an LLM-guided approach; the schema here is forward-
+compatible with that.
 
-JSONL output is compatible with HARNESS_PLAN.md §2.3 where fields overlap;
-profile-specific signals live under a `profile` key.
+JSONL fields overlap deliberately with HARNESS_PLAN.md §2.3.
 
 Usage:
     python -m src.cli.profile_hardness \\
         --instances data/toy/*.wcnf \\
-        --cap 600 \\
+        --cap 10 \\
         --out results/profile/toy_profile.jsonl
 
     python -m src.cli.profile_hardness \\
@@ -47,12 +49,11 @@ from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
 
 
-# Tier-boundary constants. See docs/STRATIFICATION_PLAN.md for rationale.
-T1_RATIO_MAX = 1.1
-T2A_RATIO_MAX = 2.0
-T1_TIME_MAX = 300.0     # First-feasible by 5 min counts as "fast"
+# Tier-boundary constants (seconds). See docs/STRATIFICATION_PLAN.md.
+T1_MAX_S = 60.0
+T2A_MAX_S = 300.0
+T2B_MAX_S = 600.0
 DEFAULT_CAP = 600.0
-DEFAULT_CHECKPOINTS = (60.0, 300.0, 600.0)
 
 
 class _Timeout(Exception):
@@ -61,7 +62,7 @@ class _Timeout(Exception):
 
 @contextmanager
 def wall_timeout(seconds: float):
-    """SIGALRM-based timeout. Posix only; fine for SLURM and local Linux."""
+    """SIGALRM-based hard timeout. POSIX only."""
     def _handler(signum, frame):
         raise _Timeout()
     old = signal.signal(signal.SIGALRM, _handler)
@@ -73,25 +74,22 @@ def wall_timeout(seconds: float):
         signal.signal(signal.SIGALRM, old)
 
 
-def profile_instance(path: str, cap: float,
-                     checkpoints: tuple[float, ...]) -> dict:
-    """Run RC2 anytime on one instance under a wall-clock cap.
+def profile_instance(path: str, cap: float) -> dict:
+    """Run RC2.compute() on one instance under a wall-clock cap.
 
-    Returns a dict of raw profile signals. Tier is assigned later by
-    assign_tier() once best-known cost is looked up.
+    Returns a dict with the profile signals; tier is assigned later by
+    assign_tier(). Never raises — all errors are captured into
+    rec['profile']['error'].
     """
-    size_mb = os.path.getsize(path) / 1e6
     rec: dict = {
         "instance": path,
-        "size_mb": round(size_mb, 4),
+        "size_mb": round(os.path.getsize(path) / 1e6, 4),
         "profile": {
             "cap_s": cap,
-            "first_feasible_s": None,
-            "last_improve_s": None,
+            "solver": "rc2",
+            "solve_s": None,
             "final_cost": None,
-            "checkpoints": {str(int(c)): None for c in checkpoints},
             "completed": False,
-            "wall_s": None,
             "error": None,
         },
     }
@@ -99,60 +97,31 @@ def profile_instance(path: str, cap: float,
     try:
         wcnf = WCNF(from_file=path)
     except Exception as e:
-        rec["profile"]["error"] = f"parse_failed: {e}"
+        rec["profile"]["error"] = f"parse_failed: {type(e).__name__}: {e}"
         return rec
 
     t0 = time.monotonic()
-    pending_cp = list(checkpoints)
-    best: Optional[int] = None
-
-    def _stamp_checkpoints(elapsed: float, current_best: Optional[int]):
-        while pending_cp and elapsed >= pending_cp[0]:
-            cp = pending_cp.pop(0)
-            rec["profile"]["checkpoints"][str(int(cp))] = current_best
-
     try:
-        with wall_timeout(cap + 5.0):           # hard kill 5s past cap
+        with wall_timeout(cap):
             solver = RC2(wcnf)
             try:
-                # RC2.enumerate streams improving models in modern pysat.
-                # Older builds expose .compute() returning one model. Try
-                # enumerate first; fall back if absent.
-                if hasattr(solver, "enumerate"):
-                    completed = True
-                    for _model in solver.enumerate():
-                        elapsed = time.monotonic() - t0
-                        cost = solver.cost
-                        if rec["profile"]["first_feasible_s"] is None:
-                            rec["profile"]["first_feasible_s"] = round(elapsed, 3)
-                        if best is None or cost < best:
-                            best = cost
-                            rec["profile"]["last_improve_s"] = round(elapsed, 3)
-                        _stamp_checkpoints(elapsed, best)
-                        if elapsed >= cap:
-                            completed = False
-                            break
-                    rec["profile"]["completed"] = completed
-                else:
-                    model = solver.compute()
-                    elapsed = time.monotonic() - t0
-                    if model is not None:
-                        best = solver.cost
-                        rec["profile"]["first_feasible_s"] = round(elapsed, 3)
-                        rec["profile"]["last_improve_s"] = round(elapsed, 3)
+                model = solver.compute()
+                elapsed = time.monotonic() - t0
+                if model is not None:
+                    rec["profile"]["solve_s"] = round(elapsed, 3)
+                    rec["profile"]["final_cost"] = int(solver.cost)
                     rec["profile"]["completed"] = True
-                    _stamp_checkpoints(elapsed, best)
+                else:
+                    rec["profile"]["error"] = "rc2_returned_none"
+                    rec["profile"]["solve_s"] = round(elapsed, 3)
             finally:
                 solver.delete()
     except _Timeout:
-        rec["profile"]["error"] = "hard_timeout"
+        rec["profile"]["error"] = "timeout"
     except Exception as e:
         rec["profile"]["error"] = f"solver_failed: {type(e).__name__}: {e}"
+        rec["profile"]["solve_s"] = round(time.monotonic() - t0, 3)
 
-    elapsed = time.monotonic() - t0
-    _stamp_checkpoints(elapsed, best)
-    rec["profile"]["final_cost"] = best
-    rec["profile"]["wall_s"] = round(elapsed, 3)
     return rec
 
 
@@ -160,39 +129,35 @@ def assign_tier(rec: dict, best_known: Optional[int]) -> dict:
     """Pure function: set `tier`, `ratio`, `tier_reason` on rec, return it."""
     p = rec["profile"]
     final_cost = p["final_cost"]
-    first_feasible = p["first_feasible_s"]
+    solve_s = p["solve_s"]
 
-    if final_cost is None:
-        rec["tier"] = "T3"
-        rec["ratio"] = None
-        rec["tier_reason"] = "no_feasible_within_cap"
-        return rec
-
+    # Optional ratio annotation (always computed if best_known is given).
     ratio: Optional[float] = None
-    if best_known is not None:
+    if final_cost is not None and best_known is not None:
         if best_known > 0:
             ratio = final_cost / best_known
         elif best_known == 0 and final_cost == 0:
             ratio = 1.0
-        # best_known == 0 with final_cost > 0: ratio undefined (skip)
     rec["ratio"] = round(ratio, 4) if ratio is not None else None
 
-    if ratio is None:
-        rec["tier"] = "T2_prov"
-        rec["tier_reason"] = "feasible_but_ratio_unknown"
+    if not p["completed"]:
+        rec["tier"] = "T3"
+        rec["tier_reason"] = p["error"] or "did_not_complete"
         return rec
 
-    if (first_feasible is not None
-            and first_feasible <= T1_TIME_MAX
-            and ratio <= T1_RATIO_MAX):
+    if solve_s <= T1_MAX_S:
         rec["tier"] = "T1"
-        rec["tier_reason"] = f"ratio<={T1_RATIO_MAX} and fast"
-    elif ratio <= T2A_RATIO_MAX:
+        rec["tier_reason"] = f"solve_s<={T1_MAX_S}"
+    elif solve_s <= T2A_MAX_S:
         rec["tier"] = "T2a"
-        rec["tier_reason"] = f"{T1_RATIO_MAX}<ratio<={T2A_RATIO_MAX}"
-    else:
+        rec["tier_reason"] = f"{T1_MAX_S}<solve_s<={T2A_MAX_S}"
+    elif solve_s <= T2B_MAX_S:
         rec["tier"] = "T2b"
-        rec["tier_reason"] = f"ratio>{T2A_RATIO_MAX}"
+        rec["tier_reason"] = f"{T2A_MAX_S}<solve_s<={T2B_MAX_S}"
+    else:
+        # Shouldn't happen — cap should have triggered timeout first.
+        rec["tier"] = "T3"
+        rec["tier_reason"] = f"solve_s>{T2B_MAX_S} (cap misconfigured?)"
     return rec
 
 
@@ -208,15 +173,12 @@ def load_bestknown(path: str) -> dict[str, int]:
 
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Profile MaxSAT instances against RC2 and assign tiers."
+        description="Profile MaxSAT instances with RC2 and assign tiers."
     )
     ap.add_argument("--instances", nargs="+", required=True,
                     help="Glob(s) for instance files (.wcnf, .cnf).")
     ap.add_argument("--cap", type=float, default=DEFAULT_CAP,
                     help="Per-instance wall-clock cap, seconds.")
-    ap.add_argument("--checkpoints", type=float, nargs="+",
-                    default=list(DEFAULT_CHECKPOINTS),
-                    help="Wall-clock seconds at which to log best-so-far.")
     ap.add_argument("--bestknown", default=None,
                     help="CSV with columns `instance,best_cost`. Optional.")
     ap.add_argument("--out", required=True,
@@ -239,16 +201,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     with open(args.out, "a") as f:
         for path in paths:
             print(f"[*] {path}")
-            rec = profile_instance(path, args.cap, tuple(args.checkpoints))
+            rec = profile_instance(path, args.cap)
             bk = best_known.get(os.path.basename(path))
             assign_tier(rec, bk)
             f.write(json.dumps(rec) + "\n")
             f.flush()
             p = rec["profile"]
-            print(f"    first_feasible={p['first_feasible_s']} "
-                  f"final_cost={p['final_cost']} "
-                  f"wall={p['wall_s']} "
-                  f"tier={rec.get('tier')} ratio={rec.get('ratio')}")
+            print(f"    solve_s={p['solve_s']} final_cost={p['final_cost']}"
+                  f" tier={rec.get('tier')} ratio={rec.get('ratio')}"
+                  f" err={p['error']}")
 
     return 0
 
