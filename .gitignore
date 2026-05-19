@@ -43,6 +43,7 @@ htmlcov/
 
 # Project data & results
 data/*
+!data/toy/
 !data/toy/**
 #experiments/
 #results/

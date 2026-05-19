@@ -1,0 +1,7 @@
+c Toy: trivially satisfiable, 4 vars, 4 unit soft clauses.
+c Expected RC2 outcome: optimum cost = 0, solved in microseconds.
+c New WCNF format (MSE 2022+): `h` for hard clauses, integer weight for soft.
+1 1 0
+1 2 0
+1 3 0
+1 4 0
