@@ -42,7 +42,7 @@ venv.bak/
 htmlcov/
 
 # Project data & results
-data/*
+#data/*
 !data/toy/
 !data/toy/**
 #experiments/
