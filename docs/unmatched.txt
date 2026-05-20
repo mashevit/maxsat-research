@@ -1,0 +1,14 @@
+# Local basenames absent from the upstream MSE best-known CSVs.
+# They are still present in the filtered output CSVs with best_cost = -1,
+# matching the -1-means-unknown convention CSV B already uses for mse24.
+# Reason for absence: confirmed checked against MSE 2023 anytime
+# best_costs.csv (the official upstream of CSV A) — par32 instances
+# are not in that table. They likely originate from the MSE 2023
+# exact-track corpus or from the MaxSATRegressionSuite fuzzer set,
+# neither of which publishes a best-known anytime cost.
+
+## mse23-uw-small (vs best_costs.csv) — 2 forced to -1
+pseudoBoolean-normalized-par32-3.opb.msat.wcnf
+pseudoBoolean-normalized-par32-5.opb.msat.wcnf
+
+## mse24-small (vs best_costs__1_.csv) — 0 forced to -1
