@@ -18,18 +18,13 @@ Result semantics
 
 Surviving SIGKILL
 -----------------
-When ``--progress-file PATH`` is given, RC2's ``process_core`` method is
-wrapped so that every time RC2 extracts an unsatisfiable core (which is
-exactly when ``rc2.cost`` advances), the new lb is atomically written to
-PATH. No polling, no watchdog thread, no GIL contention: the write
-happens on the main thread between SAT calls, immediately after the only
-event that ever advances the bound. If the process is later SIGKILL'd
-mid-SAT-call, the most recently written value is recovered from disk by
-the parent.
-
-If RC2 never extracts a single core (the SAT solver is stuck in its
-first call), the file stays empty — and that's an honest signal: RC2
-made no proof progress at all.
+When ``--progress-file PATH`` is given, a background thread writes the
+running lower bound to PATH every 2 seconds while RC2 is solving. If
+this process is SIGKILL'd by a parent (e.g. because Python's SIGALRM was
+swallowed by RC2's underlying C SAT solver and a subprocess.run timeout
+escalated to a hard kill), the most recent lower bound is still on disk
+for the parent to recover. Without ``--progress-file`` this behavior is
+disabled.
 
 Example
 -------
@@ -46,6 +41,7 @@ import json
 import os
 import signal
 import sys
+import threading
 import time
 from dataclasses import dataclass, asdict
 from typing import Optional, List
@@ -65,11 +61,14 @@ except ImportError:  # pragma: no cover
 from src.cli.run_opt_rc2 import load_as_wcnf  # noqa: E402
 
 
+PROGRESS_INTERVAL_S = 2.0  # how often the background thread dumps lb to disk
+
+
 @dataclass
 class AnytimeRC2Result:
     """One record per invocation of :func:`solve_rc2_with_timeout`."""
     path: str
-    status: str
+    status: str                              # "optimal" | "timeout" | "unsat" | "error"
     cost: Optional[int]
     cost_lower_bound: Optional[int]
     model: Optional[List[int]]
@@ -88,7 +87,12 @@ class _Timeout(Exception):
 
 
 def _read_lower_bound(rc2) -> Optional[int]:
-    """Return the running lower bound from RC2, regardless of PySAT version."""
+    """Return the running lower bound from RC2, regardless of PySAT version.
+
+    Different PySAT releases have exposed the accumulated core weight under
+    different attribute names. Probe the common ones; if none exist, warn to
+    stderr and return ``None``.
+    """
     for attr in ("cost", "cost_so_far"):
         v = getattr(rc2, attr, None)
         if v is not None:
@@ -105,48 +109,29 @@ def _read_lower_bound(rc2) -> Optional[int]:
     return None
 
 
-def _atomic_write_int(path: str, value: int) -> None:
-    """Write `value` to `path` atomically. Best-effort; failures swallowed."""
-    try:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(str(value))
-        os.replace(tmp, path)
-    except Exception:
-        pass
+def _progress_writer(rc2, path: str, stop_event: threading.Event,
+                     interval: float = PROGRESS_INTERVAL_S) -> None:
+    """Background thread: dump RC2's running lower bound to ``path`` every
+    ``interval`` seconds. Atomic via write-temp-then-rename so a SIGKILL'd
+    parent read never sees a partial value.
 
-
-def _install_process_core_hook(rc2, progress_file: str) -> None:
-    """Wrap rc2.process_core so the running lb is written to disk after every
-    core extraction.
-
-    process_core is the exact point at which RC2 advances `cost`. Hooking it
-    means: zero writes if no progress, one write per real advance, no polling,
-    no thread, no GIL contention.
-
-    Best-effort: if the PySAT API changes and process_core isn't present,
-    skip silently (lb will still be reported via stdout JSON on graceful
-    SIGALRM, just not survive SIGKILL).
+    Best-effort: any exception inside the loop is swallowed. We never want
+    the progress thread to interfere with the main solve.
     """
-    original = getattr(rc2, "process_core", None)
-    if original is None or not callable(original):
-        return
-
-    def _hooked(*args, **kwargs):
-        result = original(*args, **kwargs)
+    while not stop_event.wait(interval):
         try:
             lb = _read_lower_bound(rc2)
-            if lb is not None:
-                _atomic_write_int(progress_file, lb)
+        except Exception:
+            continue
+        if lb is None:
+            continue
+        try:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write(str(lb))
+            os.replace(tmp, path)
         except Exception:
             pass
-        return result
-
-    try:
-        rc2.process_core = _hooked
-    except Exception:
-        # Some RC2 internals make attributes read-only; if so, fall through.
-        pass
 
 
 def solve_rc2_with_timeout(
@@ -155,19 +140,28 @@ def solve_rc2_with_timeout(
     solver: str = "g3",
     progress_file: Optional[str] = None,
 ) -> AnytimeRC2Result:
-    """Run RC2 on path with a wall-clock budget of timeout_s seconds.
+    """Run RC2 on ``path`` with a wall-clock budget of ``timeout_s`` seconds.
 
-    If progress_file is supplied, RC2's process_core method is wrapped to
-    write the running lower bound to that path on every core extraction.
-    This is how the bound survives an external SIGKILL.
+    If ``progress_file`` is supplied, a daemon thread writes RC2's running
+    lower bound to that path every ``PROGRESS_INTERVAL_S`` seconds. This
+    is the only way to recover a lower bound when the process is SIGKILL'd
+    by an external parent before the SIGALRM cleanup path runs.
     """
     abs_path = os.path.abspath(path)
 
     out = AnytimeRC2Result(
-        path=abs_path, status="error",
-        cost=None, cost_lower_bound=None, model=None,
-        elapsed_s=0.0, timeout_s=float(timeout_s), solver=solver,
-        n_vars=0, n_clauses=0, n_hard=0, n_soft=0,
+        path=abs_path,
+        status="error",
+        cost=None,
+        cost_lower_bound=None,
+        model=None,
+        elapsed_s=0.0,
+        timeout_s=float(timeout_s),
+        solver=solver,
+        n_vars=0,
+        n_clauses=0,
+        n_hard=0,
+        n_soft=0,
         error=None,
     )
 
@@ -194,10 +188,19 @@ def solve_rc2_with_timeout(
         out.elapsed_s = time.time() - start
         return out
 
-    # Install the disk-write hook BEFORE arming the alarm so that an
-    # early-firing SIGALRM still benefits from the hook.
+    # Start the progress writer thread BEFORE arming the alarm, so even a
+    # SIGALRM that fires very early in compute() has at least one tick of
+    # lb dumped to disk first.
+    progress_stop: Optional[threading.Event] = None
+    progress_thread: Optional[threading.Thread] = None
     if progress_file:
-        _install_process_core_hook(rc2, progress_file)
+        progress_stop = threading.Event()
+        progress_thread = threading.Thread(
+            target=_progress_writer,
+            args=(rc2, progress_file, progress_stop),
+            daemon=True,
+        )
+        progress_thread.start()
 
     def _alarm_handler(signum, frame):  # noqa: ARG001
         raise _Timeout()
@@ -230,6 +233,10 @@ def solve_rc2_with_timeout(
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, prev_handler)
+        if progress_stop is not None:
+            progress_stop.set()
+        if progress_thread is not None:
+            progress_thread.join(timeout=1.0)
         try:
             rc2.delete()
         except Exception:
@@ -266,7 +273,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         description=(
             "Anytime RC2 MaxSAT solver. Runs PySAT's RC2 under a wall-clock\n"
             "budget and reports either the optimum or the lower bound\n"
-            "accumulated when the timeout fires."
+            "accumulated when the timeout fires.\n\n"
+            "Example:\n"
+            "  python -m src.cli.solve_rc2_anytime --path data/toy/mini.wcnf "
+            "--timeout-s 1.0 --json\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -277,8 +287,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument("--solver", default="g3",
                         help="Underlying SAT solver name for RC2 (default: %(default)s).")
     parser.add_argument("--progress-file", metavar="PATH",
-                        help="Write the running lower bound to this path "
-                             "after every unsat-core extraction. Survives SIGKILL.")
+                        help="Periodically dump the running lower bound to "
+                             "this path. Survives SIGKILL.")
     parser.add_argument("--json", action="store_true",
                         help="Emit a JSON line to stdout instead of human-readable output.")
     parser.add_argument("--out-json", metavar="PATH",
