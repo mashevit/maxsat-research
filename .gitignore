@@ -54,4 +54,5 @@ Thumbs.db
 *:Zone.Identifier
 
 garbage/
-cluster_staging/
+cluster_staging/data/
+cluster_staging/folder_tree.txt
