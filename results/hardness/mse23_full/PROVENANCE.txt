@@ -1,0 +1,143 @@
+==============================================================================
+PROVENANCE — MaxSAT hardness profile: mse23_full
+==============================================================================
+Place this file at:  results/hardness/mse23_full/PROVENANCE.txt
+
+Purpose: record exactly what produced the per-instance RC2 hardness profiles in
+this directory and how the T1/T2a/T2b/T3 tiers are defined, so the numbers
+behind any tier claim in the thesis are traceable without re-running the cluster.
+
+Lines marked <FILL IN ...> are run-specific facts only you can supply. Fill them
+in once, now, while the run is fresh.
+
+------------------------------------------------------------------------------
+1. WHAT THIS IS
+------------------------------------------------------------------------------
+75 single-record JSONL shards (one per SLURM array task), each profiling one
+MaxSAT instance with the RC2 solver under a fixed time budget. Aggregating them
+yields the tier stratification used for instance selection downstream.
+
+  Shards        : tasks/mse23_full_arr_task_{1..75}.jsonl   (1 record each)
+  Aggregate     : all_results.jsonl, all_results.csv        (built, see §6)
+  Summaries     : tier_summary.csv, bench_summary.csv
+
+The shards are the source of truth; the aggregate + summaries are reproducible
+build products of analyze_tiers.py.
+
+------------------------------------------------------------------------------
+2. INSTANCE SET
+------------------------------------------------------------------------------
+  Benchmark     : MSE unweighted-small track, dir "mse23-uw-small"
+  Path in record: data/raw/mse_2024/mse23-uw-small/*.wcnf   (gitignored; lives
+                  on the BGU cluster, not committed)
+  Count         : 75 instances (one per array task)
+  Original source: <FILL IN — MSE download URL / year / DOI>
+
+  NAMING NOTE: records store instances under a "mse_2024" parent but the subdir
+  and run name say "mse23". Confirm whether this is the MSE 2023 or 2024
+  unweighted-small set and make the directory name match — this is the place to
+  pin it down so the year isn't ambiguous later.
+
+------------------------------------------------------------------------------
+3. PROFILING RUN
+------------------------------------------------------------------------------
+  Solver           : RC2 (core-guided MaxSAT, PySAT)  — CPU-bound; no GPU used
+  Time budget cap  : cap_s = 600.0 s per instance
+  Hard kill margin : subprocess killed at cap + 60.0 s wall
+                     (a solve_s of ~660 s means "killed at the margin")
+  On non-convergence: best lower bound recovered from the RC2 progress file
+
+  Per-record schema (observed):
+    instance              instance path
+    size_mb               file size (MB)
+    profile.cap_s         600.0
+    profile.solver        "rc2"
+    profile.status        optimal | solved | subprocess_killed | error | ...
+    profile.solve_s       wall time actually spent
+    profile.final_cost    optimum cost if converged, else null
+    profile.cost_lower_bound  best LB recovered (esp. when killed)
+    profile.completed     true iff RC2 converged within budget
+    profile.error         free-text note (e.g. kill + LB-recovery)
+    ratio                 final_cost / reference, when solved
+    lb_ratio              lower-bound progress ratio (0..1)
+    tier                  T1 | T2a | T2b | T3
+    tier_reason           short explanation per instance
+
+  Profiler script  : src/cli/profile_hardness.py
+  SLURM driver     : scripts/smoke_mse23.sbatch
+  Located in       : cluster_staging tree
+                     ~/maxsat-lab_new/maxsat-lab/cluster_staging
+                     (NOTE: src/bench/harness.py in the main repo is the
+                     WalkSAT/EA config normalizer, NOT this profiler.)
+  Profiler commit  : <FILL IN — `git log -1 --format=%h -- src/cli/profile_hardness.py`>
+
+  *** PROVENANCE GAP: profile_hardness.py and smoke_mse23.sbatch live ONLY in
+      the cluster_staging tree, not in the committed maxsat-research repo. The
+      code that produced this tier data is currently unversioned. Commit it (or
+      pin its exact contents) so the tiers stay reproducible. ***
+
+  *** CONFIRM: driver is named smoke_mse23.sbatch but this run is "mse23_full".
+      Verify the 75 shards came from a full profiling pass, not a smoke test. ***
+
+------------------------------------------------------------------------------
+4. TIER DEFINITIONS
+------------------------------------------------------------------------------
+Observable semantics (read from the data):
+
+  T1   RC2 converged to the optimum within budget.
+       completed = true, final_cost present.  -> easiest.
+  T3   RC2 did not converge; killed at cap (+60 s); only a lower bound
+       recovered.  completed = false, final_cost = null, cost_lower_bound
+       present, lb_ratio < 1.  -> hardest.
+  T2a  Intermediate hardness (between T1 and T3).
+  T2b  Intermediate hardness (between T1 and T3).
+
+  EXACT cutoffs (the T2a/T2b split, and any solve_s / lb_ratio thresholds):
+    <FILL IN — transcribe the precise rule from src/cli/profile_hardness.py.
+    This is the authoritative definition; everything downstream depends on it.>
+
+------------------------------------------------------------------------------
+5. CAVEATS THAT SHAPE THE TIERS
+------------------------------------------------------------------------------
+  - cap_s = 600 s with a +60 s kill margin directly sets the T1/T3 boundary.
+    Re-running at a different cap changes which instances land in T3. Any tier
+    comparison must hold cap_s fixed (or report it).
+  - cost_lower_bound for killed instances is RECOVERED from a progress file, not
+    a clean solver return — treat it as a best-effort bound.
+  - lb_ratio is only meaningful where a bound was recovered (mainly T3).
+
+------------------------------------------------------------------------------
+6. REPRODUCING THE AGGREGATE
+------------------------------------------------------------------------------
+From the repo root:
+
+  python -m src.bench.analyze_tiers \
+      --in-dir  results/hardness/mse23_full/tasks \
+      --out-dir results/hardness/mse23_full
+
+  (writes all_results.jsonl, all_results.csv, tier_summary.csv,
+   bench_summary.csv, and prints the cross-instance report.)
+
+Re-profiling a subset (e.g. bumping cap_s for T3): re-run only those array
+tasks, drop the new shards into tasks/, and re-run the command above.
+
+------------------------------------------------------------------------------
+7. RUN METADATA  (fill in once)
+------------------------------------------------------------------------------
+  Date(s) run        : <FILL IN>
+  SLURM driver script: scripts/smoke_mse23.sbatch
+  SLURM array job ID : <FILL IN — e.g. NNNNNNNN_[1-75]>  (from sacct / history)
+  Cluster / partition: <FILL IN>
+  CPU model          : <FILL IN>
+  RAM per task       : <FILL IN>
+  Wall limit per task: <FILL IN>  (cap_s 600 + 60 s margin + overhead)
+  Python env         : <FILL IN — conda env name>
+  PySAT version      : <FILL IN — `python -c "import pysat; print(pysat.__version__)"`>
+  RC2 backend SAT    : <FILL IN — e.g. Glucose / Cadical>
+  Repo commit at run : <FILL IN — `git rev-parse --short HEAD`>
+
+------------------------------------------------------------------------------
+8. TIER COUNTS (snapshot — fill from tier_summary.csv after aggregating)
+------------------------------------------------------------------------------
+  T1  : <n>      T2a : <n>      T2b : <n>      T3 : <n>      total : 75
+==============================================================================

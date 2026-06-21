@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-hit-A-1-grd_1790_4_8.tgf.pl.wcnf", "size_mb": 1.4229, "profile": {"cap_s": 600.0, "solver": "rc2", "status": "timeout", "solve_s": 633.15, "final_cost": null, "cost_lower_bound": 226, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": 0.7267, "tier": "T3", "tier_reason": "timeout"}

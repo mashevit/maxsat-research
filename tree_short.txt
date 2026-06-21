@@ -1,0 +1,812 @@
+.
+├── README_PATCH.txt
+├── configs
+│   ├── 2.yaml
+│   ├── 3.yaml
+│   ├── 4.yaml
+│   ├── cfg.yaml
+│   ├── cfg2.yaml
+│   ├── cfg250.yaml
+│   ├── cfg3.yaml
+│   ├── cfghard1.yaml
+│   ├── default.yaml
+│   ├── ea_cfg.yaml
+│   ├── hard2.yaml
+│   └── hard3.yaml
+├── data
+│   ├── dev_small
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_0.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_1.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_2.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_3.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_4.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_5.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_6.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_7.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_8.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C600_H100_9.wcnf
+│   │   ├── file_rpms_wcnf_L3_V100_C700_H100_0.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_0.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_1.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_2.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_3.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_4.wcnf
+│   │   ├── file_rwms_wcnf_L3_V70_C700_5.wcnf
+│   │   ├── file_rwpms_wcnf_L3_V100_C600_H100_0.wcnf
+│   │   ├── hamming6-2.clq.wcnf
+│   │   ├── johnson8-2-4.clq.wcnf
+│   │   ├── johnson8-4-4.clq.wcnf
+│   │   ├── metadata.jsonl
+│   │   ├── ram_k3_n10.ra1.wcnf
+│   │   ├── ram_k3_n11.ra1.wcnf
+│   │   ├── ram_k3_n12.ra1.wcnf
+│   │   ├── ram_k3_n13.ra1.wcnf
+│   │   ├── ram_k3_n9.ra1.wcnf
+│   │   ├── uf50-01.cnf
+│   │   ├── uf50-02.cnf
+│   │   ├── uf50-03.cnf
+│   │   ├── uf50-04.cnf
+│   │   ├── uf50-05.cnf
+│   │   ├── uf50-06.cnf
+│   │   ├── uuf50-01.cnf
+│   │   ├── uuf50-02.cnf
+│   │   ├── uuf50-03.cnf
+│   │   ├── uuf50-04.cnf
+│   │   └── uuf50-05.cnf
+│   ├── exp0
+│   │   ├── uf50-06.cnf
+│   │   └── uuf50-01.cnf
+│   ├── exp1
+│   │   ├── uuf250-01.cnf
+│   │   ├── uuf250-02.cnf
+│   │   ├── uuf250-03.cnf
+│   │   └── uuf250-04.cnf
+│   ├── exp2
+│   │   └── uuf250-02.cnf
+│   ├── hard
+│   │   └── HG-3SAT-V250-C1000-1.cnf
+│   ├── raw
+│   │   └── mse_2024
+│   │       ├── best_costs (1).csv
+│   │       ├── best_costs (1).csv:Zone.Identifier
+│   │       ├── best_costs.csv
+│   │       ├── best_costs.csv:Zone.Identifier
+│   │       ├── bestknown_mse23.csv
+│   │       ├── bestknown_mse23.csv:Zone.Identifier
+│   │       ├── bestknown_mse24.csv
+│   │       ├── bestknown_mse24.csv:Zone.Identifier
+│   │       ├── mse23-uw-small
+│   │       │   ├── MaxSATQueriesinInterpretableClassifiers-wdbc_train_9_CNF_5_1.wcnf
+│   │       │   ├── bcp-SU3__simp-genos.haps.9.wcnf
+│   │       │   ├── decision-tree-heart-cleveland-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree.wcnf
+│   │       │   ├── extension-enforcement-extension-enforcement_non-strict_stb_200_0.05_1_10_1.wcnf
+│   │       │   ├── gen-hyper-tw-GenHyperTW_b01.wcnf
+│   │       │   ├── gen-hyper-tw-GenHyperTW_grid4d_3.wcnf
+│   │       │   ├── gen-hyper-tw-GenHyperTW_uf20-01.wcnf
+│   │       │   ├── inconsistency-measurement-im-contension-B-3-stb_696_368.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-A-2-WS_300_16_70_30.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-A-2-WS_300_16_90_30.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-B-2-stb_625_161.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-B-3-WS_300_16_90_30.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-B-3-stb_428_430.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-B-3-stb_457_193.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-forgetting-T-2-stb_339_81.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-A-1-grd_1790_4_8.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-A-1-grd_2065_1_8.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-A-2-grd_1948_5_1.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-B-1-grd_3018_3_7.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-B-3-stb_390_450.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-hit-C-1-grd_3018_3_7.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-sum-B-2-stb_330_291.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-sum-B-3-stb_327_100.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-sum-B-3-stb_339_393.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-sum-B-3-stb_696_368.tgf.pl.wcnf
+│   │       │   ├── inconsistency-measurement-im-sum-C-1-grd_1222_5_4.tgf.pl.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000071.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000157.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000253.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000260.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000293.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000295.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000316.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000333.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000338.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000385.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000390.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000444.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000486.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000492.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000512.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000517.wcnf
+│   │       │   ├── judgment-aggregation-ja-maxham-preflib-00049-00000540.wcnf
+│   │       │   ├── judgment-aggregation-ja-slater-preflib-00049-00000135.wcnf
+│   │       │   ├── judgment-aggregation-ja-slater-preflib-00049-00000405.wcnf
+│   │       │   ├── judgment-aggregation-ja-slater-preflib-00049-00000468.wcnf
+│   │       │   ├── logic-synthesis-normalized-test4.pi.opb.msat.wcnf
+│   │       │   ├── mbd-b14_C-mbd14-0277.wcnf
+│   │       │   ├── min-fill-MinFill_R0_myciel5.wcnf
+│   │       │   ├── optic-gen_cvc-add7to3_9999.wcnf
+│   │       │   ├── optic-gen_mult_4_5_991.wcnf
+│   │       │   ├── optic-gen_mult_5_5_991.wcnf
+│   │       │   ├── optimizing-BDDs-australian-credit-un-wcnf_incomplete_improved_1_2019_2.wcnf
+│   │       │   ├── optimizing-BDDs-lymph-un-wcnf_incomplete_improved_1_2019_7.wcnf
+│   │       │   ├── optimizing-BDDs-soybean-un-wcnf_incomplete_improved_1_2019_6.wcnf
+│   │       │   ├── optimizing-BDDs-tic-tac-toe-un-wcnf_incomplete_improved_1_2019_6.wcnf
+│   │       │   ├── optimizing-BDDs-vote-un-wcnf_incomplete_improved_1_2019_7.wcnf
+│   │       │   ├── pseudoBoolean-normalized-par32-3.opb.msat.wcnf
+│   │       │   ├── pseudoBoolean-normalized-par32-5.opb.msat.wcnf
+│   │       │   ├── ramsey-ram_k3_n11.ra0.wcnf
+│   │       │   ├── ramsey-ram_k3_n14.ra0.wcnf
+│   │       │   ├── ramsey-ram_k3_n15.ra0.wcnf
+│   │       │   ├── ramsey-ram_k3_n17.ra0.wcnf
+│   │       │   ├── ramsey-ram_k4_n18.ra0.wcnf
+│   │       │   ├── ramsey-ram_k4_n20.ra0.wcnf
+│   │       │   ├── reversi-rev66-16.wcnf
+│   │       │   ├── reversi-rev66-26.wcnf
+│   │       │   ├── reversi-rev66-28.wcnf
+│   │       │   ├── reversi-rev66-32.wcnf
+│   │       │   ├── scheduling-cnf_small.wcnf
+│   │       │   ├── setcover-sts-data.135.wcnf
+│   │       │   ├── setcover-sts-data.243.wcnf
+│   │       │   ├── setcover-sts-data.405.wcnf
+│   │       │   ├── setcover-sts-data.729.wcnf
+│   │       │   └── xai-mindset2-postoperative-patient-data.wcnf
+│   │       ├── mse24-small
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Flag.BIC_TWBound_3.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Flag.BIC_TWBound_4.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Hepatitis.BIC_TWBound4.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Horse.BIC_TWBound_2.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Water_1000_1_2.scores_TWBound_3.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_Wine_TWBound_3.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_alarm_100_1_3.scores_TWBound_3.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_insurance_1000_1_3.scores_TWBound_3.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_insurance_1000_1_3.scores_TWBound_4.wcnf
+│   │       │   ├── BTBNSL_wt-Rounded_BTWBNSL_insurance_100_1_3.scores_TWBound_3.wcnf
+│   │       │   ├── MaxSATQueriesinInterpretableClassifiers_wt-compas_train_2_CNF_3_15.wcnf
+│   │       │   ├── MaxSATQueriesinInterpretableClassifiers_wt-heart_train_1_CNF_3_5.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.1_9.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.4_2.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.5_2.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.8_0.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.8_2.wcnf
+│   │       │   ├── ParametricRBACMaintenance_mse20_wt-role_smallcomp_multiple_0.8_6.wcnf
+│   │       │   ├── af-synthesis_wt-af-synthesis_stb_50_20_4.wcnf
+│   │       │   ├── af-synthesis_wt-af-synthesis_stb_50_20_8.wcnf
+│   │       │   ├── af-synthesis_wt-af-synthesis_stb_50_40_0.wcnf
+│   │       │   ├── af-synthesis_wt-af-synthesis_stb_50_40_6.wcnf
+│   │       │   ├── af-synthesis_wt-af-synthesis_stb_50_40_8.wcnf
+│   │       │   ├── causal-discovery_wt-causal_Bands_6_277.wcnf
+│   │       │   ├── causal-discovery_wt-causal_hailfinder_7_100.wcnf
+│   │       │   ├── causal-discovery_wt-causal_n7_i4_N500_uai14_log_int.wcnf
+│   │       │   ├── correlation-clustering_wt-Rounded_CorrelationClustering_Protein1_BINARY_N320.wcnf
+│   │       │   ├── correlation-clustering_wt-Rounded_CorrelationClustering_Protein4_BINARY_N360.wcnf
+│   │       │   ├── correlation-clustering_wt-Rounded_CorrelationClustering_Protein4_BINARY_N400.wcnf
+│   │       │   ├── decision-tree-heart-cleveland-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_adaboost_5.wcnf
+│   │       │   ├── decision-tree-heart-cleveland-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_adaboost_6.wcnf
+│   │       │   ├── decision-tree-primary-tumor-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_adaboost_2.wcnf
+│   │       │   ├── decision-tree-primary-tumor-un-formula_0.8_2021_atleast_31_max-4_reduced_incomplete_adaboost_3.wcnf
+│   │       │   ├── drmx-cryptogen_wt-threshold128_0.wcnf
+│   │       │   ├── drmx-cryptogen_wt-threshold128_1.wcnf
+│   │       │   ├── drmx-cryptogen_wt-threshold128_2.wcnf
+│   │       │   ├── drmx-cryptogen_wt-threshold128_6.wcnf
+│   │       │   ├── drmx-cryptogen_wt-threshold128_8.wcnf
+│   │       │   ├── frb_wt-frb40-19-3.wcnf
+│   │       │   ├── frb_wt-frb40-19-4.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000300.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000334.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000353.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000377.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000468.wcnf
+│   │       │   ├── judgment-aggregation-ja-kemeny-preflib-00049-00000614.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-1-18.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-1-19.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-10-17.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-10-18.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-3-18.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-4-17.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-5-19.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-6-19.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-7-18.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-7-19.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-8-17.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-9-17.wcnf
+│   │       │   ├── lisbon-wedding_wt-lisbon-wedding-9-18.wcnf
+│   │       │   ├── metro_wt-metro_8_8_5_20_10_6_500_1_3.lp.sm-extracted.wcnf
+│   │       │   ├── mpe_wt-random-net-20-5_network-3.net.wcnf
+│   │       │   ├── mpe_wt-random-net-30-5_network-4.net.wcnf
+│   │       │   ├── mpe_wt-random-net-60-3_network-7.net.wcnf
+│   │       │   ├── preference_planning_wt-WCNF_pathways_p16.wcnf
+│   │       │   ├── pseudoBoolean_wt-normalized-mps-v2-20-10-mod010.opb.msat.wcnf
+│   │       │   ├── quantum-circuit-qgan_6_15_ibmq-casablanca_7.wcnf
+│   │       │   ├── ramsey_wt-ram_k3_n11.ra1.wcnf
+│   │       │   ├── ramsey_wt-ram_k3_n12.ra1.wcnf
+│   │       │   ├── ramsey_wt-ram_k3_n17.ra1.wcnf
+│   │       │   ├── ramsey_wt-ram_k3_n18.ra1.wcnf
+│   │       │   ├── setcover_wt-rail507.wcnf
+│   │       │   ├── setcover_wt-rail516.wcnf
+│   │       │   ├── setcover_wt-rail582.wcnf
+│   │       │   ├── spot5_wt-1405.wcsp.dir.wcnf
+│   │       │   ├── spot5_wt-1405.wcsp.log.wcnf
+│   │       │   ├── spot5_wt-1407.wcsp.log.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity2_feature_4_size_10_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity2_feature_4_size_11_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity2_feature_4_size_6_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity2_feature_4_size_8_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity2_feature_4_size_9_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity3_feature_3_size_10_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity3_feature_3_size_11_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity3_feature_3_size_5_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_complete_tree_arity3_feature_3_size_8_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_synthetic_dag_run1_16_size_4_ms_0_25_0_erm.wcnf
+│   │       │   ├── synplicate_new-synplicate_synthetic_dag_run1_17_size_5_ms_0_25_0_erm.wcnf
+│   │       │   ├── tcp_wt-tcp_students_112_it_13.wcnf
+│   │       │   ├── tcp_wt-tcp_students_112_it_5.wcnf
+│   │       │   ├── tcp_wt-tcp_students_91_it_13.wcnf
+│   │       │   └── tcp_wt-tcp_students_98_it_11.wcnf
+│   │       └── mse_2024_tree.txt
+│   ├── toy
+│   │   ├── mini.wcnf
+│   │   ├── t_conflict.wcnf
+│   │   ├── t_conflict.wcnf:Zone.Identifier
+│   │   ├── t_easy.wcnf
+│   │   ├── t_easy.wcnf:Zone.Identifier
+│   │   ├── t_partial.wcnf
+│   │   ├── t_partial.wcnf:Zone.Identifier
+│   │   ├── uf20-04.cnf
+│   │   └── uf50-05.cnf
+│   ├── unsat
+│   │   ├── uuf100-430
+│   │   │   └── UUF100.430.1000
+│   │   │       ├── uuf100-01.cnf
+│   │   │       ├── uuf100-010.cnf
+│   │   │       ├── uuf100-0100.cnf
+│   │   │       ├── uuf100-01000.cnf
+│   │   │       ├── uuf100-0101.cnf
+│   │   │       ├── uuf100-0102.cnf
+│   │   │       ├── uuf100-0103.cnf
+│   │   │       ├── uuf100-0104.cnf
+│   │   │       ├── uuf100-0105.cnf
+│   │   │       ├── uuf100-0106.cnf
+│   │   │       ├── uuf100-0107.cnf
+│   │   │       ├── uuf100-0108.cnf
+│   │   │       ├── uuf100-0109.cnf
+│   │   │       ├── uuf100-011.cnf
+│   │   │       ├── uuf100-0110.cnf
+│   │   │       ├── uuf100-0111.cnf
+│   │   │       ├── uuf100-0112.cnf
+│   │   │       ├── uuf100-0113.cnf
+│   │   │       ├── uuf100-0114.cnf
+│   │   │       ├── uuf100-0115.cnf
+│   │   │       ├── uuf100-0116.cnf
+│   │   │       ├── uuf100-0117.cnf
+│   │   │       ├── uuf100-0118.cnf
+│   │   │       ├── uuf100-0119.cnf
+│   │   │       ├── uuf100-012.cnf
+│   │   │       ├── uuf100-0120.cnf
+│   │   │       ├── uuf100-0121.cnf
+│   │   │       ├── uuf100-0122.cnf
+│   │   │       ├── uuf100-0123.cnf
+│   │   │       ├── uuf100-0124.cnf
+│   │   │       ├── uuf100-0125.cnf
+│   │   │       ├── uuf100-0126.cnf
+│   │   │       ├── uuf100-0127.cnf
+│   │   │       ├── uuf100-0128.cnf
+│   │   │       ├── uuf100-0129.cnf
+│   │   │       ├── uuf100-013.cnf
+│   │   │       ├── uuf100-0130.cnf
+│   │   │       ├── uuf100-0131.cnf
+│   │   │       ├── uuf100-0132.cnf
+│   │   │       ├── uuf100-0133.cnf
+│   │   │       ├── uuf100-0134.cnf
+│   │   │       ├── uuf100-0135.cnf
+│   │   │       ├── uuf100-0136.cnf
+│   │   │       ├── uuf100-0137.cnf
+│   │   │       ├── uuf100-0138.cnf
+│   │   │       ├── uuf100-0139.cnf
+│   │   │       ├── uuf100-014.cnf
+│   │   │       ├── uuf100-0140.cnf
+│   │   │       ├── uuf100-0141.cnf
+│   │   │       ├── uuf100-0142.cnf
+│   │   │       ├── uuf100-0143.cnf
+│   │   │       ├── uuf100-0144.cnf
+│   │   │       ├── uuf100-0145.cnf
+│   │   │       ├── uuf100-0146.cnf
+│   │   │       ├── uuf100-0147.cnf
+│   │   │       ├── uuf100-0148.cnf
+│   │   │       ├── uuf100-0149.cnf
+│   │   │       ├── uuf100-015.cnf
+│   │   │       ├── uuf100-0150.cnf
+│   │   │       ├── uuf100-0151.cnf
+│   │   │       ├── uuf100-0152.cnf
+│   │   │       ├── uuf100-0153.cnf
+│   │   │       ├── uuf100-0154.cnf
+│   │   │       ├── uuf100-0155.cnf
+│   │   │       ├── uuf100-0156.cnf
+│   │   │       ├── uuf100-0157.cnf
+│   │
+│   │   ├── uuf125-538
+│   │   │   └── UUF125.538.100
+│   │   │       ├── uuf125-01.cnf
+│   │  
+│   │   │       ├── uuf125-091.cnf
+│   │   │       ├── uuf125-092.cnf
+│   │   │       ├── uuf125-093.cnf
+│   │   │       ├── uuf125-094.cnf
+│   │   │       ├── uuf125-095.cnf
+│   │   │       ├── uuf125-096.cnf
+│   │   │       ├── uuf125-097.cnf
+│   │   │       ├── uuf125-098.cnf
+│   │   │       └── uuf125-099.cnf
+│   │   ├── uuf150-645
+│   │   │   └── UUF150.645.100
+│   │   │       ├── uuf150-01.cnf
+│   │   │       ├── uuf150-010.cnf
+│   │   │       ├── uuf150-0100.cnf
+
+│   │   │       ├── uuf150-081.cnf
+│   │   │       ├── uuf150-082.cnf
+│   │   │       ├── uuf150-083.cnf
+│   │   │       ├── uuf150-084.cnf
+│   │   │       ├── uuf150-085.cnf
+│   │   │       ├── uuf150-086.cnf
+│   │   │       ├── uuf150-087.cnf
+│   │   │       ├── uuf150-088.cnf
+│   │   │       ├── uuf150-089.cnf
+│   │   │       ├── uuf150-09.cnf
+│   │   │       ├── uuf150-090.cnf
+│   │   │       ├── uuf150-091.cnf
+│   │   │       ├── uuf150-092.cnf
+│   │   │       ├── uuf150-093.cnf
+│   │   │       ├── uuf150-094.cnf
+│   │   │       ├── uuf150-095.cnf
+│   │   │       ├── uuf150-096.cnf
+│   │   │       ├── uuf150-097.cnf
+│   │   │       ├── uuf150-098.cnf
+│   │   │       └── uuf150-099.cnf
+│   │   ├── uuf175-753
+│   │   │   └── UUF175.753.100
+│   │   │       ├── uuf175-01.cnf
+│   │   │       ├── uuf175-010.cnf
+│   │   │       ├── uuf175-0100.cnf
+│   │   │       ├── uuf175-011.cnf
+│   │   │       ├── uuf175-012.cnf
+│   │   │       ├── uuf175-013.cnf
+│   │   │       ├── uuf175-014.cnf
+│   │   │       ├── uuf175-015.cnf
+│   │   │       ├── uuf175-016.cnf
+│   │   │       ├── uuf175-017.cnf
+│   │   │       ├── uuf175-018.cnf
+│   │   │       ├── uuf175-019.cnf
+│   │   │       ├── uuf175-02.cnf
+│   │   │       ├── uuf175-020.cnf
+│   │   │       ├── uuf175-021.cnf
+│   │   │       ├── uuf175-022.cnf
+│   │   │       ├── uuf175-023.cnf
+│   │   │       ├── uuf175-024.cnf
+│   │   │       ├── uuf175-025.cnf
+│   │   │       ├── uuf175-026.cnf
+│   │   │       ├── uuf175-027.cnf
+│   │   │       ├── uuf175-028.cnf
+│   │   │       ├── uuf175-029.cnf
+│   │   │       ├── uuf175-03.cnf
+│   │   │       ├── uuf175-030.cnf
+│   │   │       ├── uuf175-031.cnf
+│   │   │       ├── uuf175-032.cnf
+│   │   │       ├── uuf175-033.cnf
+│   │   │       ├── uuf175-034.cnf
+│   │   │       ├── uuf175-035.cnf
+│   │   │       ├── uuf175-036.cnf
+│   │   │       ├── uuf175-037.cnf
+│   │   │       ├── uuf175-038.cnf
+│   │   │       ├── uuf175-039.cnf
+│   │   │       ├── uuf175-04.cnf
+│   │   │       ├── uuf175-040.cnf
+│   │   │       ├── uuf175-041.cnf
+│   │   │       ├── uuf175-042.cnf
+│   │   │       ├── uuf175-043.cnf
+│   │   │       ├── uuf175-044.cnf
+│   │   │       ├── uuf175-045.cnf
+│   │   │       ├── uuf175-046.cnf
+│   │   │       ├── uuf175-047.cnf
+│   │   │       ├── uuf175-048.cnf
+│   │   │       ├── uuf175-049.cnf
+│   │   │       ├── uuf175-05.cnf
+│   │   │       ├── uuf175-050.cnf
+│   │   │       ├── uuf175-051.cnf
+│   │   │       ├── uuf175-052.cnf
+│   │   │       ├── uuf175-053.cnf
+│   │   │       ├── uuf175-054.cnf
+│   │   │       ├── uuf175-055.cnf
+│   │   │       ├── uuf175-056.cnf
+│   │   │       ├── uuf175-057.cnf
+│   │   │       ├── uuf175-058.cnf
+│   │   │       ├── uuf175-059.cnf
+│   │   │       ├── uuf175-06.cnf
+│   │   │       ├── uuf175-060.cnf
+│   │   │       ├── uuf175-061.cnf
+│   │   │       ├── uuf175-062.cnf
+│   │   │       ├── uuf175-063.cnf
+│   │   │       ├── uuf175-064.cnf
+│   │   │       ├── uuf175-065.cnf
+│   │   │       ├── uuf175-066.cnf
+
+│   │   │       ├── uuf175-097.cnf
+│   │   │       ├── uuf175-098.cnf
+│   │   │       └── uuf175-099.cnf
+│   │   ├── uuf200-860
+│   │   │   └── UUF200.860.1000
+│   │   │       ├── uuf200-01.cnf
+│   │   │       ├── uuf200-010.cnf
+│   │   │       ├── uuf200-011.cnf
+│   │   │       ├── uuf200-012.cnf
+│   
+│   │   │       ├── uuf200-098.cnf
+│   │   │       └── uuf200-099.cnf
+│   │   ├── uuf225-960
+│   │   │   └── UUF225.960.100
+│   │   │       ├── uuf225-01.cnf
+│   │   │       ├── uuf225-010.cnf
+│   │   │       ├── uuf225-0100.cnf
+│   │   │       ├── uuf225-011.cnf
+│   │   │       ├── uuf225-012.cnf
+│   │   │       ├── uuf225-013.cnf
+│   │   │       ├── uuf225-014.cnf
+│   │   │       ├── uuf225-015.cnf
+│   │   │       ├── uuf225-016.cnf
+│   │   │       ├── uuf225-017.cnf
+│   │   │       ├── uuf225-018.cnf
+│   │   │       ├── uuf225-019.cnf
+│   │   │       ├── uuf225-02.cnf
+│   │   │       ├── uuf225-020.cnf
+│   │   │       ├── uuf225-021.cnf
+│   │   │       ├── uuf225-022.cnf
+│   │   │       ├── uuf225-023.cnf
+│   │   │       ├── uuf225-024.cnf
+│   │   │       ├── uuf225-025.cnf
+│   │   │       ├── uuf225-026.cnf
+│   │   │       ├── uuf225-027.cnf
+│   │   │       ├── uuf225-028.cnf
+│   │   │       ├── uuf225-029.cnf
+│   │   │       ├── uuf225-03.cnf
+│   │   │       ├── uuf225-030.cnf
+│   │   │       ├── uuf225-031.cnf
+│   │   │       ├── uuf225-032.cnf
+│   │   │       ├── uuf225-033.cnf
+│   │   │       ├── uuf225-034.cnf
+│   │   │       ├── uuf225-035.cnf
+│   │   │       ├── uuf225-036.cnf
+│   │   │       ├── uuf225-037.cnf
+│   │   │       ├── uuf225-038.cnf
+│   │   │       ├── uuf225-039.cnf
+│   │   │       ├── uuf225-04.cnf
+│   │   │       ├── uuf225-040.cnf
+│   │   │       ├── uuf225-041.cnf
+│   │   │       ├── uuf225-042.cnf
+│   │   │       ├── uuf225-043.cnf
+│   │   │       ├── uuf225-044.cnf
+│   │   │       ├── uuf225-045.cnf
+│   │   │       ├── uuf225-046.cnf
+│   │   │       ├── uuf225-047.cnf
+│   │   │       ├── uuf225-048.cnf
+│   │   │       ├── uuf225-049.cnf
+│   │   │       ├── uuf225-05.cnf
+│   │   │       ├── uuf225-050.cnf
+
+│   │   │       ├── uuf225-070.cnf
+
+│   │   ├── uuf250-1065
+│   │   │   └── UUF250.1065.100
+
+│   │   │       ├── uuf250-08.cnf
+│   │   │       ├── uuf250-080.cnf
+│   │   │       ├── uuf250-081.cnf
+│   │   │       ├── uuf250-082.cnf
+│   │   │       ├── uuf250-083.cnf
+│   │   │       ├── uuf250-084.cnf
+│   │   │       ├── uuf250-085.cnf
+│   │   │       ├── uuf250-086.cnf
+│   │   │       ├── uuf250-087.cnf
+│   │   │       ├── uuf250-088.cnf
+│   │   │       ├── uuf250-089.cnf
+│   │   │       ├── uuf250-09.cnf
+│   │   │       ├── uuf250-090.cnf
+│   │   │       ├── uuf250-091.cnf
+│   │   │       ├── uuf250-092.cnf
+│   │   │       ├── uuf250-093.cnf
+│   │   │       ├── uuf250-094.cnf
+│   │   │       ├── uuf250-095.cnf
+│   │   │       ├── uuf250-096.cnf
+│   │   │       ├── uuf250-097.cnf
+│   │   │       ├── uuf250-098.cnf
+│   │   │       └── uuf250-099.cnf
+│   │   ├── uuf50-218
+│   │   │   └── UUF50.218.1000
+│   │   │       ├── uuf50-01.cnf
+│   │   │       ├── uuf50-010.cnf
+│   │   │       ├── uuf50-0100.cnf
+│   │   │       ├── uuf50-01000.cnf
+│   │   │       ├── uuf50-0101.cnf
+│   │   │       ├── uuf50-0102.cnf
+│   │   │       ├── uuf50-0103.cnf
+│   │   │       ├── uuf50-0104.cnf
+│   │   │       ├── uuf50-0105.cnf
+│   │   │       ├── uuf50-0106.cnf
+│   │   │       ├── uuf50-0107.cnf
+│   │   │       ├── uuf50-0108.cnf
+│   │   │       ├── uuf50-0109.cnf
+│   │   │       ├── uuf50-011.cnf
+│   │   │       ├── uuf50-0110.cnf
+
+│   │   └── uuf75-325
+│   │       └── UUF75.325.100
+│   │           ├── uuf75-01.cnf
+│   │           ├── uuf75-010.cnf
+│   │           ├── uuf75-0100.cnf
+│   │           ├── uuf75-011.cnf
+│   │           ├── uuf75-012.cnf
+│   │           ├── uuf75-013.cnf
+│   │           ├── uuf75-014.cnf
+│   │           ├── uuf75-015.cnf
+│   │           ├── uuf75-016.cnf
+│   │           ├── uuf75-017.cnf
+│   │           ├── uuf75-018.cnf
+│   │           ├── uuf75-019.cnf
+│   │           ├── uuf75-02.cnf
+│   │           ├── uuf75-020.cnf
+│   │           ├── uuf75-021.cnf
+│   │           ├── uuf75-022.cnf
+│   │           ├── uuf75-023.cnf
+│   │           ├── uuf75-024.cnf
+│   │           ├── uuf75-025.cnf
+│   │           ├── uuf75-026.cnf
+│   │           ├── uuf75-027.cnf
+│   │           ├── uuf75-028.cnf
+│   │           ├── uuf75-029.cnf
+│   │           ├── uuf75-03.cnf
+│   │           ├── uuf75-030.cnf
+│   │           ├── uuf75-031.cnf
+│   │           ├── uuf75-032.cnf
+│   │           ├── uuf75-033.cnf
+│   │           ├── uuf75-034.cnf
+│   │           ├── uuf75-035.cnf
+│   │           ├── uuf75-036.cnf
+│   │           ├── uuf75-037.cnf
+│   │           ├── uuf75-038.cnf
+│   │           ├── uuf75-039.cnf
+│   │           ├── uuf75-04.cnf
+│   │           ├── uuf75-040.cnf
+│   │           ├── uuf75-041.cnf
+│   │           ├── uuf75-042.cnf
+│   │           ├── uuf75-043.cnf
+│   │           ├── uuf75-044.cnf
+│   │           ├── uuf75-045.cnf
+│   │           ├── uuf75-046.cnf
+│   │           ├── uuf75-047.cnf
+│   │           ├── uuf75-048.cnf
+│   │           ├── uuf75-049.cnf
+│   │           ├── uuf75-05.cnf
+│   │           ├── uuf75-050.cnf
+│   │           ├── uuf75-051.cnf
+│   │           ├── uuf75-052.cnf
+│   │           ├── uuf75-053.cnf
+│   │           ├── uuf75-054.cnf
+│   │           ├── uuf75-055.cnf
+│   │           ├── uuf75-056.cnf
+│   │           ├── uuf75-057.cnf
+│   │           ├── uuf75-058.cnf
+│   │           ├── uuf75-059.cnf
+│   │           ├── uuf75-06.cnf
+│   │           ├── uuf75-060.cnf
+│   │           ├── uuf75-061.cnf
+│   │           ├── uuf75-062.cnf
+│   │           ├── uuf75-063.cnf
+│   │           ├── uuf75-064.cnf
+│   │           ├── uuf75-065.cnf
+│   │           ├── uuf75-066.cnf
+│   │           ├── uuf75-067.cnf
+│   │           ├── uuf75-068.cnf
+│   │           ├── uuf75-069.cnf
+│   │           ├── uuf75-07.cnf
+│   │           ├── uuf75-070.cnf
+│   │           ├── uuf75-071.cnf
+│   │           ├── uuf75-072.cnf
+│   │           ├── uuf75-073.cnf
+│   │           ├── uuf75-074.cnf
+│   │           ├── uuf75-075.cnf
+│   │           ├── uuf75-076.cnf
+│   │           ├── uuf75-077.cnf
+│   │           ├── uuf75-078.cnf
+│   │           ├── uuf75-079.cnf
+│   │           ├── uuf75-08.cnf
+│   │           ├── uuf75-080.cnf
+│   │           ├── uuf75-081.cnf
+│   │           ├── uuf75-082.cnf
+│   │           ├── uuf75-083.cnf
+│   │           ├── uuf75-084.cnf
+│   │           ├── uuf75-085.cnf
+│   │           ├── uuf75-086.cnf
+│   │           ├── uuf75-087.cnf
+│   │           ├── uuf75-088.cnf
+│   │           ├── uuf75-089.cnf
+│   │           ├── uuf75-09.cnf
+│   │           ├── uuf75-090.cnf
+│   │           ├── uuf75-091.cnf
+│   │           ├── uuf75-092.cnf
+│   │           ├── uuf75-093.cnf
+│   │           ├── uuf75-094.cnf
+│   │           ├── uuf75-095.cnf
+│   │           ├── uuf75-096.cnf
+│   │           ├── uuf75-097.cnf
+│   │           ├── uuf75-098.cnf
+│   │           └── uuf75-099.cnf
+│   └── unsat_exp
+│       ├── uuf250-01.cnf
+│       ├── uuf50-01.cnf
+│       └── uuf50-02.cnf
+├── docs
+│   ├── HARNESS_PLAN.md
+│   ├── STRATIFICATION_PLAN.md
+│   ├── STRATIFICATION_PLAN.md:Zone.Identifier
+│   ├── SUMMARY.md
+│   ├── SUMMARY.md:Zone.Identifier
+│   ├── unmatched.txt
+│   └── unmatched.txt:Zone.Identifier
+├── experiments
+│   ├── a0.csv
+│   ├── o.csv
+│   ├── toy_results.csv
+│   ├── toy_results1.csv
+│   ├── toy_results_tmp.csv
+│   └── toy_results_tmp5.csv
+├── folder_tree.txt
+├── from_gemini.py
+├── garbage
+│   ├── in1.txt
+│   ├── in2.txt
+│   ├── test.py
+│   └── txt.txt
+├── gsm8k_lora_v2_consolidated
+│   ├── README.md
+│   ├── eval-job-17333969.out
+│   ├── eval.sbatch
+│   ├── evaluate.py
+│   ├── old
+│   │   ├── README.md
+│   │   ├── evaluate.py
+│   │   ├── evaluate_o.py
+│   │   ├── requirements.txt
+│   │   ├── train.py
+│   │   ├── train.sbatch
+│   │   ├── train_o1.py
+│   │   └── utils.py
+│   ├── requirements.txt
+│   ├── train-job-17311373.out
+│   ├── train-job-17415176.out
+│   ├── train.py
+│   ├── train.sbatch
+│   └── utils.py
+├── notes.MD
+├── requirements.txt
+├── results
+│   ├── dev_250h.csv
+│   ├── dev_250h1.csv
+│   ├── dev_small_cfg2_5min.csv
+│   ├── dev_small_cfg2_5min_with_opt.csv
+│   ├── dev_small_cfg3.csv
+│   ├── dev_small_rc2.csv
+│   ├── dev_small_rc2_1.csv
+│   ├── dev_small_rc2_2.csv
+│   ├── hard1.csv
+│   ├── hard2.csv
+│   ├── hard3.csv
+│   └── profile
+│       ├── mse23_smoke.jsonl
+│       ├── mse23_smoke1_773.jsonl
+│       ├── mse23_smoke_00.jsonl
+│       ├── mse23_smoke_1.jsonl
+│       ├── mse23_smoke_3.jsonl
+│       ├── mse23_smoke_301_last.jsonl
+│       ├── mse23_smoke_31.jsonl
+│       ├── mse23_smoke_311.jsonl
+│       └── toy_profile.jsonl
+├── runs
+│   ├── mini.ea.json
+│   ├── mini1.ea.json
+│   ├── uf20-0411.ea.json
+│   └── uf50-0511.ea.json
+├── src
+│   ├── bench
+│   │   ├── __pycache__
+│   │   │   └── harness.cpython-311.pyc
+│   │   ├── harness.py
+│   │   └── harness.py.bak
+│   ├── cli
+│   │   ├── __pycache__
+│   │   │   ├── batch_opt_rc2.cpython-311.pyc
+│   │   │   ├── batch_opt_rc2.cpython-312.pyc
+│   │   │   ├── make_metadata.cpython-312.pyc
+│   │   │   ├── polish.cpython-311.pyc
+│   │   │   ├── polish.cpython-312.pyc
+│   │   │   ├── profile_hardness.cpython-311.pyc
+│   │   │   ├── profile_hardness.cpython-312.pyc
+│   │   │   ├── run_ea.cpython-311.pyc
+│   │   │   ├── run_experiment.cpython-311.pyc
+│   │   │   ├── run_experiment1.cpython-311.pyc
+│   │   │   ├── run_experiment1.cpython-312.pyc
+│   │   │   ├── run_opt_rc2.cpython-311.pyc
+│   │   │   ├── run_opt_rc2.cpython-312.pyc
+│   │   │   ├── run_pipeline_opt_vs_memetic.cpython-311.pyc
+│   │   │   ├── run_pipeline_opt_vs_memetic.cpython-312.pyc
+│   │   │   ├── solve.cpython-311.pyc
+│   │   │   ├── solve_batch.cpython-311.pyc
+│   │   │   ├── solve_batch.cpython-312.pyc
+│   │   │   └── solve_rc2_anytime.cpython-311.pyc
+│   │   ├── batch_opt_rc2.py
+│   │   ├── make_metadata.py
+│   │   ├── polish.py
+│   │   ├── profile_hardness.py
+│   │   ├── profile_hardness.py:Zone.Identifier
+│   │   ├── run_ea.py
+│   │   ├── run_experiment.py
+│   │   ├── run_experiment1.py
+│   │   ├── run_opt_rc2.py
+│   │   ├── run_pipeline_opt_vs_memetic.py
+│   │   ├── solve.py
+│   │   ├── solve_batch.py
+│   │   ├── solve_batch.py.bak
+│   │   ├── solve_rc2_anytime.py
+│   │   ├── solve_rc2_anytime.py:Zone.Identifier
+│   │   ├── solve_rc2_anytime1.py:Zone.Identifier
+│   │   └── solve_rc2_anytime2.py
+│   ├── evo
+│   │   ├── __pycache__
+│   │   │   ├── memetic.cpython-311.pyc
+│   │   │   ├── memetic.cpython-312.pyc
+│   │   │   ├── operators.cpython-311.pyc
+│   │   │   ├── operators.cpython-312.pyc
+│   │   │   ├── population.cpython-311.pyc
+│   │   │   └── population.cpython-312.pyc
+│   │   ├── memetic.py
+│   │   ├── memetic0.py
+│   │   ├── operators.py
+│   │   └── population.py
+│   ├── evo_v_1
+│   │   └── 1.py
+│   ├── llm
+│   │   ├── __pycache__
+│   │   │   ├── advisor.cpython-311.pyc
+│   │   │   ├── advisor.cpython-312.pyc
+│   │   │   └── prompt.cpython-311.pyc
+│   │   ├── advisor.py
+│   │   ├── prompt.py
+│   │   └── providers
+│   │       ├── __pycache__
+│   │       │   ├── noop.cpython-311.pyc
+│   │       │   └── noop.cpython-312.pyc
+│   │       ├── noop.py
+│   │       └── ollama.py
+│   └── sat
+│       ├── __pycache__
+│       │   ├── cnf.cpython-311.pyc
+│       │   ├── cnf.cpython-312.pyc
+│       │   ├── metadata.cpython-312.pyc
+│       │   ├── state.cpython-311.pyc
+│       │   ├── state.cpython-312.pyc
+│       │   ├── walksat.cpython-311.pyc
+│       │   └── walksat.cpython-312.pyc
+│       ├── cnf.py
+│       ├── metadata.py
+│       ├── state.py
+│       ├── state.py.bak
+│       ├── walksat.bak.py
+│       └── walksat.py
+├── stopped.txt
+├── tests
+│   ├── test_cnf.py
+│   └── test_solve_rc2_anytime.py
+├── todo.txt
+├── tree.txt
+├── tree1.txt
+└── tree_new.txt
+
+56 directories, 3087 files

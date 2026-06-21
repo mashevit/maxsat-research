@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/min-fill-MinFill_R0_myciel5.wcnf", "size_mb": 2.5768, "profile": {"cap_s": 600.0, "solver": "rc2", "status": "timeout", "solve_s": 620.869, "final_cost": null, "cost_lower_bound": 91, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": 0.4643, "tier": "T3", "tier_reason": "timeout"}
