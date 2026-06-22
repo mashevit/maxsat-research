@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000385.wcnf", "size_mb": 0.9349, "profile": {"cap_s": 1800.0, "solver": "rc2", "status": "optimal", "solve_s": 65.029, "final_cost": 37, "cost_lower_bound": 37, "completed": true, "error": null}, "ratio": 1.0, "lb_ratio": 1.0, "tier": "T2a", "tier_reason": "60.0<solve_s<=300.0"}

@@ -1,0 +1,5 @@
+tier,count,pct,completed_rate,size_mb_median,size_mb_max,solve_s_median,solve_s_max,lb_ratio_n,lb_ratio_median
+T1,8,22.9,1.0,0.0153,0.0153,34.996,48.556,0,
+T2a,15,42.9,1.0,0.0153,0.0153,128.158,269.613,0,
+T2b,3,8.6,1.0,0.0153,0.0153,436.684,495.832,0,
+T3,9,25.7,0.0,0.0153,0.0153,960.106,960.114,0,

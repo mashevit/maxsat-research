@@ -1,0 +1,36 @@
+instance,family,bench_dir,size_mb,tier,profile.completed,profile.status,profile.solve_s,profile.cap_s,over_cap,profile.final_cost,profile.cost_lower_bound,ratio,lb_ratio,profile.solver,profile.error,tier_reason,_source_file,stem
+data/unsat250_1000c/uuf250-0100.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,219.129,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_100.jsonl,uuf250-0100
+data/unsat250_1000c/uuf250-066.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,106.544,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_66.jsonl,uuf250-066
+data/unsat250_1000c/uuf250-067.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,36.904,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_67.jsonl,uuf250-067
+data/unsat250_1000c/uuf250-068.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,14.58,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_68.jsonl,uuf250-068
+data/unsat250_1000c/uuf250-069.cnf,uuf250,unsat250_1000c,0.0153,T3,False,subprocess_killed,960.114,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_69.jsonl,uuf250-069
+data/unsat250_1000c/uuf250-070.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,145.584,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_70.jsonl,uuf250-070
+data/unsat250_1000c/uuf250-071.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,106.725,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_71.jsonl,uuf250-071
+data/unsat250_1000c/uuf250-072.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,63.1,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_72.jsonl,uuf250-072
+data/unsat250_1000c/uuf250-073.cnf,uuf250,unsat250_1000c,0.0152,T1,True,optimal,29.913,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_73.jsonl,uuf250-073
+data/unsat250_1000c/uuf250-074.cnf,uuf250,unsat250_1000c,0.0153,T3,False,timeout,926.799,900.0,True,,1,,,rc2,timeout,timeout,uuf250_arr_task_74.jsonl,uuf250-074
+data/unsat250_1000c/uuf250-075.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,269.613,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_75.jsonl,uuf250-075
+data/unsat250_1000c/uuf250-076.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,36.526,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_76.jsonl,uuf250-076
+data/unsat250_1000c/uuf250-077.cnf,uuf250,unsat250_1000c,0.0152,T3,False,subprocess_killed,960.035,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_77.jsonl,uuf250-077
+data/unsat250_1000c/uuf250-078.cnf,uuf250,unsat250_1000c,0.0153,T3,False,subprocess_killed,960.11,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_78.jsonl,uuf250-078
+data/unsat250_1000c/uuf250-079.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,81.058,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_79.jsonl,uuf250-079
+data/unsat250_1000c/uuf250-080.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,212.418,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_80.jsonl,uuf250-080
+data/unsat250_1000c/uuf250-081.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,110.62,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_81.jsonl,uuf250-081
+data/unsat250_1000c/uuf250-082.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,48.556,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_82.jsonl,uuf250-082
+data/unsat250_1000c/uuf250-083.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,33.466,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_83.jsonl,uuf250-083
+data/unsat250_1000c/uuf250-084.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,31.968,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_84.jsonl,uuf250-084
+data/unsat250_1000c/uuf250-085.cnf,uuf250,unsat250_1000c,0.0153,T3,False,subprocess_killed,960.104,900.0,True,,2,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_85.jsonl,uuf250-085
+data/unsat250_1000c/uuf250-086.cnf,uuf250,unsat250_1000c,0.0153,T3,False,subprocess_killed,960.106,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_86.jsonl,uuf250-086
+data/unsat250_1000c/uuf250-087.cnf,uuf250,unsat250_1000c,0.0153,T2b,True,optimal,436.684,900.0,False,1.0,1,,,rc2,,300.0<solve_s<=600.0,uuf250_arr_task_87.jsonl,uuf250-087
+data/unsat250_1000c/uuf250-088.cnf,uuf250,unsat250_1000c,0.0152,T3,False,subprocess_killed,960.111,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_88.jsonl,uuf250-088
+data/unsat250_1000c/uuf250-089.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,70.743,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_89.jsonl,uuf250-089
+data/unsat250_1000c/uuf250-090.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,151.173,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_90.jsonl,uuf250-090
+data/unsat250_1000c/uuf250-091.cnf,uuf250,unsat250_1000c,0.0153,T1,True,optimal,45.847,900.0,False,1.0,1,,,rc2,,solve_s<=60.0,uuf250_arr_task_91.jsonl,uuf250-091
+data/unsat250_1000c/uuf250-092.cnf,uuf250,unsat250_1000c,0.0152,T3,False,subprocess_killed,960.11,900.0,True,,1,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_92.jsonl,uuf250-092
+data/unsat250_1000c/uuf250-093.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,127.973,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_93.jsonl,uuf250-093
+data/unsat250_1000c/uuf250-094.cnf,uuf250,unsat250_1000c,0.0153,T2a,True,optimal,129.716,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_94.jsonl,uuf250-094
+data/unsat250_1000c/uuf250-095.cnf,uuf250,unsat250_1000c,0.0152,T3,False,subprocess_killed,960.066,900.0,True,,2,,,rc2,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file,uuf250_arr_task_95.jsonl,uuf250-095
+data/unsat250_1000c/uuf250-096.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,149.447,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_96.jsonl,uuf250-096
+data/unsat250_1000c/uuf250-097.cnf,uuf250,unsat250_1000c,0.0153,T2b,True,optimal,495.832,900.0,False,1.0,1,,,rc2,,300.0<solve_s<=600.0,uuf250_arr_task_97.jsonl,uuf250-097
+data/unsat250_1000c/uuf250-098.cnf,uuf250,unsat250_1000c,0.0153,T2b,True,optimal,311.374,900.0,False,1.0,1,,,rc2,,300.0<solve_s<=600.0,uuf250_arr_task_98.jsonl,uuf250-098
+data/unsat250_1000c/uuf250-099.cnf,uuf250,unsat250_1000c,0.0152,T2a,True,optimal,128.158,900.0,False,1.0,1,,,rc2,,60.0<solve_s<=300.0,uuf250_arr_task_99.jsonl,uuf250-099
