@@ -1,0 +1,36 @@
+# Modelfile for the merged GSM8K LoRA model (Llama-3.2-3B).
+#
+# The TEMPLATE below reproduces utils.build_prompt() character-for-character:
+#   build_prompt(q) = INSTRUCTION + "\n\nProblem: " + q + RESPONSE_TEMPLATE
+#   RESPONSE_TEMPLATE = "\n\nSolution:"
+# Both seams are DOUBLE newlines (a blank line), so the rendered prompt has an
+# empty line after the instruction and after the question. The client sends
+# ONLY the raw question; Ollama substitutes it into {{ .Prompt }} and the
+# template rebuilds the exact training format.
+# Verify at runtime with: ollama show --modelfile gsm8k-llama32-3b
+# Point this at the Q6_K file produced by gguf.sbatch.
+FROM /home/mashevit/gguf_models/merged_16bit-Q6_K.gguf
+
+# Greedy decoding for a deterministic base-vs-LoRA comparison.
+PARAMETER temperature 0.0
+PARAMETER top_p 1.0
+PARAMETER num_predict 512
+PARAMETER num_ctx 32768
+
+# No stop sequence on purpose: gen_original() in compare_base_vs_lora.py uses no
+# stop list either (greedy to max_new_tokens, relying on trained EOS), so adding
+# one here would make the served path asymmetric with the reference path. It is
+# also unnecessary as a rambling guard — extract_answer_from_generation() reads
+# the FIRST "#### N", so a fabricated second problem can't corrupt the answer.
+# Do NOT stop on "####": the final answer comes AFTER it (e.g. "#### 42").
+
+# Exact reconstruction of build_prompt(). INSTRUCTION is baked in inline (it was
+# part of the prompt string at train time, not a separate system turn), so the
+# served format matches regardless of what the client sends. The two blank lines
+# are required. Prompt ends at "Solution:" with no trailing space or newline —
+# the model produces the leading space.
+TEMPLATE """Solve the following math problem step by step. Show your reasoning, then give the final answer after ####.
+
+Problem: {{ .Prompt }}
+
+Solution:"""
