@@ -1,0 +1,11 @@
+c mini WCNF test instance for maxsat_new step 1
+c 5 vars, 8 clauses, old MSE format; weight >= top (100) is hard
+p wcnf 5 8 100
+100 1 2 0
+100 -3 4 0
+100 5 0
+3 1 0
+5 -2 0
+2 3 0
+4 -4 5 0
+1 2 -5 0
