@@ -1,0 +1,43 @@
+------------------------------------
+Wed 15 Jul 2026 12:55:25 IDT
+SLURM_JOBID:		19381603
+SLURM_JOB_NODELIST:	ise-cpu256-08
+SLURM_SCRATCH_DIR:	/scratch/mashevit/19381603
+Allocated Resouces:	cpu - 4 / mem - 65536 MB / gpu - 1
+SLURM_GPU_INDEX:	0
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+------------------------------------
+Wed 15 Jul 2026 12:55:25 IDT
+SLURM_JOBID:            19381603
+SLURM_JOB_NODELIST:     ise-cpu256-08
+SLURM_SCRATCH_DIR:      
+------------------------------------
+NVIDIA RTX 6000 Ada Generation, 49140 MiB
+[env] torch 2.10.0+cu128  cuda 12.8
+[env] device NVIDIA RTX 6000 Ada Generation  47.4 GiB
+[env] mode = gate-only
+[gate] gate-only: using existing /home/mashevit/gsm8k_lora_v2/merged_16bit
+[gate] loading reference: base fp16 + adapter
+[setup] reference base: Qwen/Qwen3-8B  dtype=torch.float16
+[gate] reloading merged fp16 from disk
+[setup] merged: /home/mashevit/gsm8k_lora_v2/merged_16bit  dtype=torch.float16
+[gate] reference dtype = torch.float16
+[gate] merged    dtype = torch.float16
+[gate] teacher-forced comparison over 5 items
+  item 0: T=  41  max|dlogit|=  0.06396  rel= 0.00215  max_KL=  0.000030  top1=41/41
+  item 1: T=  42  max|dlogit|=  0.10938  rel= 0.00367  max_KL=  0.000042  top1=42/42
+  item 2: T=  64  max|dlogit|=  0.06396  rel= 0.00198  max_KL=  0.000047  top1=64/64
+  item 3: T=  54  max|dlogit|=  0.03906  rel= 0.00133  max_KL=  0.000077  top1=54/54
+  item 4: T= 113  max|dlogit|=  0.11938  rel= 0.00391  max_KL=  0.000074  top1=113/113
+
+[gate] --- diagnostics (not gated) ---
+[gate] worst max|dlogit| = 0.11938
+[gate] worst rel dlogit  = 0.00391   (< 0.02 is fp16 arithmetic noise)
+[gate] --- criteria (gated) ---
+[gate] worst max KL      = 7.73393e-05   (max 0.01)  OK
+[gate] top1 agreement    = 314/314 = 1.00000   (min 0.999)  OK
+[gate] PASS
+
+[gate] PASS -> safe to proceed to GGUF conversion
+[sbatch] merge_export.py exit code = 0

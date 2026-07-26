@@ -1,0 +1,21 @@
+------------------------------------
+Wed 15 Jul 2026 15:42:00 IDT
+SLURM_JOBID:		19384537
+SLURM_JOB_NODELIST:	cs-cpu-06
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 4096 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+==============================================================
+GGUF   : /home/mashevit/gguf_models/qwen3_8b_merged-f16.gguf
+size   : 16.39 GB
+tensors: 399
+dtypes : {'1': 254, '0': 145}
+--------------------------------------------------------------
+vocab   ref=151936   gguf=151936
+layers  ref=36  gguf=36
+tie_word_embeddings (ref config) = False
+--------------------------------------------------------------
+FAIL
+  - NO F16 TENSORS -> wrong --outtype, breaks common-fp16-ancestor invariant

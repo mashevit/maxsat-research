@@ -1,0 +1,39 @@
+------------------------------------
+Wed 15 Jul 2026 16:11:07 IDT
+SLURM_JOBID:		19385919
+SLURM_JOB_NODELIST:	cs-cpu-06
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 4096 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+env OK
+[modelfile] wrote /home/mashevit/gsm8k_lora_v2/Modelfile
+
+FROM /home/mashevit/gguf_models/qwen3_8b_merged-Q8_0.gguf
+
+TEMPLATE """Solve the following math problem step by step. Show your reasoning, then give the final answer after ####.
+
+Problem: {{ .Prompt }}
+
+Solution:"""
+
+
+[modelfile] prefix repr: 'Solve the following math problem step by step. Show your reasoning, then give the final answer after ####.\n\nProblem: '
+[modelfile] suffix repr: '\n\nSolution:'
+
+=============== Modelfile ===============
+FROM /home/mashevit/gguf_models/qwen3_8b_merged-Q8_0.gguf
+
+TEMPLATE """Solve the following math problem step by step. Show your reasoning, then give the final answer after ####.
+
+Problem: {{ .Prompt }}
+
+Solution:"""
+
+=========================================
+
+Confirm above:
+  FROM      -> qwen3_8b_merged-Q8_0.gguf   (NOT merged_16bit-Q6_K.gguf)
+  stop      -> Qwen3 tokens (<|im_end|>)   (NOT Llama <|eot_id|>)
+  temperature 0 / greedy params match utils.GREEDY

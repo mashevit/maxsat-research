@@ -1,0 +1,33 @@
+------------------------------------
+Wed 15 Jul 2026 12:34:36 IDT
+SLURM_JOBID:		19381294
+SLURM_JOB_NODELIST:	ise-cpu256-07
+SLURM_SCRATCH_DIR:	/scratch/mashevit/19381294
+Allocated Resouces:	cpu - 4 / mem - 65536 MB / gpu - 1
+SLURM_GPU_INDEX:	0
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+------------------------------------
+Wed 15 Jul 2026 12:34:36 IDT
+SLURM_JOBID:            19381294
+SLURM_JOB_NODELIST:     ise-cpu256-07
+------------------------------------
+NVIDIA RTX 6000 Ada Generation, 49140 MiB
+[pre] no existing merged dir at /home/mashevit/gsm8k_lora_v2/merged_16bit
+[env] torch 2.10.0+cu128  cuda 12.8
+[env] device NVIDIA RTX 6000 Ada Generation  47.4 GiB
+[gate] loading reference: base fp16 + adapter
+[merge] loading second independent base fp16
+[merge] merge_and_unload -> /home/mashevit/gsm8k_lora_v2/merged_16bit
+[gate] /home/mashevit/gsm8k_lora_v2/merged_16bit/config.json dtype = 'float16'
+[gate] reloading merged fp16 from disk
+[gate] teacher-forced logit comparison over 5 items
+  item 0: T= 137  max|dlogit|=  0.12500  max_KL=  0.000381  top1=137/137
+  item 1: T=  84  max|dlogit|=  0.19531  max_KL=  0.000212  top1=84/84
+  item 2: T= 192  max|dlogit|=  0.22266  max_KL=  0.000113  top1=192/192
+  item 3: T=  94  max|dlogit|=  0.19531  max_KL=  0.000212  top1=94/94
+  item 4: T= 136  max|dlogit|=  0.23340  max_KL=  0.000381  top1=136/136
+[gate] worst max|dlogit| = 0.23340   (atol 0.05)
+[gate] worst max KL      = 0.000381
+[gate] top1 agreement    = 643/643 = 1.00000   (min 0.999)
+[gate] FAIL

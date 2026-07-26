@@ -1,0 +1,10 @@
+------------------------------------
+Wed 15 Jul 2026 11:39:28 IDT
+SLURM_JOBID:		19380265
+SLURM_JOB_NODELIST:	cs-pheno-01
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 4 / mem - 65536 MB / gpu - 1
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+/var/spool/slurmd/job19380265/slurm_script: line 13: /var/spool/slurmd/job19380265/env.sh: No such file or directory

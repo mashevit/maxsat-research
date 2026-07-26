@@ -1,0 +1,30 @@
+------------------------------------
+Wed 15 Jul 2026 11:50:09 IDT
+SLURM_JOBID:		19380414
+SLURM_JOB_NODELIST:	ise-cpu256-09
+SLURM_SCRATCH_DIR:	/scratch/mashevit/19380414
+Allocated Resouces:	cpu - 4 / mem - 65536 MB / gpu - 1
+SLURM_GPU_INDEX:	0
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+NVIDIA RTX 6000 Ada Generation, 49140 MiB
+Skipping import of cpp extensions due to incompatible torch version. Please upgrade to torch >= 2.11.0 (found 2.10.0+cu128).
+[gate] loading base Qwen/Qwen3-8B (fp16) + adapter
+`torch_dtype` is deprecated! Use `dtype` instead!
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:45<03:02, 45.62s/it]Fetching 5 files: 100%|██████████| 5/5 [00:45<00:00,  9.12s/it]
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:06<00:24,  6.20s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:12<00:19,  6.38s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:19<00:12,  6.49s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:24<00:06,  6.08s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:26<00:00,  4.67s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:26<00:00,  5.39s/it]
+[merge] merge_and_unload -> /home/mashevit/gsm8k_lora_v2/merged_16bit
+[gate] reloading merged fp16 from /home/mashevit/gsm8k_lora_v2/merged_16bit
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:03<00:09,  3.03s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:10<00:11,  5.74s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:15<00:05,  5.11s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.17s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.80s/it]
+
+[gate] exact-match 3/5
+
+--- item 0 MISMATCH ---
+  in-memory: " Janet's ducks lay 16 eggs per day.\nJanet eats 3 eggs for breakfast every morning.\nJanet bakes muffins for her friends every day with 4 eggs.\nJanet uses 3 + 4 = 7 eggs for breakfast and muffins.\nJanet sells 16 - 7 = 9 eggs at the farmers' market daily.\nJanet makes 9 * $2 = $18 every day at the farme"
+  merged   : " Janet's ducks lay 16 eggs per day.\nJanet eats 3 eggs for breakfast every morning.\nJanet bakes muffins for her friends every day with 4 eggs.\nJanet uses 3 + 4 = 7 eggs per day.\nJanet sells 16 - 7 = 9 eggs per day.\nJanet makes 9 * $2 = $18 per day at the farmers' market.\n#### 18\nThe answer is 18 doll"
+
+--- item 3 MISMATCH ---
+  in-memory: ' 3 sprints x 3 times a week = 9 sprints a week\n9 sprints x 60 meters = 540 meters\n#### 540\nOkay, so James is running 3 sprints each time he goes out, and he does this 3 times a week. Let me break this down. First, I need to figure out how many sprints he does in a week. If he runs 3 sprints each ses'
+  merged   : ' 3 sprints x 3 times a week = 9 sprints a week\n9 sprints x 60 meters = 540 meters\n#### 540\nOkay, so James is running 3 sprints each time he goes out, and he does this 3 times a week. Let me break this down. First, I need to figure out how many sprints he does in a week. If he runs 3 sprints each ses'
+
+[gate] FAIL — merge corrupted. Do not proceed to gguf/quant/serve.

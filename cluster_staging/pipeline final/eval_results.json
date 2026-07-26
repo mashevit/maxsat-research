@@ -1,0 +1,318 @@
+{
+  "metrics": {
+    "base": {
+      "accuracy": 0.7,
+      "correct": 21,
+      "total": 30,
+      "no_answer_extracted": 0,
+      "num_samples_per_question": 1
+    },
+    "lora": {
+      "accuracy": 0.8333,
+      "correct": 25,
+      "total": 30,
+      "no_answer_extracted": 0,
+      "num_samples_per_question": 1
+    }
+  },
+  "config": {
+    "model_name": "unsloth/Qwen3-8B-bnb-4bit",
+    "adapter_path": "./qwen3_8b_lora_model",
+    "num_test": 30,
+    "base_only": false,
+    "num_samples": 1,
+    "temperature": 0.7,
+    "max_new_tokens": 256,
+    "show_examples": 4,
+    "output_file": "eval_results.json",
+    "hf_token": null,
+    "seed": 42,
+    "quick": true
+  },
+  "sample_predictions": {
+    "base": [
+      {
+        "question": "Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...",
+        "gold_answer": "109",
+        "predicted_answer": "109",
+        "correct": true,
+        "generated_text": " \n\nStep 1: Let the common ratio factor be x. So, Darrell's age is 7x and Allen's age is 11x.\n\nStep 2: The sum of their ages is 7x + 11x = 18x, and this equals 162. So, 18x = 162.\n\nStep 3: Solving for x, we divide both sides by 18: x = 162 / 18 = 9.\n\nStep 4: Allen's current age is 11x = 11 * 9 = 99.\n\nStep 5: Allen's age 10 years from now is 99 + 10 = 109.\n\nSo, the answer is 109.\n\nLet me try to solv"
+      },
+      {
+        "question": "Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...",
+        "gold_answer": "89",
+        "predicted_answer": "2",
+        "correct": false,
+        "generated_text": " \n\nFirst, we need to find out how many small stickers Lorraine has. She starts with 30 small stickers and trades 90% of them for large buttons. So, 90% of 30 is 27. That means she trades 27 small stickers for large buttons. \n\nNext, we need to find out how many large stickers she has. She starts with 40 large stickers. She trades 50% of them for large buttons, which is 20 large stickers. So, she ha"
+      },
+      {
+        "question": "Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. How man...",
+        "gold_answer": "13",
+        "predicted_answer": "13",
+        "correct": true,
+        "generated_text": " First, we need to find out how many letters are in her sister's name. Half of the letters in Indras' name is 6 divided by 2, which is 3. Then, we add 4 to that number to get the number of letters in her sister's name. So, 3 plus 4 is 7. Therefore, the total number of letters in both names is 6 plus 7, which is 13.\n\nLet me try to solve this problem again. So, the problem says that Indras has 6 let"
+      },
+      {
+        "question": "Bethany can run 10 laps on the track in one hour.  Trey can run 4 more laps than Bethany.  Shaelyn can run half as many ...",
+        "gold_answer": "5",
+        "predicted_answer": "5",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find out how many laps each person can run. \n\nBethany can run 10 laps in one hour. \n\nTrey can run 4 more laps than Bethany, so 10 + 4 = 14 laps. \n\nShaelyn can run half as many laps as Trey, so 14 / 2 = 7 laps. \n\nQuinn can run 2 fewer laps than Shaelyn, so 7 - 2 = 5 laps. \n\nNow, we need to find the difference between Bethany's laps and Quinn's laps. \n\n10 - 5 = 5 laps. \n\nSo, Bet"
+      },
+      {
+        "question": "An ice cream truck is traveling through a neighborhood. Children from various homes have started chasing the truck and, ...",
+        "gold_answer": "25",
+        "predicted_answer": "25",
+        "correct": true,
+        "generated_text": " \n\nLet's break down the problem step by step. \n\nFirst, we start with 5 children on the first street. \n\nOn the second street, each child is joined by another child. This means the number of children doubles. So, 5 * 2 = 10 children. \n\nOn the third street, each child in the existing group is joined by another 2 children. This means each child now has 2 more children joining them. So, the number of c"
+      },
+      {
+        "question": "Kim sleepwalks, to monitor her sleeping hours, she installs a camera in her room. Kim usually goes to sleep at 10 p.m. a...",
+        "gold_answer": "452",
+        "predicted_answer": "5",
+        "correct": false,
+        "generated_text": " \n\nFirst, we need to find out how long Kim normally sleeps. She goes to sleep at 10 p.m. and wakes up at 6 a.m. So, that's 8 hours. \n\nNext, we need to find out how long she actually slept that day. She woke up 5 minutes earlier than usual, so she was asleep for 8 hours minus 5 minutes. That's 7 hours and 55 minutes. \n\nBut she was sleepwalking from 2:15 to 2:38 am. That's 23 minutes. So, we need to"
+      },
+      {
+        "question": "Gunther, the gorilla, had 48 bananas hidden under a fern branch.  When Gunther wasn't looking, Arnold, the chimpanzee, s...",
+        "gold_answer": "43",
+        "predicted_answer": "43",
+        "correct": true,
+        "generated_text": " \n\nStep 1: Start with the original number of bananas, which is 48.\n\nStep 2: Arnold stole half of the bananas, so we need to calculate half of 48. Half of 48 is 24. So, after Arnold stole half, there were 48 - 24 = 24 bananas left.\n\nStep 3: The next day, Gunther added another 25 bananas to the pile. So, we add 25 to the remaining bananas: 24 + 25 = 49 bananas.\n\nStep 4: Later that evening, Arnold st"
+      },
+      {
+        "question": "Jonathan has 2/3 as many measuring spoons as measuring cups. If he has two dozen cups and gifts Pedro 6 measuring spoons...",
+        "gold_answer": "34",
+        "predicted_answer": "34",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find the total number of measuring spoons Jonathan has. Since he has 2/3 as many measuring spoons as measuring cups, and he has two dozen cups, we can calculate the number of measuring spoons as follows:\n\nTwo dozen cups is 24 cups. \n\nSo, the number of measuring spoons is 2/3 * 24 = 16 measuring spoons.\n\nNext, we need to calculate the total number of utensils Jonathan has remai"
+      },
+      {
+        "question": "Martha's cat is 5 times faster than her turtle. If the cat can run 15 feet/second, how many feet can her turtle crawl in...",
+        "gold_answer": "120",
+        "predicted_answer": "12",
+        "correct": false,
+        "generated_text": " \n\nFirst, we need to find the speed of the turtle. Since the cat is 5 times faster than the turtle, we divide the cat's speed by 5. So, 15 feet/second divided by 5 equals 3 feet/second. \n\nNext, we calculate how far the turtle can crawl in 40 seconds. We multiply the turtle's speed by the time. So, 3 feet/second multiplied by 40 seconds equals 120 feet.\n\nTherefore, the turtle can crawl 120 feet in "
+      },
+      {
+        "question": "An airport has only 2 planes that fly multiple times a day. Each day, the first plane goes to Greece for three-quarters ...",
+        "gold_answer": "11",
+        "predicted_answer": "11",
+        "correct": true,
+        "generated_text": " \n\nStep 1: Let the total number of flights the first plane makes in one day be F.\n\nStep 2: According to the problem, the first plane goes to Greece for three-quarters of its flights, which is (3/4)F. The remaining flights are split equally between France and Germany. The remaining flights would be F - (3/4)F = (1/4)F. Since these are split equally, the number of flights to France is (1/4)F / 2 = ("
+      },
+      {
+        "question": "As Sally walked to school, she was holding the strings to 25 red balloons, 7 green balloons, and 12 yellow balloons. Sud...",
+        "gold_answer": "34",
+        "predicted_answer": "6",
+        "correct": false,
+        "generated_text": " \n\nLet's break down the problem step by step. \n\nFirst, we need to find the total number of balloons Sally had initially. She had 25 red, 7 green, and 12 yellow balloons. So, the total number of balloons is 25 + 7 + 12 = 44 balloons. \n\nNext, we need to account for the balloons that burst and were released. \n\nFirst, 40% of the red balloons burst. 40% of 25 is 0.4 * 25 = 10. So, 10 red balloons burst"
+      },
+      {
+        "question": "Kira bought 3 apples, 5 bananas and 6 oranges at the grocery store. Lola ate 2 pieces of the fruit. How many pieces are ...",
+        "gold_answer": "12",
+        "predicted_answer": "12",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find the total number of fruits that Kira bought. She bought 3 apples, 5 bananas, and 6 oranges. So, we add those together: 3 + 5 + 6 = 14.\n\nThen, Lola ate 2 pieces of the fruit. So, we subtract 2 from the total number of fruits: 14 - 2 = 12.\n\nSo, there are 12 pieces of fruit left.\n\n####\n\nThe answer is 12.\n\nOkay, let me try to figure out this problem. So, Kira bought some frui"
+      },
+      {
+        "question": "I have 10 liters of orange drink that are two-thirds water and I wish to add it to 15 liters of pineapple drink that is ...",
+        "gold_answer": "15",
+        "predicted_answer": "15",
+        "correct": true,
+        "generated_text": " \n\nFirst, find the amount of water in the orange drink. Since it is two-thirds water, then the amount of water is 10 liters \u00d7 2/3 = 6.666... liters. But I spill one liter of the orange drink, so the amount of water spilled is 1 liter \u00d7 2/3 = 0.666... liters. Therefore, the amount of water remaining in the orange drink is 6.666... liters - 0.666... liters = 6 liters.\n\nThen, find the amount of water"
+      },
+      {
+        "question": "Jill and her friends watch 4 movies every Saturday and half the number of movies on Sunday than on Saturday. If they wat...",
+        "gold_answer": "24",
+        "predicted_answer": "24",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find out how many movies they watch on Saturday and Sunday. \n\nOn Saturday, they watch 4 movies. \n\nOn Sunday, they watch half the number of movies as Saturday, which is 4 / 2 = 2 movies. \n\nSo, in one weekend (Saturday and Sunday), they watch 4 + 2 = 6 movies. \n\nNow, we need to find out how many movies they watch in 4 weeks. \n\nSince they watch 6 movies in one weekend, in 4 weeks"
+      },
+      {
+        "question": "Mark took a test yesterday that consisted of 75 questions. He completed the test at a rate of 5 questions per hour. Toda...",
+        "gold_answer": "105",
+        "predicted_answer": "105",
+        "correct": true,
+        "generated_text": " \n\nFirst, let's find out how many questions Mark was able to complete in each test. \n\nFor the first test, he completed 5 questions per hour for 8 hours. So, the number of questions he completed is 5 * 8 = 40 questions. \n\nFor the second test, he completed 5 questions per hour for 6 hours. So, the number of questions he completed is 5 * 6 = 30 questions. \n\nNow, let's find out how many questions he l"
+      },
+      {
+        "question": "After transferring to a new school, Amy made 20 more friends than Lily. If Lily made 50 friends, how many friends do Lil...",
+        "gold_answer": "120",
+        "predicted_answer": "20",
+        "correct": false,
+        "generated_text": " \n\nStep 1: Determine the number of friends Amy made. Since Amy made 20 more friends than Lily, and Lily made 50 friends, we add 20 to Lily's total.\nStep 2: Calculate the total number of friends both Lily and Amy have by adding their individual totals.\n\nLet me try to solve this problem.\n\nOkay, so the problem says that Amy made 20 more friends than Lily. And Lily made 50 friends. We need to find out"
+      },
+      {
+        "question": "A basket contains 25 oranges among which 1 is bad, 20% are unripe, 2 are sour and the rest are good. How many oranges ar...",
+        "gold_answer": "17",
+        "predicted_answer": "17",
+        "correct": true,
+        "generated_text": " \n\nStep 1: Find the total number of unripe oranges. Since 20% of the oranges are unripe, we calculate 20% of 25. \n\nStep 2: Find the total number of sour oranges. It is given that 2 are sour.\n\nStep 3: Find the total number of bad oranges. It is given that 1 is bad.\n\nStep 4: Find the total number of good oranges. Subtract the number of unripe, sour, and bad oranges from the total. \n\nLet me calculate"
+      },
+      {
+        "question": "An eraser costs $2 and a pencil costs $3. How much do 6 erasers and 8 pencils cost?",
+        "gold_answer": "36",
+        "predicted_answer": "36",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find the total cost of the erasers. Each eraser costs $2, so 6 erasers cost 6 \u00d7 $2 = $12.\n\nThen, we need to find the total cost of the pencils. Each pencil costs $3, so 8 pencils cost 8 \u00d7 $3 = $24.\n\nFinally, we add the cost of the erasers and pencils together. $12 + $24 = $36.\n\nSo, the total cost is $36.\n\n####\n\nThe total cost of 6 erasers and 8 pencils is $\\boxed{36}$.\nOkay, l"
+      },
+      {
+        "question": "Tyrion changes his face mask two times every time he goes out. If he goes out three times a day, how many face masks doe...",
+        "gold_answer": "12",
+        "predicted_answer": "12",
+        "correct": true,
+        "generated_text": " \n\nFirst, we need to find out how many times Tyrion changes his face mask in a day. He changes it two times every time he goes out, and he goes out three times a day. So, we multiply the number of times he changes the mask by the number of times he goes out. That would be 2 times 3, which equals 6. So, he changes his mask 6 times a day.\n\nNext, we need to find out how many masks he uses in two days"
+      },
+      {
+        "question": "Max bought stamps at the post office. Some of the stamps had a snowflake design, some had a truck design, and some had a...",
+        "gold_answer": "45",
+        "predicted_answer": "45",
+        "correct": true,
+        "generated_text": " \n\nStep 1: Determine the number of truck stamps. Since Max bought 3 more truck stamps than snowflake stamps, and he bought 16 snowflake stamps, the number of truck stamps is 16 + 3 = 19.\n\nStep 2: Determine the number of rose stamps. Since there are 9 fewer rose stamps than truck stamps, the number of rose stamps is 19 - 9 = 10.\n\nStep 3: Add the number of snowflake, truck, and rose stamps to find t"
+      }
+    ],
+    "lora": [
+      {
+        "question": "Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...",
+        "gold_answer": "109",
+        "predicted_answer": "109",
+        "correct": true,
+        "generated_text": " Let the ages of Darrell and Allen be 7x and 11x respectively.\n7x + 11x = 162\n18x = 162\nx = 9\nAllen's age now is 11x = 99\nAllen's age 10 years from now is 99 + 10 = 109\n#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 109\n\nThe answer is 109.#### 10"
+      },
+      {
+        "question": "Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...",
+        "gold_answer": "89",
+        "predicted_answer": "107",
+        "correct": false,
+        "generated_text": " Lorraine trades 90% of her small stickers for large buttons, which is 30 * 0.9 = 27 small stickers.\nShe trades 27 small stickers for 27 large buttons.\nShe trades 50% of her large stickers for large buttons, which is 40 * 0.5 = 20 large stickers.\nShe trades 20 large stickers for 20 large buttons.\nShe trades the rest of her large stickers for small buttons, which is 40 - 20 = 20 large stickers.\nShe"
+      },
+      {
+        "question": "Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. How man...",
+        "gold_answer": "13",
+        "predicted_answer": "13",
+        "correct": true,
+        "generated_text": " Half of the letters in Indras' name is 6/2 = 3 letters.\nHer sister's name has 3 + 4 = 7 letters.\nIndras and her sister's names have 6 + 7 = 13 letters.\n#### 13\n\nThe answer is 13.#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13#### 13####"
+      },
+      {
+        "question": "Bethany can run 10 laps on the track in one hour.  Trey can run 4 more laps than Bethany.  Shaelyn can run half as many ...",
+        "gold_answer": "5",
+        "predicted_answer": "5",
+        "correct": true,
+        "generated_text": " Bethany can run 10 laps in one hour.\nTrey can run 10 + 4 = 14 laps in one hour.\nShaelyn can run 14 / 2 = 7 laps in one hour.\nQuinn can run 7 - 2 = 5 laps in one hour.\nBethany can run 10 - 5 = 5 more laps than Quinn in one hour.\n#### 5\n\nThe answer is 5. Bethany can run 5 more laps than Quinn in one hour.#### 5\n\nThe answer is 5. Bethany can run 5 more laps than Quinn in one hour.#### 5\n\nThe answer "
+      },
+      {
+        "question": "An ice cream truck is traveling through a neighborhood. Children from various homes have started chasing the truck and, ...",
+        "gold_answer": "25",
+        "predicted_answer": "25",
+        "correct": true,
+        "generated_text": " On the first street, there are 5 children.\nOn the second street, each child is joined by another child, so there are 5 + 5 = 10 children.\nOn the third street, each child in the existing group is joined by another 2 children, so there are 10 + (10 * 2) = 30 children.\nThe original 5 children then give up and leave the group, so there are 30 - 5 = 25 children.\n#### 25\n\nThe final answer is 25. There "
+      },
+      {
+        "question": "Kim sleepwalks, to monitor her sleeping hours, she installs a camera in her room. Kim usually goes to sleep at 10 p.m. a...",
+        "gold_answer": "452",
+        "predicted_answer": "7",
+        "correct": false,
+        "generated_text": " Kim usually sleeps from 10 p.m. to 6 a.m. That is 8 hours.\nShe woke up 5 minutes earlier than usual to go to the bathroom, so she slept for 8 hours - 5 minutes = 7 hours and 55 minutes.\nShe was sleepwalking from 2:15 to 2:38 am, which is 23 minutes.\nSo she slept for 7 hours and 55 minutes - 23 minutes = 7 hours and 32 minutes.\n#### 7*60+32=452 minutes\n#### 452 minutes\n#### 452 minutes\n#### 452 mi"
+      },
+      {
+        "question": "Gunther, the gorilla, had 48 bananas hidden under a fern branch.  When Gunther wasn't looking, Arnold, the chimpanzee, s...",
+        "gold_answer": "43",
+        "predicted_answer": "43",
+        "correct": true,
+        "generated_text": " Arnold stole half of the bananas from the pile, so Gunther had 48 / 2 = 24 bananas left.\nGunther added another 25 bananas to his pile, so he had 24 + 25 = 49 bananas.\nArnold stole another 12 of the bananas, so Gunther had 49 - 12 = 37 bananas left.\nGunther added another 6 bananas to his pile, so he had 37 + 6 = 43 bananas.\n#### 43\nThe answer is 43. Gunther found 43 bananas in the pile.#### 43\n###"
+      },
+      {
+        "question": "Jonathan has 2/3 as many measuring spoons as measuring cups. If he has two dozen cups and gifts Pedro 6 measuring spoons...",
+        "gold_answer": "34",
+        "predicted_answer": "34",
+        "correct": true,
+        "generated_text": " Jonathan has 2/3 as many measuring spoons as measuring cups, so he has 2/3 * 24 = 16 measuring spoons.\nIf he gifts Pedro 6 measuring spoons, he has 16 - 6 = 10 measuring spoons remaining.\nJonathan has 24 measuring cups and 10 measuring spoons remaining, so he has 24 + 10 = 34 utensils remaining.\n#### 34\n\nThe total number of utensils Jonathan has remaining is 34.#### 34\n\nThe total number of utensi"
+      },
+      {
+        "question": "Martha's cat is 5 times faster than her turtle. If the cat can run 15 feet/second, how many feet can her turtle crawl in...",
+        "gold_answer": "120",
+        "predicted_answer": "120",
+        "correct": true,
+        "generated_text": " Martha's cat is 5 times faster than her turtle, so the turtle's speed is 15/5 = 3 feet/second.\nIf the turtle can crawl 3 feet/second, then in 40 seconds it can crawl 3*40 = 120 feet.\n#### 120\n\nThe turtle can crawl 120 feet in 40 seconds.#### 120\n\nThe turtle can crawl 120 feet in 40 seconds.#### 120\n\nThe turtle can crawl 120 feet in 40 seconds.#### 120\n\nThe turtle can crawl 120 feet in 40 seconds."
+      },
+      {
+        "question": "An airport has only 2 planes that fly multiple times a day. Each day, the first plane goes to Greece for three-quarters ...",
+        "gold_answer": "11",
+        "predicted_answer": "11",
+        "correct": true,
+        "generated_text": " The first plane makes 44 * 2 = 88 flights in one day.\nThe first plane makes 88 * 3/4 = 66 flights to Greece.\nThe first plane makes 88 - 66 = 22 flights to France and Germany.\nThe first plane makes 22 / 2 = 11 flights to France.\n#### 11 flights to France.#### 11 flights to France.#### 11 flights to France.#### 11 flights to France.#### 11 flights to France.#### 11 flights to France.#### 11 flights"
+      },
+      {
+        "question": "As Sally walked to school, she was holding the strings to 25 red balloons, 7 green balloons, and 12 yellow balloons. Sud...",
+        "gold_answer": "34",
+        "predicted_answer": "34",
+        "correct": true,
+        "generated_text": " Sally had 25 red balloons, 7 green balloons, and 12 yellow balloons, for a total of 25 + 7 + 12 = 44 balloons.\n40% of the red balloons burst, which is 0.4 * 25 = 10 balloons.\nSally had 25 - 10 = 15 red balloons remaining.\nSally released half of the yellow balloons, which is 12 / 2 = 6 balloons.\nSally had 12 - 6 = 6 yellow balloons remaining.\nSally found 8 blue balloons caught in a tree, and she a"
+      },
+      {
+        "question": "Kira bought 3 apples, 5 bananas and 6 oranges at the grocery store. Lola ate 2 pieces of the fruit. How many pieces are ...",
+        "gold_answer": "12",
+        "predicted_answer": "12",
+        "correct": true,
+        "generated_text": " 3 + 5 + 6 = 14\n14 - 2 = 12\n#### 12\n\nAnswer: 12 pieces are left.#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12#### 12"
+      },
+      {
+        "question": "I have 10 liters of orange drink that are two-thirds water and I wish to add it to 15 liters of pineapple drink that is ...",
+        "gold_answer": "15",
+        "predicted_answer": "14",
+        "correct": false,
+        "generated_text": " The orange drink has 10 liters * 2/3 = 6 liters of water.\nThe pineapple drink has 15 liters * 3/5 = 9 liters of water.\nThe orange drink spilled has 1 liter * 2/3 = 2/3 liters of water.\nThe remaining orange drink has 10 liters - 1 liter = 9 liters.\nThe total water in the remaining 24 liters is 6 liters - 2/3 liters + 9 liters = 14 1/3 liters.\n#### 14 1/3 liters of water in the remaining 24 liters."
+      },
+      {
+        "question": "Jill and her friends watch 4 movies every Saturday and half the number of movies on Sunday than on Saturday. If they wat...",
+        "gold_answer": "24",
+        "predicted_answer": "24",
+        "correct": true,
+        "generated_text": " Jill and her friends watch 4 movies every Saturday and half the number of movies on Sunday than on Saturday, so they watch 4/2 = 2 movies on Sunday.\nIn total, they watch 4 + 2 = 6 movies every weekend.\nIn 4 weeks, they can watch 6 * 4 = 24 movies.\n#### 24\n\nThe answer is 24. Jill and her friends can watch 24 movies in 4 weeks.#### 24\n\nThe answer is 24. Jill and her friends can watch 24 movies in 4"
+      },
+      {
+        "question": "Mark took a test yesterday that consisted of 75 questions. He completed the test at a rate of 5 questions per hour. Toda...",
+        "gold_answer": "105",
+        "predicted_answer": "105",
+        "correct": true,
+        "generated_text": " Mark completed 5 questions per hour * 8 hours = 40 questions on the first test.\nMark completed 5 questions per hour * 6 hours = 30 questions on the second test.\nMark left incomplete 75 questions - 40 questions = 35 questions on the first test.\nMark left incomplete 100 questions - 30 questions = 70 questions on the second test.\nMark left incomplete 35 questions + 70 questions = 105 questions in to"
+      },
+      {
+        "question": "After transferring to a new school, Amy made 20 more friends than Lily. If Lily made 50 friends, how many friends do Lil...",
+        "gold_answer": "120",
+        "predicted_answer": "120",
+        "correct": true,
+        "generated_text": " Amy made 20 more friends than Lily, so Amy made 20 + 50 = 70 friends.\nLily and Amy have 70 + 50 = 120 friends together.\n#### 120\n\nThe answer is 120. Lily and Amy have 120 friends together.#### 120\n\nThe answer is 120. Lily and Amy have 120 friends together.#### 120\n\nThe answer is 120. Lily and Amy have 120 friends together.#### 120\n\nThe answer is 120. Lily and Amy have 120 friends together.#### 12"
+      },
+      {
+        "question": "A basket contains 25 oranges among which 1 is bad, 20% are unripe, 2 are sour and the rest are good. How many oranges ar...",
+        "gold_answer": "17",
+        "predicted_answer": "17",
+        "correct": true,
+        "generated_text": " The number of unripe oranges is 25 * 20% = 5\nThe number of good oranges is 25 - 1 - 5 - 2 = 17\n#### 17\n\nThe number of good oranges is 17.#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17#### 17###"
+      },
+      {
+        "question": "An eraser costs $2 and a pencil costs $3. How much do 6 erasers and 8 pencils cost?",
+        "gold_answer": "36",
+        "predicted_answer": "36",
+        "correct": true,
+        "generated_text": " 6 erasers cost 6 x $2 = $12\n8 pencils cost 8 x $3 = $24\n#### 36\n#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 36#### 3"
+      },
+      {
+        "question": "Tyrion changes his face mask two times every time he goes out. If he goes out three times a day, how many face masks doe...",
+        "gold_answer": "12",
+        "predicted_answer": "12",
+        "correct": true,
+        "generated_text": " Tyrion uses 2 face masks every time he goes out.\nTyrion uses 2 x 3 = 6 face masks every day.\nTyrion uses 6 x 2 = 12 face masks every 2 days.\n#### 12\n\nAnswer: Tyrion uses 12 face masks every 2 days.#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAnswer: 12#### 12\n\nAns"
+      },
+      {
+        "question": "Max bought stamps at the post office. Some of the stamps had a snowflake design, some had a truck design, and some had a...",
+        "gold_answer": "45",
+        "predicted_answer": "45",
+        "correct": true,
+        "generated_text": " Max bought 16 + 3 = 19 truck stamps.\nMax bought 19 - 9 = 10 rose stamps.\nMax bought 16 + 19 + 10 = 45 stamps in all.\n#### 45\n\nThe answer is 45. Max bought 45 stamps in all.#### 45\n\nThe answer is 45. Max bought 45 stamps in all.#### 45\n\nThe answer is 45. Max bought 45 stamps in all.#### 45\n\nThe answer is 45. Max bought 45 stamps in all.#### 45\n\nThe answer is 45. Max bought 45 stamps in all.#### 45"
+      }
+    ]
+  }
+}

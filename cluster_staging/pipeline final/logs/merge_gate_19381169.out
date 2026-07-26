@@ -1,0 +1,21 @@
+------------------------------------
+Wed 15 Jul 2026 12:28:23 IDT
+SLURM_JOBID:		19381169
+SLURM_JOB_NODELIST:	cs-pheno-01
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 4 / mem - 65536 MB / gpu - 1
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+------------------------------------
+Wed 15 Jul 2026 12:28:24 IDT
+SLURM_JOBID:            19381169
+SLURM_JOB_NODELIST:     cs-pheno-01
+------------------------------------
+NVIDIA GeForce GTX 1080 Ti, 11264 MiB
+[pre] existing merged dir found, reading declared dtype:
+[pre] dtype = float16
+[env] torch 2.10.0+cu128  cuda 12.8
+[env] device NVIDIA GeForce GTX 1080 Ti  10.9 GiB
+[merge] removing existing /home/mashevit/gsm8k_lora_v2/merged_16bit
+[gate] loading reference: base fp16 + adapter

@@ -1,0 +1,157 @@
+------------------------------------
+Sat 04 Jul 2026 18:09:59 IDT
+SLURM_JOBID:		19022473
+SLURM_JOB_NODELIST:	ise-cpu256-17
+SLURM_SCRATCH_DIR:	/scratch/mashevit/19022473
+Allocated Resouces:	cpu - 2 / mem - 16384 MB / gpu - 1
+SLURM_GPU_INDEX:	0
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+Sat 04 Jul 2026 18:09:59 IDT
+
+SLURM_JOBID:		 19022473
+SLURM_JOB_NODELIST:	 ise-cpu256-17 
+
+=== sanity ===
+/home/mashevit/.conda/envs/gsm8k_lora/bin/python
+torch 2.10.0+cu128 cuda? True
+NVIDIA RTX 6000 Ada Generation, 49140 MiB
+==============
+🦥 Unsloth: Will patch your computer to enable 2x faster free finetuning.
+🦥 Unsloth Zoo will now patch everything to make training faster!
+
+============================================================
+GSM8K Evaluation
+============================================================
+  Model:        unsloth/Qwen3-8B-bnb-4bit
+  Adapter:      ./qwen3_8b_lora_model
+  Test size:    30
+  Samples/q:    1 (greedy)
+  GPU 0: NVIDIA RTX 6000 Ada Generation  (50.9 GB, CC 8.9)
+  PyTorch:  2.10.0+cu128
+  CUDA:     12.8
+============================================================
+
+Loading GSM8K test set...
+Testing on 30 examples
+
+Loading base model: unsloth/Qwen3-8B-bnb-4bit
+==((====))==  Unsloth 2026.4.8: Fast Qwen3 patching. Transformers: 4.57.6.
+   \\   /|    NVIDIA RTX 6000 Ada Generation. Num GPUs = 1. Max memory: 47.374 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.10.0+cu128. CUDA: 8.9. CUDA Toolkit: 12.8. Triton: 3.6.0
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.35. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+unsloth/Qwen3-8B-bnb-4bit does not have a padding token! Will use pad_token = <|PAD_TOKEN|>.
+Base:   0%|          | 0/30 [00:00<?, ?it/s]Base:   3%|▎         | 1/30 [00:13<06:30, 13.48s/it]Base:   7%|▋         | 2/30 [00:24<05:31, 11.85s/it]Base:  10%|█         | 3/30 [00:34<05:05, 11.33s/it]Base:  13%|█▎        | 4/30 [00:45<04:47, 11.07s/it]Base:  17%|█▋        | 5/30 [00:56<04:33, 10.92s/it]Base:  20%|██        | 6/30 [01:06<04:20, 10.84s/it]Base:  23%|██▎       | 7/30 [01:17<04:07, 10.78s/it]Base:  27%|██▋       | 8/30 [01:28<03:56, 10.73s/it]Base:  30%|███       | 9/30 [01:38<03:45, 10.72s/it]Base:  33%|███▎      | 10/30 [01:49<03:33, 10.70s/it]Base:  37%|███▋      | 11/30 [02:00<03:22, 10.68s/it]Base:  40%|████      | 12/30 [02:10<03:12, 10.67s/it]Base:  43%|████▎     | 13/30 [02:21<03:01, 10.67s/it]Base:  47%|████▋     | 14/30 [02:32<02:50, 10.67s/it]Base:  50%|█████     | 15/30 [02:42<02:40, 10.67s/it]Base:  53%|█████▎    | 16/30 [02:53<02:29, 10.67s/it]Base:  57%|█████▋    | 17/30 [03:04<02:18, 10.69s/it]Base:  60%|██████    | 18/30 [03:14<02:08, 10.68s/it]Base:  63%|██████▎   | 19/30 [03:25<01:57, 10.67s/it]Base:  67%|██████▋   | 20/30 [03:36<01:46, 10.69s/it]Base:  70%|███████   | 21/30 [03:46<01:36, 10.69s/it]Base:  73%|███████▎  | 22/30 [03:57<01:25, 10.68s/it]Base:  77%|███████▋  | 23/30 [04:08<01:14, 10.70s/it]Base:  80%|████████  | 24/30 [04:19<01:04, 10.69s/it]Base:  83%|████████▎ | 25/30 [04:29<00:53, 10.69s/it]Base:  87%|████████▋ | 26/30 [04:40<00:42, 10.69s/it]Base:  90%|█████████ | 27/30 [04:51<00:32, 10.68s/it]Base:  93%|█████████▎| 28/30 [05:01<00:21, 10.69s/it]Base:  97%|█████████▋| 29/30 [05:12<00:10, 10.68s/it]Base: 100%|██████████| 30/30 [05:23<00:00, 10.69s/it]Base: 100%|██████████| 30/30 [05:23<00:00, 10.77s/it]
+Unsloth 2026.4.8 patched 36 layers with 36 QKV layers, 36 O layers and 36 MLP layers.
+
+============================================================
+  BASE MODEL (no LoRA)
+============================================================
+  Accuracy:             70.00% (21/30)
+  No answer extracted:  0
+  Samples per question: 1
+============================================================
+
+--- Sample predictions (Base) ---
+
+✅ Q: Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...
+   Gold: 109  |  Pred: 109
+   Out:   
+
+Step 1: Let the common ratio factor be x. So, Darrell's age is 7x and Allen's age is 11x.
+
+Step 2: The sum of their ages is 7x + 11x = 18x, and this equals 162. So, 18x = 162.
+
+Step 3: Solving for ...
+
+✅ Q: Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. How man...
+   Gold: 13  |  Pred: 13
+   Out:   First, we need to find out how many letters are in her sister's name. Half of the letters in Indras' name is 6 divided by 2, which is 3. Then, we add 4 to that number to get the number of letters in ...
+
+❌ Q: Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...
+   Gold: 89  |  Pred: 2
+   Out:   
+
+First, we need to find out how many small stickers Lorraine has. She starts with 30 small stickers and trades 90% of them for large buttons. So, 90% of 30 is 27. That means she trades 27 small stic...
+
+❌ Q: Kim sleepwalks, to monitor her sleeping hours, she installs a camera in her room. Kim usually goes to sleep at 10 p.m. a...
+   Gold: 452  |  Pred: 5
+   Out:   
+
+First, we need to find out how long Kim normally sleeps. She goes to sleep at 10 p.m. and wakes up at 6 a.m. So, that's 8 hours. 
+
+Next, we need to find out how long she actually slept that day. Sh...
+---
+
+
+Loading LoRA adapter: ./qwen3_8b_lora_model
+==((====))==  Unsloth 2026.4.8: Fast Qwen3 patching. Transformers: 4.57.6.
+   \\   /|    NVIDIA RTX 6000 Ada Generation. Num GPUs = 1. Max memory: 47.374 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.10.0+cu128. CUDA: 8.9. CUDA Toolkit: 12.8. Triton: 3.6.0
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.35. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+LoRA:   0%|          | 0/30 [00:00<?, ?it/s]LoRA:   3%|▎         | 1/30 [00:14<07:04, 14.64s/it]LoRA:   7%|▋         | 2/30 [00:29<06:48, 14.60s/it]LoRA:  10%|█         | 3/30 [00:43<06:33, 14.59s/it]LoRA:  13%|█▎        | 4/30 [00:58<06:18, 14.58s/it]LoRA:  17%|█▋        | 5/30 [01:12<06:04, 14.58s/it]LoRA:  20%|██        | 6/30 [01:27<05:49, 14.58s/it]LoRA:  23%|██▎       | 7/30 [01:42<05:35, 14.60s/it]LoRA:  27%|██▋       | 8/30 [01:56<05:21, 14.59s/it]LoRA:  30%|███       | 9/30 [02:11<05:06, 14.58s/it]LoRA:  33%|███▎      | 10/30 [02:25<04:51, 14.60s/it]LoRA:  37%|███▋      | 11/30 [02:40<04:37, 14.62s/it]LoRA:  40%|████      | 12/30 [02:55<04:23, 14.62s/it]LoRA:  43%|████▎     | 13/30 [03:09<04:08, 14.62s/it]LoRA:  47%|████▋     | 14/30 [03:24<03:54, 14.63s/it]LoRA:  50%|█████     | 15/30 [03:39<03:39, 14.63s/it]LoRA:  53%|█████▎    | 16/30 [03:53<03:24, 14.63s/it]LoRA:  57%|█████▋    | 17/30 [04:08<03:10, 14.63s/it]LoRA:  60%|██████    | 18/30 [04:23<02:55, 14.63s/it]LoRA:  63%|██████▎   | 19/30 [04:37<02:40, 14.62s/it]LoRA:  67%|██████▋   | 20/30 [04:52<02:26, 14.62s/it]LoRA:  70%|███████   | 21/30 [05:06<02:11, 14.62s/it]LoRA:  73%|███████▎  | 22/30 [05:21<01:56, 14.61s/it]LoRA:  77%|███████▋  | 23/30 [05:36<01:42, 14.64s/it]LoRA:  80%|████████  | 24/30 [05:50<01:27, 14.63s/it]LoRA:  83%|████████▎ | 25/30 [06:05<01:13, 14.63s/it]LoRA:  87%|████████▋ | 26/30 [06:19<00:58, 14.61s/it]LoRA:  90%|█████████ | 27/30 [06:34<00:43, 14.61s/it]LoRA:  93%|█████████▎| 28/30 [06:49<00:29, 14.61s/it]LoRA:  97%|█████████▋| 29/30 [07:03<00:14, 14.61s/it]LoRA: 100%|██████████| 30/30 [07:18<00:00, 14.61s/it]LoRA: 100%|██████████| 30/30 [07:18<00:00, 14.61s/it]
+
+============================================================
+  LORA MODEL (fine-tuned)
+============================================================
+  Accuracy:             83.33% (25/30)
+  No answer extracted:  0
+  Samples per question: 1
+============================================================
+
+--- Sample predictions (LoRA) ---
+
+✅ Q: Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, calculate Allen's age 10 years from no...
+   Gold: 109  |  Pred: 109
+   Out:   Let the ages of Darrell and Allen be 7x and 11x respectively.
+7x + 11x = 162
+18x = 162
+x = 9
+Allen's age now is 11x = 99
+Allen's age 10 years from now is 99 + 10 = 109
+#### 109
+
+The answer is 109.###...
+
+✅ Q: Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. How man...
+   Gold: 13  |  Pred: 13
+   Out:   Half of the letters in Indras' name is 6/2 = 3 letters.
+Her sister's name has 3 + 4 = 7 letters.
+Indras and her sister's names have 6 + 7 = 13 letters.
+#### 13
+
+The answer is 13.#### 13#### 13#### 13...
+
+❌ Q: Lorraine and Colleen are trading stickers for buttons. Each large sticker is worth a large button or three small buttons...
+   Gold: 89  |  Pred: 107
+   Out:   Lorraine trades 90% of her small stickers for large buttons, which is 30 * 0.9 = 27 small stickers.
+She trades 27 small stickers for 27 large buttons.
+She trades 50% of her large stickers for large b...
+
+❌ Q: Kim sleepwalks, to monitor her sleeping hours, she installs a camera in her room. Kim usually goes to sleep at 10 p.m. a...
+   Gold: 452  |  Pred: 7
+   Out:   Kim usually sleeps from 10 p.m. to 6 a.m. That is 8 hours.
+She woke up 5 minutes earlier than usual to go to the bathroom, so she slept for 8 hours - 5 minutes = 7 hours and 55 minutes.
+She was sleep...
+---
+
+
+============================================================
+  IMPROVEMENT: +13.33%
+  Base: 70.00%  →  LoRA: 83.33%
+============================================================
+
+  Per-example breakdown:
+  Both correct:       20
+  Both wrong:         4
+  LoRA fixed:         5  (base wrong → LoRA right)
+  LoRA broke:         1  (base right → LoRA wrong)
+  Net fixes:          +4
+
+Results saved to eval_results.json
+
+Evaluation finished at: Sat 04 Jul 2026 18:23:28 IDT

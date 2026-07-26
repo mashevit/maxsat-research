@@ -1,0 +1,8 @@
+FROM /home/mashevit/gguf_models/qwen3_8b_merged-Q8_0.gguf
+
+TEMPLATE """Solve the following math problem step by step. Show your reasoning, then give the final answer after ####.
+
+Problem: {{ .Prompt }}
+
+Solution:"""
+

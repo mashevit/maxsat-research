@@ -1,0 +1,12 @@
+------------------------------------
+Wed 15 Jul 2026 16:02:03 IDT
+SLURM_JOBID:		19385788
+SLURM_JOB_NODELIST:	ise-cpu-intl-04
+SLURM_SCRATCH_DIR:	/scratch/mashevit/19385788
+Allocated Resouces:	cpu - 2 / mem - 4096 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+env OK
+usage: gen_modelfile.py [-h] --gguf GGUF [--out OUT]
+gen_modelfile.py: error: unrecognized arguments: --merged /home/mashevit/gsm8k_lora_v2/merged_16bit
