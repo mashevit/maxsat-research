@@ -1,9 +1,12 @@
 # Weighted Instance Generation + Tier Calibration — audit and plan
 
-Status: **plan only.** No code is shipped by this doc; nothing outside this file
-was created or edited, and no solver was run to produce it.
+Status: **§13 steps 1-2 implemented; steps 3-6 are plan only.** Shipped:
+`instancegen/generate.py`, `instancegen/feasible.py`, `instancegen/wcnf_io.py`,
+their tests, and the `.gitignore` entry from D6. Not shipped: `tiers.py`,
+`calibrate.py`, `cli.py`, and any sweep. Part I (audit) remains as written: it was
+produced read-only, and no solver was run to produce it.
 
-`git rev-parse --short HEAD` at time of writing: `dab856e`.
+`git rev-parse --short HEAD` at time of the audit: `dab856e`.
 
 **Problem this addresses.** The corpus has no weighted MaxSAT instances in the
 middle difficulty tier. MSE benchmarks are almost entirely T3 under RC2 because
@@ -312,16 +315,35 @@ the EA.
 instancegen/
   __init__.py
   generate.py      # pure: params -> in-memory Instance. No I/O, no pysat.
+  feasible.py      # generate_feasible(params) -> (Instance, witness). Uses pysat. See D8.
   wcnf_io.py       # write_wcnf(inst, path, *, dialect)  -- dialect REQUIRED
   tiers.py         # threshold constants + classify() + TIER_RULE dict
   calibrate.py     # generate -> RC2Stratified under cap -> classify -> manifest row
   cli.py           # python -m instancegen.cli
   tests/
-    test_generate.py  test_wcnf_io.py  test_tiers.py  test_calibrate.py
+    test_generate.py  test_feasible.py  test_wcnf_io.py
+    test_tiers.py     test_calibrate.py
     data/tiny_known.wcnf
 data/generated/<batch>/*.wcnf
 data/generated/<batch>/manifest.jsonl
 ```
+
+**Why `feasible.py` is a separate module from `generate.py`.** D8 requires a SAT
+call on the hard part, but §8 specs `generate.py` as pure with no pysat — those
+two cannot both live in one module. The split resolves it:
+
+- `generate.py` stays pure and pysat-free. Determinism (test 1) is therefore
+  testable with no solver installed, and `generate` remains a total function of
+  `GenParams` with no external dependency that could change its output.
+- `feasible.py` owns the only SAT call in the generator path:
+  `generate_feasible(params) -> (Instance, witness)`. It is a deterministic
+  function of `params` as well — the resample loop derives each attempt's seed
+  from `(params.seed, attempt_index)` by a fixed hash, and SAT/UNSAT is a
+  property of the formula, not of the solver. So the *instance bytes* are still
+  reproducible from `(params, seed)`; only the returned `hard_witness` is
+  solver-dependent (any model will do, and the manifest records which one).
+- The dependency edge points the safe way: `feasible.py` imports `generate.py`,
+  never the reverse.
 
 **Why not inside `maxsat_new/`:**
 
@@ -352,15 +374,40 @@ outputs.
 @dataclass(frozen=True)
 class GenParams:
     n_vars: int
-    clause_ratio: float      # n_clauses = round(clause_ratio * n_vars)
     k: int
+    soft_ratio: float        # n_soft = round(soft_ratio * n_vars)
+    hard_ratio: float        # n_hard = round(hard_ratio * n_vars)
     w_max: int
-    hard_frac: float         # fraction of clauses emitted as hard
     seed: int
-    weight_dist: str = "uniform"   # see §11 — proposed addition, decision D4
+    weight_dist: str = "uniform"   # see §11 — decided, D4
 
 def generate(p: GenParams) -> Instance: ...
 ```
+
+#### 8.1 Why `hard_ratio` / `soft_ratio` and not `clause_ratio` / `hard_frac`
+
+The original parameter pair was `clause_ratio` (total clauses per variable) plus
+`hard_frac` (fraction of those clauses emitted hard). That couples the two knobs
+that §11 wants to sweep separately: with `n_hard = round(hard_frac *
+clause_ratio * n_vars)`, raising `clause_ratio` at fixed `hard_frac` raises the
+hard-clause count too, and raising `hard_frac` at fixed `clause_ratio` *removes*
+soft clauses one-for-one. §11 axis 1 and axis 3 therefore cannot move
+independently, and no observed change in solve time can be attributed to either.
+
+Decoupling to two ratios against `n_vars` separates the two things that actually
+matter and that have different mechanisms:
+
+- **`hard_ratio` sizes the feasible region.** It is a clauses-per-variable
+  density on the hard part alone, so it sits on the same scale as the k-SAT
+  phase-transition literature (~4.27 for k=3) and can be reasoned about directly.
+- **`soft_ratio` sizes the objective density** — how many soft clauses, hence how
+  many cores are available to extract, at a fixed feasible region.
+
+`clause_ratio` is not deleted as a *concept*; it is demoted from an input to a
+**derived quantity**, `clause_ratio == hard_ratio + soft_ratio`, recorded in the
+manifest's `sizes` block. Keeping it as a field as well would over-determine
+`n_clauses` (two disagreeing sources of truth for the same count), which is why
+it comes out of `GenParams`.
 
 - One `random.Random(p.seed)` object, threaded explicitly. **No module-level
   `random.*`** — that is the `from_gemini.py:127` anti-pattern and it is exactly
@@ -368,8 +415,9 @@ def generate(p: GenParams) -> Instance: ...
 - Clause construction: sample `k` distinct variables without replacement,
   independent uniform sign per literal. Tautologies and duplicate literals are
   impossible by construction.
-- Hard/soft split: the first `round(hard_frac * n_clauses)` clauses in
-  generation order are hard. Deterministic, no second RNG stream.
+- Hard/soft split: the first `round(hard_ratio * n_vars)` clauses in generation
+  order are hard, the next `round(soft_ratio * n_vars)` are soft. Deterministic,
+  no second RNG stream.
 - Soft weights drawn from `weight_dist` over `[1, w_max]`. **Never 0** — a
   weight-0 clause line starts with `"0"` and `maxsat_new/cnf.py:57` would
   silently drop it (audit §2).
@@ -377,12 +425,18 @@ def generate(p: GenParams) -> Instance: ...
   `top`. Deliberately independent of `maxsat_new.cnf.WCNF`, so the round-trip
   test compares two independently-built objects rather than asserting a thing
   equals itself.
-- **No satisfiability guarantee.** Random weighted k-SAT above the phase
-  transition is almost surely unsatisfiable in its soft part — that is what
-  makes it a real MaxSAT instance. But hard clauses at `hard_frac > 0` can make
-  the *hard* part unsatisfiable, which RC2 reports as no-solution. The
-  calibrator must treat "hard part UNSAT" as a distinct outcome and discard it,
-  **not** classify it as T3 (§10).
+- **No satisfiability guarantee on the soft part; a feasibility guarantee on the
+  hard part.** Random weighted k-SAT above the phase transition is almost surely
+  unsatisfiable in its soft part — that is what makes it a real MaxSAT instance,
+  and the soft part is deliberately left unconstrained. The *hard* part is
+  different: at `hard_ratio > 0` a uniform sample can be unsatisfiable, which RC2
+  reports as no-solution and which is worthless as a MaxSAT instance. So the hard
+  part is made satisfiable **by construction** — generate uniformly, SAT-check
+  the hard part alone, resample on UNSAT, and store the model the SAT call
+  returns. This is `feasible.py`, not `generate.py` (§7), and the full rationale
+  including why the assignment is *not* planted is **D8**. The calibrator still
+  keeps `hard_unsat` as an outcome code, but it is now rare-by-construction
+  rather than a routine post-solve discard (§10.2).
 
 ### 9. Writer (`wcnf_io.py`) — and the format mismatch
 
@@ -459,7 +513,7 @@ Two caveats, recorded in the module docstring **and** in every manifest row:
 
 ```
 for each param point in the sweep grid, for each seed:
-    inst = generate(params)
+    inst, witness = generate_feasible(params)     # D8: hard part SAT by construction
     write_wcnf(inst, path, dialect="old")
     result = solve_with_cap(path, cap_s)      # RC2Stratified
     tier, reason = classify(result.solve_s, result.completed)
@@ -476,11 +530,16 @@ for each param point in the sweep grid, for each seed:
   progress-file thread -> `subprocess.run(timeout=cap+grace)` SIGKILL). An
   in-process timeout on `RC2Stratified` is therefore **not reliable**.
 - **Four outcomes, not two:** `solved` (record `solve_s`, `final_cost`),
-  `timeout` (-> T3), `hard_unsat` (**discard** — the generator produced an
-  infeasible hard part), `error`.
+  `timeout` (-> T3), `hard_unsat`, `error`. Since D8, `hard_unsat` is
+  **rare-by-construction, not a routine discard**: the hard part was SAT-checked
+  before the instance was written, so this code now means something has gone
+  wrong (a writer bug, a solver disagreement, a corrupted file) and should be
+  investigated rather than silently dropped. It is kept in the schema precisely
+  so that "should never happen" is observable if it happens.
 - **Keep every candidate's row**, including T1 and T3. The solve time is already
   paid for, and T1 instances are needed as regression fixtures. "Keep T2" is a
-  *filter over the manifest*, not a deletion of files.
+  *filter over the manifest*, not a deletion of files. D9 leans on this: a
+  parameter point's T2 yield rate is only computable if the non-T2 rows survive.
 - **No new abstraction.** `solve_with_cap` is a module-local function returning
   a dataclass. No `Oracle` protocol, no registry, no interface changes anywhere.
 
@@ -492,17 +551,21 @@ concrete value and the rule that produced it":
 
 ```json
 {
-  "instance": "data/generated/b01/wksat_v150_r4.30_k3_w64_h0.10_s7.wcnf",
+  "instance": "data/generated/b01/wksat_v150_k3_sr3.90_hr0.40_w64_uniform_s7.wcnf",
   "instance_sha256": "…",
   "dialect": "old",
   "generator": {
     "name": "weighted_ksat",
     "version": "0.1.0",
-    "params": {"n_vars":150,"clause_ratio":4.30,"k":3,"w_max":64,
-               "hard_frac":0.10,"seed":7,"weight_dist":"uniform"}
+    "params": {"n_vars":150,"k":3,"soft_ratio":3.90,"hard_ratio":0.40,
+               "w_max":64,"seed":7,"weight_dist":"uniform"}
   },
-  "sizes": {"n_vars":150,"n_clauses":645,"n_hard":64,"n_soft":581,
+  "sizes": {"n_vars":150,"n_clauses":645,"n_hard":60,"n_soft":585,
+            "clause_ratio":4.30,
             "total_soft_weight":18734,"n_distinct_weights":64},
+  "hard_witness": [-1,2,3,-4,"…"],
+  "hard_resample_attempts": 1,
+  "ea": {"ea_best_cost":null,"ea_gap_to_opt":null,"ea_stagnation_iter":null},
   "profile": {"solver":"rc2stratified","blo":"div","cap_s":600.0,
               "solve_s":183.42,"completed":true,"final_cost":1207,
               "status":"ok","error":null},
@@ -525,6 +588,28 @@ concrete value and the rule that produced it":
   `memetic_ea`'s `best_cost` with no conversion.
 - `created_utc` and `git_sha` live in the **manifest only, never in the `.wcnf`
   comment header** — otherwise byte-identity (test 1, §12) fails.
+- **Filename template**, one field per `GenParams` field so the params are
+  recoverable from the path alone:
+  `wksat_v<n_vars>_k<k>_sr<soft_ratio:.2f>_hr<hard_ratio:.2f>_w<w_max>_<weight_dist>_s<seed>.wcnf`.
+  `weight_dist` is slugified (`:` -> `-`, e.g. `few_classes-5`) so the name stays
+  a legal filename on every platform. `clause_ratio` is *not* in the name — it is
+  derived (§8.1) and would be redundant with `sr`/`hr`.
+- `sizes.clause_ratio` is the derived total density, `hard_ratio + soft_ratio`
+  (§8.1). It is recorded so rows stay joinable with the existing
+  `metadata.jsonl` `density.clauses_per_var` field (audit §4).
+- **`hard_witness`** is the model returned by D8's hard-part SAT check, as a list
+  of signed ints over `1..n_vars`. It is recorded for three uses: it is the
+  evidence backing test 9; it is a **feasible EA seed** (an assignment with zero
+  hard violations, which a random EA init is not guaranteed to find); and it
+  gives a **cost floor** — evaluating the softs under the witness bounds the
+  optimum from above at no solver cost. `hard_resample_attempts` records how many
+  uniform samples D8's loop rejected, which is the observable that says whether
+  `hard_ratio` is approaching the UNSAT threshold.
+- **`ea` is reserved and null-filled at generation time** (D10). The three fields
+  `ea_best_cost`, `ea_gap_to_opt`, `ea_stagnation_iter` are written as `null` by
+  the calibrator and back-filled later, once the ported `memetic_ea` can be run
+  against the corpus. They are in the schema now so that adding the second tier
+  axis does not require regenerating and re-solving the corpus.
 
 ### 11. Which knob is the primary difficulty dial
 
@@ -532,8 +617,11 @@ concrete value and the rule that produced it":
 `n_vars` for weighted instances under a core-guided solver, because
 stratification layers scale with the number of distinct weights.
 
-**Verdict: the mechanism is right, the direction is inverted.** Read from the
-installed pysat (1.9.dev2).
+**Verdict: the mechanism is settled; the direction is open.** The code reading
+below establishes *what* `w_max` does to stratification. It does **not**
+establish which way solve time moves, and the first version of this section
+overreached by claiming it did — see §11.1. Read from the installed pysat
+(1.9.dev2).
 
 `RC2Stratified.init_wstr`:
 
@@ -575,33 +663,62 @@ compares **selectors-per-remaining-level** against it. Work the two extremes:
 - **Few, heavily-populated weight classes** (e.g. 5 distinct weights x 100
   clauses). `len(blop) = 5`, `sdiv = 2.5`; at `levl=0`, `numr = 400` over 4
   remaining levels -> ratio 100 >> 2.5 -> break immediately. **Many genuine
-  strata, many oracle calls.**
+  strata, hence many but individually smaller oracle calls.**
 
 The other break condition, partial BLO (`wght > sumr`), needs a **skewed** weight
 distribution — one weight dominating the sum of everything below it. A uniform
 draw over `[1, w_max]` produces that essentially never, regardless of how large
 `w_max` is.
 
-**Conclusion: `w_max` is not the primary dial, and its effect is non-monotone.**
-Above `w_max ~= n_soft` it saturates (distinct-weight count is capped by clause
-count) and pushes *toward* the no-stratification regime. What actually controls
-stratification is the **shape** of the weight distribution: how many weight
-classes there are and how populated/skewed they are.
+#### 11.1 What follows from that, and what does not
+
+**Settled (mechanism).** Above `w_max ~= n_soft`, `w_max` **saturates** —
+distinct-weight count is capped by soft-clause count — and near-unique weights
+make `sdiv = len(blop)/2` large enough that the diversity break is
+**unfireable**, while partial BLO (`wght > sumr`) needs a skew that a uniform
+draw over `[1, w_max]` essentially never produces. So large `w_max` collapses
+`RC2Stratified` to a **single stratum**. What controls stratification is the
+**shape** of the weight distribution — how many weight classes and how
+populated/skewed — not `w_max` alone. None of this is in doubt; it is read
+directly off `init_wstr` / `next_level`.
+
+**Not settled (direction).** The earlier draft inferred "non-monotone, so
+`w_max` is not the primary dial" from that mechanism. The inference does not
+follow, on two counts:
+
+1. **One stratum means plain RC2 on a fully weighted problem, which is typically
+   *slower*, not faster.** Stratification exists as an optimization: solving the
+   heavy levels first gives strong early bounds and keeps each core-extraction
+   call small. Disabling it hands RC2 the whole weighted formula at once. So
+   "large `w_max` disables stratification" is an argument that large `w_max` is
+   **harder** — the opposite of what the draft concluded, and at minimum not
+   evidence for non-monotonicity.
+2. **"Many oracle calls" was treated as a cost; it usually is not.** SAT-call
+   cost is superlinear in formula/core size, so many small calls typically beat
+   one large call. Counting calls is not a runtime proxy, and the
+   few-classes branch above should not be read as "expensive" just because the
+   call count is high.
+
+**Therefore: no prior is asserted here in either direction.** The `w_max` /
+`weight_dist` axis is recorded as *mechanistically understood, directionally
+unknown*, and is resolved by **Phase A measurement** (§13 step 5), which produces
+the `solve_s`-vs-axis table. Its rank-4 position in the table below reflects that
+it is a shape parameter swept after the density parameters, **not** a prediction
+that its effect is small or non-monotone.
 
 Proposed sweep axes, in priority order:
 
 | Rank | Axis | Why |
 |---|---|---|
-| 1 | **`clause_ratio`** at fixed `n_vars` | Core-guided runtime tracks the number of cores extracted and their size; both are driven by soft-clause density relative to the k-SAT phase transition (~4.26 for k=3). Classic hardness dial; moves solve time by orders of magnitude across a narrow band. |
+| 1 | **`soft_ratio`** at fixed `n_vars`, `hard_ratio` | Core-guided runtime tracks the number of cores extracted and their size; both are driven by soft-clause density relative to the k-SAT phase transition (~4.27 for k=3). Classic hardness dial; moves solve time by orders of magnitude across a narrow band. Now sweepable *without* dragging the hard-clause count along (§8.1). |
 | 2 | `n_vars` | Scales the cost of each individual SAT call, roughly monotonically. |
-| 3 | `hard_frac` | Shrinks the feasible region, enlarging cores — but past some point makes the hard part UNSAT, which is an *instant* solve, not a hard one. Most likely axis to blow up. |
-| 4 | `w_max` / `weight_dist` | A **shape** parameter. Swept last, expected non-monotone. |
+| 3 | `hard_ratio` | Shrinks the feasible region, enlarging cores. Independent of axis 1 since §8.1. Past ~4.27 the hard part goes UNSAT, which D8 now turns into rejection-and-resample rather than an instant trivial solve — so the failure mode of pushing this axis is an impractical rejection rate, not a corpus full of infeasible instances. Most likely axis to blow up. |
+| 4 | `w_max` / `weight_dist` | A **shape** parameter — the one that maps onto `blop`. Swept last because the density axes are cheaper to interpret, **not** because its effect is expected to be small or non-monotone (§11.1). |
 
-**Design consequence:** add **`weight_dist`** to the parameter set
-(`"uniform"` | `"few_classes:<m>"` | `"powerlaw:<alpha>"`). It is the parameter
-that actually maps onto `blop`; `w_max` alone cannot express "5 classes of 100"
-versus "500 unique". This is a small addition to the requested six parameters —
-decision D4.
+**Design consequence:** `weight_dist` is part of the parameter set
+(`"uniform"` | `"few_classes:<m>"` | `"powerlaw:<alpha>"`) — **D4, decided.** It
+is the parameter that actually maps onto `blop`; `w_max` alone cannot express
+"5 classes of 100" versus "500 unique".
 
 **This should be settled by measurement, not argument.** Phase A of the sweep
 varies one axis at a time from a fixed base point, and the first deliverable
@@ -619,8 +736,12 @@ after the code is a table of `solve_s` versus each axis.
 | 6 | `test_tiny_known_cost` | a committed 4-var hand-built instance with a hand-computed optimum: `RC2Stratified` returns that exact cost, **and** `WCNF.eval_assignment(model)` gives `total_soft_weight - sat_soft_weight == cost`. Pins the sign convention against `PORT_NOTES` §8. |
 | 7 | `test_classify_boundaries` | `classify(60.0)` -> `T1`; `classify(60.001)` -> `T2a`; `classify(300.0)` -> `T2a`; `classify(600.001)` -> `T3`; `completed=False` -> `T3`. Mirrors `profile_hardness`'s inclusive-upper convention exactly. |
 | 8 | `test_manifest_row_schema` | one calibration row on a trivially-fast instance is JSON round-trippable and contains **both** `generator.params` and `tier_rule` (the §4 both-or-neither rule). |
+| 9 | `test_hard_part_feasible` | for params with `hard_ratio > 0`, `generate_feasible(p)` returns a witness that **satisfies every hard clause** of the returned instance (checked by direct evaluation, not by re-asking the solver), and an independent SAT call on the hard part alone reports SAT. Pins D8: a generated instance is never hard-infeasible. Also asserts `generate_feasible` is deterministic in `p` (same instance bytes on two calls) and that `hard_ratio == 0` needs no solver call. |
 
 Tests 1-5, 7, 8 are sub-second. Test 6 uses a 4-var instance — also sub-second.
+Test 9 makes a real SAT call, but on a small hard part with no cap — also
+sub-second, and it is the only test in 1-5/9 that needs pysat installed (which
+is exactly the split §7 buys: `generate.py`'s determinism tests do not).
 No test invokes a real cap; calibration sweeps are CLI runs, not tests.
 
 ### 13. Step order
@@ -630,7 +751,7 @@ One PR each, one test that fails before and passes after.
 | # | Change | Test |
 |---|---|---|
 | 1 | `generate.py` + `GenParams` | 1 (determinism, in-memory only) |
-| 2 | `wcnf_io.py` (`write_wcnf`, both dialects) | 1 (files), 2, 3, 4, 5 |
+| 2 | `wcnf_io.py` (`write_wcnf`, both dialects) + `feasible.py` (D8) | 1 (files), 2, 3, 4, 5, 9 |
 | 3 | `tiers.py` | 7 |
 | 4 | `calibrate.py` + `cli.py` | 6, 8 |
 | 5 | Phase A pilot sweep | *no code* — produces the `solve_s`-vs-axis table that settles §11 empirically |
@@ -642,12 +763,36 @@ solver, no `Oracle` abstraction, no planted-optimum generator.
 
 ---
 
-## 14. Open decisions
+## 14. Decisions
 
-**D1 — wcnf dialect strategy.** Confirmed mismatch (§2, §9.1):
-`maxsat_new.cnf.parse_dimacs` reads old format only and hard-fails on `h`.
+Each row carries a status. **DECIDED** rows are settled and the code below them
+follows them; **open** rows still need the owner's call; **DEFERRED** means the
+decision is real but cannot be made until an upstream dependency lands, and says
+what is reserved in the meantime.
+
+| # | Subject | Status |
+|---|---|---|
+| D1 | wcnf dialect strategy | **DECIDED — (a) both dialects, commit `"old"`** |
+| D2 | three tiers or four | open (recommend (a), 4 buckets) |
+| D3 | timeout mechanism | open — owner's call, non-goal boundary |
+| D4 | `weight_dist` in `GenParams` | **DECIDED — include** |
+| D5 | calibration cap and sweep budget | open |
+| D6 | commit generated instances | **DECIDED — (a) `.gitignore` them** |
+| D7 | sweep base point | proposed, re-expressed for §8.1 |
+| D8 | feasibility guard on the hard part | **DECIDED — guard, do not plant** |
+| D9 | tier is a property of an instance | **DECIDED** |
+| D10 | second tier axis: EA gap | **DEFERRED — schema reserved now** |
+
+
+**D1 — wcnf dialect strategy. DECIDED: (a).** Implement both dialects; calibrate
+and commit with `"old"`; keep `"new"` for external interop; assert the mismatch
+in test 3. Confirmed mismatch (§2, §9.1): `maxsat_new.cnf.parse_dimacs` reads old
+format only and hard-fails on `h`. (a) matches `STRATIFICATION_PLAN` §5's stated
+position, keeps the generated corpus readable by the EA, and costs one extra
+branch in the writer.
+Options as considered:
 (a) implement both dialects, calibrate + commit with `"old"`, keep `"new"` for
-external interop, assert the mismatch in test 3 — **recommended**;
+external interop, assert the mismatch in test 3 — **CHOSEN**;
 (b) implement `"old"` only and drop the dialect argument's second value;
 (c) extend `parse_dimacs` to accept the new format — **recommended against**:
 `cnf.py` is frozen, pinned bit-for-bit by the in-flight step-8 oracle test, and
@@ -667,11 +812,19 @@ pattern the non-goals push away from. Lean: (a) plus an outer per-batch wall
 budget so a hang costs one instance rather than the run. **Owner's call — this
 is the non-goal boundary.**
 
-**D4 — add `weight_dist` to the parameter set?** Per §11, `w_max` alone cannot
-express "5 weight classes of 100 clauses each" versus "500 unique weights", and
-it is the class structure — not `w_max` — that
-`RC2Stratified.init_wstr`/`next_level` key on. One-parameter addition to the
-requested six.
+**D4 — add `weight_dist` to the parameter set? DECIDED: yes, include it.** Per
+§11, `w_max` alone cannot express "5 weight classes of 100 clauses each" versus
+"500 unique weights", and it is the class structure — not `w_max` — that
+`RC2Stratified.init_wstr`/`next_level` key on.
+
+Decided now rather than deferred because of *when* it has to be decided, not just
+whether it is useful: `weight_dist` is a **`GenParams` field**, and `GenParams`
+has to be frozen before step 1 ships. Its fields propagate into the filename
+template and into every `generator.params` manifest row (§10.3), so adding a
+field later invalidates every path and every row already written — i.e. it forces
+a corpus regeneration. A field that is even *probably* wanted is cheaper to
+include up front than to add after calibration. Values:
+`"uniform"` | `"few_classes:<m>"` | `"powerlaw:<alpha>"`.
 
 **D5 — calibration cap and sweep budget.** Finding T2 by definition requires
 willingness to spend up to 600 s per candidate. (a) full 600 s cap — accurate,
@@ -679,14 +832,107 @@ slow; a 100-point sweep is up to ~17 CPU-hours worst case; (b) a scaled ladder
 (e.g. 6/30/60 s) with tiers relabelled `T1'/T2'/T3'` and a documented scale
 factor — fast, but not comparable to the MSE tables.
 
-**D6 — do generated instances get committed?** `.gitignore`'s `data/*` line is
-commented out, so `data/generated/` is **tracked by default**, and 2925 files
-are already tracked under `data/` (audit §4). (a) add `data/generated/` to
-`.gitignore` and commit only `manifest.jsonl` + the tiny test fixture —
-**recommended**, since instances are regenerable byte-for-byte from
-`(params, seed)`, which is the entire point of test 1; (b) commit the T2 set so
-the corpus is pinned without a regeneration step.
+**D6 — do generated instances get committed? DECIDED: (a).** `data/generated/` is
+added to `.gitignore`; only `manifest.jsonl` and the tiny test fixture are
+committed. `.gitignore`'s `data/*` line is commented out, so `data/generated/` was
+**tracked by default**, and 2925 files are already tracked under `data/`
+(audit §4) — this stops the generated corpus from joining them. Rationale:
+instances are **byte-reproducible from `(params, seed)`**, which is exactly what
+test 1 guarantees and what §7's pure-`generate.py` split preserves; the manifest
+carries the params, so the corpus is a `git`-cheap manifest plus a regeneration
+step. Rejected: (b) commit the T2 set so the corpus is pinned without a
+regeneration step.
+Note the negative-space entry `!data/toy/` already in `.gitignore` is unaffected.
 
 **D7 — sweep base point.** One anchor is needed to vary axes around. Proposed:
-`k=3`, `n_vars=150`, `clause_ratio=4.3`, `hard_frac=0.10`, `w_max=64`,
-`weight_dist="uniform"`, 5 seeds.
+`k=3`, `n_vars=150`, `soft_ratio=3.90`, `hard_ratio=0.40`, `w_max=64`,
+`weight_dist="uniform"`, 5 seeds. That is the same anchor as before the §8.1
+re-parameterisation — the old `clause_ratio=4.3` / `hard_frac=0.10` point is
+`n_clauses=645` with `n_hard≈64`, i.e. `hard_ratio≈0.43`, `soft_ratio≈3.87`,
+rounded here to `0.40 / 3.90` (derived `clause_ratio = 4.30`, unchanged). Note
+`hard_ratio=0.40` is far below the k=3 UNSAT threshold, so D8's rejection loop
+will essentially never fire at the base point.
+
+**D8 — feasibility guard on the hard part. DECIDED: guard it, do not plant.**
+The soft part stays unconstrained — that is what makes the instance a real MaxSAT
+problem (§8). The hard part is made satisfiable **by construction**:
+
+```
+generate hard clauses uniformly
+  -> SAT-check the hard part alone
+  -> on UNSAT, resample (new derived seed) and repeat
+  -> on SAT, store the returned model as `hard_witness`
+```
+
+Recorded rationale, point by point:
+
+- **Do not plant an assignment.** The obvious alternative — pick a target
+  assignment first and only emit clauses it satisfies — is rejected. Planting
+  biases the clause distribution (every hard clause is conditioned on the planted
+  model, so the sample is no longer uniform random k-SAT) and the standard result
+  is that planted instances are **easier at matched parameters**. That defeats the
+  purpose: this whole document exists to *find* hard instances.
+- **The SAT check returns a model for free.** Rejection sampling needs the SAT
+  call anyway to decide accept/reject; taking `get_model()` off the accepted call
+  costs nothing extra. So the witness is a free by-product, not a reason to plant.
+- **The witness has two concrete uses** (§10.3): a **feasible EA seed** — a
+  zero-hard-violation starting assignment, which a random EA init does not
+  guarantee — and a **cost floor**: evaluating the softs under the witness bounds
+  the optimum from above with no solver time.
+- **Guaranteed feasibility does not imply an easy instance.** The two roles are
+  separate: hard clauses carry *feasibility*, soft clauses carry *optimization
+  difficulty*. Knowing one feasible point says nothing about which feasible point
+  minimises unsatisfied soft weight, and that search is where core-guided solve
+  time is spent. A feasible-by-construction instance can sit anywhere in T1..T3.
+- **`hard_ratio` must stay below the k-SAT UNSAT threshold** (~4.27 for k=3) or
+  the rejection rate becomes impractical — above threshold, almost every sample
+  is UNSAT and the loop degenerates. So this guard constrains axis 3's sweep range
+  (§11), and the loop needs an attempt cap that raises rather than spins.
+  **Near-threshold `hard_ratio` is the one case where planting would be
+  reconsidered** — it is the only regime where rejection sampling cannot deliver,
+  and the cost would be an explicit, recorded loss of uniformity.
+
+Mechanically: `feasible.py` (§7), `hard_unsat` demoted to
+rare-by-construction in §10.2, `hard_witness` + `hard_resample_attempts` in
+§10.3, test 9 in §12.
+
+**D9 — tier is a property of an INSTANCE, not of a parameter setting. DECIDED.**
+Solve time varies by **orders of magnitude across seeds at fixed parameters** —
+that is the normal behaviour of random k-SAT near a threshold, not noise to be
+averaged away. Therefore a parameter point does not *have* a tier; it induces a
+**tier distribution** over its seeds.
+
+Consequences, which the plan must honour:
+
+- Each parameter point records its **T2 yield rate** (fraction of seeds landing
+  in `T2a ∪ T2b`), not a single tier label.
+- Point selection is on the **median or a quantile** of `solve_s`, **never the
+  mean**. A heavy-tailed distribution's mean is dominated by whichever seed
+  happened to time out; it is not a statistic about the parameter point.
+- A "good" parameter point is one with a high T2 yield, and the deliverable of
+  calibration is a set of `(point, yield)` pairs plus the instances themselves.
+- This is consistent with §10.2's existing **"keep every candidate's row"** rule
+  and is in fact what makes that rule necessary: the yield rate is not computable
+  if the T1 and T3 rows are discarded.
+
+**D10 — a SECOND tier axis: EA gap. DEFERRED (schema reserved now).** Oracle
+solve time and EA difficulty are **uncorrelated**: `RC2Stratified` is exact and
+core-guided, `memetic_ea` is a stochastic local-search hybrid, and the structure
+that makes cores hard to extract is not the structure that makes a fitness
+landscape hard to search. An instance where the baseline `memetic_ea` reaches the
+optimum on **every** seed is useless for this project's research question no
+matter what its oracle tier is — there is no headroom left to measure an
+improvement in.
+
+So the ideal filter is two-dimensional: oracle tier **and** EA gap. It is deferred
+because measuring the second axis requires the **ported `memetic_ea`**, which is
+downstream of this document (`maxsat_new/PORT_NOTES.md`, in flight) and explicitly
+out of scope here (§6).
+
+What is **not** deferred: §10.3's manifest schema **reserves the fields now** —
+`ea_best_cost`, `ea_gap_to_opt`, `ea_stagnation_iter`, written `null` at
+generation time and back-filled once the EA is available. Reserving them costs
+three null keys per row; not reserving them means the corpus has to be
+regenerated (or every row rewritten) to add the axis later, and by then the solve
+time is already spent. `ea_gap_to_opt` is computable against `profile.final_cost`
+with no conversion, since both are unsatisfied soft weight (`PORT_NOTES` §8).

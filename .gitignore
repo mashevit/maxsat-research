@@ -45,6 +45,15 @@ htmlcov/
 #data/*
 !data/toy/
 !data/toy/**
+
+# Generated instance corpus (docs/INSTANCEGEN_PLAN.md D6 = option (a)).
+# Instances are byte-reproducible from (GenParams, seed) -- see §12 test 1 -- so
+# only manifest.jsonl and the tiny test fixture are committed.
+# Note: excluding files (not the directory) so the manifest negation below can
+# still match -- git does not descend into an excluded directory.
+data/generated/**
+!data/generated/**/
+!data/generated/**/manifest.jsonl
 #experiments/
 #results/
 
