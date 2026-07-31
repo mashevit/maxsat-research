@@ -1,0 +1,16 @@
+------------------------------------
+Mon 22 Jun 2026 07:31:29 IDT
+SLURM_JOBID:		18291084
+SLURM_JOB_NODELIST:	cs-cpu-08
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=26 host=cs-cpu-08 start=2026-06-22T07:31:29+03:00
+instance=data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-sum-C-1-grd_1222_5_4.tgf.pl.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=1800.0s grace=120.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-sum-C-1-grd_1222_5_4.tgf.pl.wcnf
+    status=timeout solve_s=1895.214 final_cost=None lb=148 tier=T3 ratio=None lb_ratio=0.6789 err=timeout
+end=2026-06-22T08:03:05+03:00 exit=0

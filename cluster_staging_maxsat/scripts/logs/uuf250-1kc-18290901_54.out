@@ -1,0 +1,15 @@
+------------------------------------
+Mon 22 Jun 2026 06:29:15 IDT
+SLURM_JOBID:		18290955
+SLURM_JOB_NODELIST:	ise-cpu-intl-22
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=54 host=ise-cpu-intl-22.auth.ad.bgu.ac.il start=2026-06-22T06:29:15+03:00
+instance=data/unsat250_1000c/uuf250-054.cnf
+[info] runner=subprocess cap=900.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/unsat250_1000c/uuf250-054.cnf
+    status=optimal solve_s=119.689 final_cost=1 lb=1 tier=T2a ratio=None lb_ratio=None err=None
+end=2026-06-22T06:31:16+03:00 exit=0

@@ -1,0 +1,1 @@
+{"instance": "data/unsat250_1000c/uuf250-020.cnf", "size_mb": 0.0152, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 763.397, "final_cost": 1, "cost_lower_bound": 1, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T3", "tier_reason": "solve_s>600.0 (cap misconfigured?)"}

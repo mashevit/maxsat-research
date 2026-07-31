@@ -65,3 +65,6 @@ Thumbs.db
 garbage/
 cluster_staging/data/
 cluster_staging/folder_tree.txt
+
+cluster_staging_maxsat/data/
+cluster_staging_maxsat/folder_tree.txt

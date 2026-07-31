@@ -1,0 +1,1 @@
+{"instance": "data/unsat250_1000c/uuf250-074.cnf", "size_mb": 0.0153, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "timeout", "solve_s": 926.799, "final_cost": null, "cost_lower_bound": 1, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": null, "tier": "T3", "tier_reason": "timeout"}

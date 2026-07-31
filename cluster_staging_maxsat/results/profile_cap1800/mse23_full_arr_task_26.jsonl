@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-sum-C-1-grd_1222_5_4.tgf.pl.wcnf", "size_mb": 3.1004, "profile": {"cap_s": 1800.0, "solver": "rc2", "status": "timeout", "solve_s": 1895.214, "final_cost": null, "cost_lower_bound": 148, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": 0.6789, "tier": "T3", "tier_reason": "timeout"}

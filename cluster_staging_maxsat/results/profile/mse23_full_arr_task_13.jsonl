@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-forgetting-B-3-stb_428_430.tgf.pl.wcnf", "size_mb": 0.3222, "profile": {"cap_s": 600.0, "solver": "rc2", "status": "timeout", "solve_s": 636.451, "final_cost": null, "cost_lower_bound": 44, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": 0.8627, "tier": "T3", "tier_reason": "timeout"}

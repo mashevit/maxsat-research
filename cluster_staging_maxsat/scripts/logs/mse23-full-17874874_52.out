@@ -1,0 +1,16 @@
+------------------------------------
+Mon 25 May 2026 08:29:39 IDT
+SLURM_JOBID:		17875454
+SLURM_JOB_NODELIST:	ise-cpu-intl-12
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=52 host=ise-cpu-intl-12.auth.ad.bgu.ac.il start=2026-05-25T08:29:40+03:00
+instance=data/raw/mse_2024/mse23-uw-small/optic-gen_mult_5_5_991.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/optic-gen_mult_5_5_991.wcnf
+    status=subprocess_killed solve_s=660.108 final_cost=None lb=148 tier=T3 ratio=None lb_ratio=0.6435 err=subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file
+end=2026-05-25T08:40:41+03:00 exit=0

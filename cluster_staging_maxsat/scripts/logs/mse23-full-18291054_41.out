@@ -1,0 +1,16 @@
+------------------------------------
+Mon 22 Jun 2026 07:32:58 IDT
+SLURM_JOBID:		18291099
+SLURM_JOB_NODELIST:	ise-cpu-intl-22
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=41 host=ise-cpu-intl-22.auth.ad.bgu.ac.il start=2026-06-22T07:32:59+03:00
+instance=data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000512.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=1800.0s grace=120.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000512.wcnf
+    status=subprocess_killed solve_s=1920.116 final_cost=None lb=51 tier=T3 ratio=None lb_ratio=0.9444 err=subprocess_killed_at_cap+120.0s; recovered_lb_from_progress_file
+end=2026-06-22T08:05:06+03:00 exit=0

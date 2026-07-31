@@ -1,0 +1,16 @@
+------------------------------------
+Mon 25 May 2026 08:30:55 IDT
+SLURM_JOBID:		17875463
+SLURM_JOB_NODELIST:	cs-cpu-02
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=61 host=cs-cpu-02.auth.ad.bgu.ac.il start=2026-05-25T08:30:55+03:00
+instance=data/raw/mse_2024/mse23-uw-small/ramsey-ram_k3_n14.ra0.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/ramsey-ram_k3_n14.ra0.wcnf
+    status=subprocess_killed solve_s=660.102 final_cost=None lb=3 tier=T3 ratio=None lb_ratio=0.1429 err=subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file
+end=2026-05-25T08:41:56+03:00 exit=0

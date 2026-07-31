@@ -1,0 +1,1 @@
+{"instance": "data/unsat250_1000c/uuf250-096.cnf", "size_mb": 0.0152, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 149.447, "final_cost": 1, "cost_lower_bound": 1, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T2a", "tier_reason": "60.0<solve_s<=300.0"}

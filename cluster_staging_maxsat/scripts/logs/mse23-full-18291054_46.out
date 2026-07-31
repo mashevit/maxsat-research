@@ -1,0 +1,16 @@
+------------------------------------
+Mon 22 Jun 2026 08:03:38 IDT
+SLURM_JOBID:		18291127
+SLURM_JOB_NODELIST:	cs-cpu-06
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=46 host=cs-cpu-06.auth.ad.bgu.ac.il start=2026-06-22T08:03:38+03:00
+instance=data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-slater-preflib-00049-00000468.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=1800.0s grace=120.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-slater-preflib-00049-00000468.wcnf
+    status=timeout solve_s=1823.283 final_cost=None lb=231 tier=T3 ratio=None lb_ratio=0.8587 err=timeout
+end=2026-06-22T08:34:03+03:00 exit=0

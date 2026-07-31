@@ -1,0 +1,1 @@
+{"instance": "data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-slater-preflib-00049-00000468.wcnf", "size_mb": 2.5553, "profile": {"cap_s": 1800.0, "solver": "rc2", "status": "timeout", "solve_s": 1823.283, "final_cost": null, "cost_lower_bound": 231, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": 0.8587, "tier": "T3", "tier_reason": "timeout"}

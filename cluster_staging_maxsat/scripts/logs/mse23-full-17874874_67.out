@@ -1,0 +1,16 @@
+------------------------------------
+Mon 25 May 2026 08:40:14 IDT
+SLURM_JOBID:		17875496
+SLURM_JOB_NODELIST:	ise-cpu-intl-13
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=67 host=ise-cpu-intl-13.auth.ad.bgu.ac.il start=2026-05-25T08:40:14+03:00
+instance=data/raw/mse_2024/mse23-uw-small/reversi-rev66-26.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/reversi-rev66-26.wcnf
+    status=subprocess_killed solve_s=660.05 final_cost=None lb=None tier=T3 ratio=None lb_ratio=None err=subprocess_killed_at_cap+60.0s
+end=2026-05-25T08:51:15+03:00 exit=0

@@ -1,0 +1,15 @@
+------------------------------------
+Sun 21 Jun 2026 18:03:40 IDT
+SLURM_JOBID:		18271488
+SLURM_JOB_NODELIST:	cs-cpu-07
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=21 host=cs-cpu-07 start=2026-06-21T18:03:40+03:00
+instance=data/unsat_uuf_diff/uuf200-01.cnf
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/unsat_uuf_diff/uuf200-01.cnf
+    status=optimal solve_s=307.403 final_cost=2 lb=2 tier=T2b ratio=None lb_ratio=None err=None
+end=2026-06-21T18:08:49+03:00 exit=0

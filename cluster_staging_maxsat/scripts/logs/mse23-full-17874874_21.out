@@ -1,0 +1,16 @@
+------------------------------------
+Mon 25 May 2026 08:17:45 IDT
+SLURM_JOBID:		17875297
+SLURM_JOB_NODELIST:	ise-cpu-intl-10
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=21 host=ise-cpu-intl-10.auth.ad.bgu.ac.il start=2026-05-25T08:17:45+03:00
+instance=data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-hit-C-1-grd_3018_3_7.tgf.pl.wcnf
+[info] loaded 75 best-known entries
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-hit-C-1-grd_3018_3_7.tgf.pl.wcnf
+    status=subprocess_killed solve_s=660.107 final_cost=None lb=371 tier=T3 ratio=None lb_ratio=0.6961 err=subprocess_killed_at_cap+60.0s; recovered_lb_from_progress_file
+end=2026-05-25T08:28:46+03:00 exit=0

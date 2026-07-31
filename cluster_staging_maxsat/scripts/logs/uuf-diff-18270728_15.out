@@ -1,0 +1,15 @@
+------------------------------------
+Sun 21 Jun 2026 17:44:07 IDT
+SLURM_JOBID:		18270743
+SLURM_JOB_NODELIST:	ise-cpu256-14
+SLURM_SCRATCH_DIR:	/scratch/mashevit/18270743
+Allocated Resouces:	cpu - 2 / mem - 8192 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+task=15 host=ise-cpu256-14.auth.ad.bgu.ac.il start=2026-06-21T17:44:07+03:00
+instance=data/unsat_uuf_diff/uuf150-04.cnf
+[info] runner=subprocess cap=600.0s grace=60.0s (lb recovered from progress-file on SIGKILL)
+[*] data/unsat_uuf_diff/uuf150-04.cnf
+    status=error solve_s=0.005 final_cost=None lb=None tier=T3 ratio=None lb_ratio=None err=ValueError: invalid integer token
+end=2026-06-21T17:44:09+03:00 exit=0

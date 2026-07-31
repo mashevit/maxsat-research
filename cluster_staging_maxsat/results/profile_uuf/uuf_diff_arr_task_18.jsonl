@@ -1,0 +1,1 @@
+{"instance": "data/unsat_uuf_diff/uuf150-07.cnf", "size_mb": 0.0087, "profile": {"cap_s": 600.0, "solver": "rc2", "status": "optimal", "solve_s": 1.431, "final_cost": 1, "cost_lower_bound": 1, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T1", "tier_reason": "solve_s<=60.0"}
