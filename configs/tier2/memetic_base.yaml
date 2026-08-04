@@ -1,0 +1,18 @@
+# Tier-2 memetic EA — baseline preset.
+#
+# The wall-clock budget is NOT set here: `run_memetic_shard.py` injects
+# top-level `time_limit_s` from the manifest's budget_s column. `ea.max_gens`
+# is deliberately huge so that time, not generation count, is the binding
+# stop condition (run_memetic defaults max_gens to 100, which would end a
+# 300 s run after a few seconds).
+ea:
+  enabled: true
+  pop_size: 60
+  tournament_k: 4
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+ls:
+  ls_polish_flips: 700
+  time_limit_s: 0.05
+  flip_budget: 2000

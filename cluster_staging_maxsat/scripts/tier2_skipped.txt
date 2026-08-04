@@ -1,0 +1,3 @@
+# instance	reason
+data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000293.wcnf	new-format WCNF, sat.cnf cannot parse it
+data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000385.wcnf	new-format WCNF, sat.cnf cannot parse it
