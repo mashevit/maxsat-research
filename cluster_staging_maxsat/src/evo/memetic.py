@@ -30,7 +30,8 @@ def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
+def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
+                target_cost: int | None = None) -> Dict[str, Any]:
     """
     Minimal memetic loop:
       - JW seeding
@@ -38,6 +39,19 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
       - (stub) short polish
       - elitist replacement
     Fitness evaluates *assignments directly* (soft weight, penalize hard violations).
+
+    `target_cost` (optional) is a known-optimal **unsatisfied soft weight** — the
+    RC2 convention, i.e. what `--oracle-cost` carries. When given, the loop stops
+    as soon as the incumbent reaches it, so `elapsed_sec` becomes a real
+    time-to-optimum measurement instead of "the budget was spent"
+    (docs/TIER2_MEMETIC_PLAN.md §6.6). `None` (the default) preserves the
+    historical behaviour exactly: the only stop conditions are `time_cap` and
+    `max_gens`.
+
+    Returns, in addition to the historical keys:
+      stop_reason       "target" | "time_cap" | "max_gens"
+      time_to_target_s  seconds from loop start to first reaching the target,
+                        or None if it was never reached / never requested.
     """
 
     advisor = LLMAdvisor(provider=NoopProvider())  # swap provider later
@@ -64,6 +78,41 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
     start_t = time.time()
     max_gens = int(cfg.get("ea", {}).get("max_gens", 100))
 
+    # --- target-cost stop -----------------------------------------------------
+    # THE UNIT TRAP (docs/TIER2_MEMETIC_PLAN.md §6.3 trap 1): the EA tracks
+    # *satisfied* soft weight (`Individual.fitness` == soft weight when there are
+    # no hard violations), while `target_cost` is *unsatisfied* soft weight. They
+    # are never compared directly; the conversion happens at the comparison site:
+    #
+    #     incumbent_cost = total_soft_weight - best_soft_weight
+    #
+    # This is written in the general weighted form on purpose. On the 26 SATLIB
+    # tier-2 instances every weight is 1 and there are no hard clauses, so it
+    # reduces to an unsatisfied-clause count -- but a `weight == 1` assumption
+    # would silently corrupt weighted instances once §3's WCNF fix lands.
+    # Computed once here, not per generation.
+    total_soft_weight = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+    stop_reason = None
+    time_to_target_s = None
+
+    def _at_target(ind) -> bool:
+        """Incumbent has reached (or beaten) target_cost.
+
+        `<=`, not `==`: a cost strictly below the oracle means the two solvers
+        disagree about what the instance is (§6.3), and we want the run to halt
+        and be visible in the shard rather than grind on for the full budget.
+        Individuals with hard violations carry a penalty fitness, not a soft
+        weight, so they are excluded rather than converted.
+        """
+        if target_cost is None or ind.hard_violations != 0:
+            return False
+        return (total_soft_weight - ind.fitness) <= target_cost
+
+    if _at_target(best):
+        # The JW-seeded population already reached it; do not run a generation.
+        stop_reason = "target"
+        time_to_target_s = time.time() - start_t
+
     ls_small = _ls_budget(cfg)
     gen = 0
     total_children = 0
@@ -73,7 +122,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
     # 2) precompute occurrences
     hard_occurs = build_hard_occurs(hard_clauses, wcnf.n_vars)
     flips_t =0
-    while (time.time() - start_t) < time_cap and gen < max_gens:
+    while stop_reason is None and (time.time() - start_t) < time_cap and gen < max_gens:
         gen += 1
         # Elites
         if elitism:
@@ -117,6 +166,27 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
             new_members.append(child)
             total_children += 1
 
+            # Incumbent tracking moved inside the fill loop so the target check
+            # can fire after each child's polish rather than only at
+            # end-of-generation (§7 measured ~57 children/generation at 8 s with
+            # memetic_base; at a 900 s budget a generation is a long time to keep
+            # running after the answer is in hand).
+            #
+            # With target_cost=None this is exactly equivalent to the
+            # end-of-generation update kept below: `best` is the running maximum
+            # over everything evaluated so far, so the elites carried into
+            # new_members can never beat it, and the strict `>` keeps the same
+            # tie-break (first individual to attain the maximum wins).
+            if child.fitness > best.fitness:
+                best = child.copy()
+                if _at_target(best):
+                    stop_reason = "target"
+                    time_to_target_s = time.time() - start_t
+                    break
+
+        if stop_reason == "target":
+            break
+
         pop.members = new_members
         # track best
         cur_best = pop.best()
@@ -124,6 +194,10 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
             best = cur_best.copy()
 
 
+
+    if stop_reason is None:
+        # The loop can only have exited on one of its two historical conditions.
+        stop_reason = "time_cap" if (time.time() - start_t) >= time_cap else "max_gens"
 
     def _assignment_exports(assign01: list[bool]) -> dict:
         # index 0 is unused in your code; export 1..n
@@ -173,6 +247,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1) -> Dict[str, Any]:
         "flips_per_sec": 0.0,
         "restarts": 0,
         "final_noise": 0.0,
+        "stop_reason": stop_reason,
+        "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
         "meta": {"ea_generations": gen, "children": total_children, **exports,},
         "satisfied_clauses": {
             "total": total_clauses,

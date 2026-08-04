@@ -17,6 +17,16 @@ of UNSATISFIED soft clauses** — lower is better, and directly comparable with
 separately and a record with `hard_violations > 0` is infeasible, so its
 `best_cost` must not be compared against the oracle.
 
+`--stop-at-oracle` (off by default) forwards `--oracle-cost` into the EA as a
+target and stops the run the moment the incumbent reaches it, so `wall_time_s`
+becomes a time-to-optimum measurement rather than "the budget was spent"
+(docs/TIER2_MEMETIC_PLAN.md §6.6). It is opt-in because an oracle-terminated run
+is a *benchmarking* mode, not a solver mode. `stop_reason` says which condition
+ended the run.
+
+NOTE: this file is intentionally AHEAD of the repo copy at `src/` -- see
+`cluster_staging_maxsat/DIVERGENCE.md`.
+
 Usage:
     python -m src.cli.run_memetic_shard \
         --instance data/unsat_uuf_diff/uuf250-03.cnf \
@@ -226,6 +236,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--job-id", default=None, help="Manifest job id, echoed into the record")
     p.add_argument("--oracle-cost", type=int, default=None,
                    help="RC2 optimum for this instance; enables gap fields in the record")
+    p.add_argument("--stop-at-oracle", action="store_true",
+                   help="Stop the EA the moment it reaches --oracle-cost, turning "
+                        "wall_time_s into a time-to-optimum measurement. Opt-in: "
+                        "an oracle-terminated run is a BENCHMARKING mode, not a "
+                        "solver mode. Requires --oracle-cost.")
     p.add_argument("--tier", default=None, help="RC2 tier label, echoed into the record")
     p.add_argument("--rc2-run", default=None, help="RC2 run dir the oracle came from")
     p.add_argument("--save-assignment", action="store_true",
@@ -233,6 +248,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--override", "-D", action="append", default=[],
                    help="Config override, e.g. -D ea.pop_size=80")
     args = p.parse_args(argv)
+
+    if args.stop_at_oracle and args.oracle_cost is None:
+        print("FATAL: --stop-at-oracle requires --oracle-cost -- there is no "
+              "target to stop at without it. Pass the RC2 optimum for this "
+              "instance (the oracle_cost column of the manifest), or drop "
+              "--stop-at-oracle to run the full budget.", file=sys.stderr)
+        return 2
+
+    # `--oracle-cost` alone keeps doing only what it always did: fill the gap
+    # fields in the record for the combine step. It becomes a stop condition
+    # only when --stop-at-oracle is passed explicitly.
+    target_cost: Optional[int] = int(args.oracle_cost) if args.stop_at_oracle else None
 
     cfg = load_cfg(args.config)
     for ov in args.override:
@@ -266,6 +293,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         "budget_s": float(args.budget_s),
         "grace_s": float(args.grace_s),
         "wall_time_s": None,
+        # Target-cost early stop (docs/TIER2_MEMETIC_PLAN.md §6.6).
+        # `wall_time_s` keeps its meaning -- total loop wall time. It now equals
+        # `time_to_target_s` on target-stopped runs and the budget otherwise;
+        # `stop_reason` is what disambiguates, so downstream code never has to
+        # infer which case it is looking at.
+        "stop_reason": None,
+        "time_to_target_s": None,
+        "target_cost_used": target_cost,
+        "stop_at_oracle": bool(args.stop_at_oracle),
         "best_cost": None,
         "hard_violations": None,
         "unsat_soft_clauses": None,
@@ -300,7 +336,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"[shard] {rec['job_id']} {os.path.basename(inst)} cfg={config_id} "
               f"seed={args.seed} budget={args.budget_s:g}s -> status={s} "
               f"cost={rec['best_cost']} hv={rec['hard_violations']} "
-              f"opt={rec['oracle_cost']} wall={rec['wall_time_s']}")
+              f"opt={rec['oracle_cost']} wall={rec['wall_time_s']} "
+              f"stop={rec['stop_reason']} t_target={rec['time_to_target_s']}")
         return 0 if s == "ok" else 1
 
     if not os.path.isfile(inst):
@@ -333,7 +370,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     signal.setitimer(signal.ITIMER_REAL, float(args.budget_s) + float(args.grace_s))
     t0 = time.time()
     try:
-        res = run_memetic(wcnf, cfg, rng_seed=args.seed)
+        res = run_memetic(wcnf, cfg, rng_seed=args.seed, target_cost=target_cost)
         rec["wall_time_s"] = round(time.time() - t0, 3)
         rec["status"] = "ok"
     except _Timeout:
@@ -363,6 +400,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     rec["hard_violations"] = hard_v
     rec["unsat_soft_clauses"] = unsat_n
     rec["best_soft_weight_reported"] = float(res.get("best_soft_weight", 0.0))
+    rec["stop_reason"] = res.get("stop_reason")
+    ttt = res.get("time_to_target_s")
+    rec["time_to_target_s"] = None if ttt is None else round(float(ttt), 3)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["children"] = meta.get("children")
     rec["total_flips"] = int(res.get("total_flips", 0))
@@ -375,6 +415,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         rec["abs_gap"] = unsat_w - opt
         rec["rel_gap"] = round((unsat_w - opt) / opt, 6) if opt > 0 else None
         rec["is_optimal"] = bool(unsat_w == opt)
+
+    # Cost cross-check (docs/TIER2_MEMETIC_PLAN.md §6.3). `best_cost` is
+    # re-derived from meta.assign_bits; the EA's own number lives in
+    # `best_soft_weight_reported`. If the EA stopped because *its* incumbent
+    # reached the target but the re-derived cost is worse than the target, the
+    # two cost paths disagree about the same assignment -- a parse or unit bug.
+    # Fail the record loudly so the combine step's integrity pass sees it
+    # instead of averaging it in.
+    if target_cost is not None and rec["stop_reason"] == "target" and unsat_w > target_cost:
+        rec["status"] = "cost_mismatch"
+        rec["error"] = (
+            f"target stop fired but re-derived best_cost={unsat_w} > "
+            f"target_cost={target_cost} (solver reported satisfied soft weight "
+            f"{rec['best_soft_weight_reported']}, soft_total_weight "
+            f"{rec['soft_total_weight']}); the two cost paths disagree")
 
     return emit()
 
