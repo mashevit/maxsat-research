@@ -9,15 +9,16 @@ this staging tree is **byte-identical** to the repo copies under `src/`, and
 gives a `diff -q` loop to verify it. As of the date above that invariant no
 longer holds for two files, **deliberately**.
 
-## The two divergent files
+## The three divergent files
 
 ```
-cluster_staging_maxsat/src/evo/memetic.py          ahead of src/evo/memetic.py
+cluster_staging_maxsat/src/evo/memetic.py            ahead of src/evo/memetic.py
 cluster_staging_maxsat/src/cli/run_memetic_shard.py  ahead of src/cli/run_memetic_shard.py
+cluster_staging_maxsat/src/sat/cnf.py                ahead of src/sat/cnf.py
 ```
 
-The other nine files of the closure (`evo/operators.py`, `evo/population.py`,
-`sat/{cnf,state,walksat}.py`, `llm/{advisor,prompt}.py`,
+The other eight files of the closure (`evo/operators.py`, `evo/population.py`,
+`sat/{state,walksat}.py`, `llm/{advisor,prompt}.py`,
 `llm/providers/{noop,ollama}.py`) are still byte-identical and must stay that
 way.
 
@@ -58,19 +59,20 @@ permanently noisy (a check that always prints `DIFFERS` is a check nobody reads)
 Use this in place of the loop in `docs/TIER2_MEMETIC_PLAN.md` §2.2:
 
 ```bash
-# Nine files that MUST stay byte-identical.
+# Eight files that MUST stay byte-identical.
 for f in evo/operators.py evo/population.py \
-         sat/cnf.py sat/state.py sat/walksat.py \
+         sat/state.py sat/walksat.py \
          llm/advisor.py llm/prompt.py llm/providers/noop.py \
          llm/providers/ollama.py; do
   diff -q "src/$f" "cluster_staging_maxsat/src/$f" >/dev/null \
     && echo "IDENTICAL src/$f" || echo "DIFFERS  src/$f   <-- REGRESSION"
 done
 
-# Two files that are INTENTIONALLY ahead (target-cost stop, 2026-08-05).
+# Three files that are INTENTIONALLY ahead (target-cost stop, 2026-08-05;
+# new-format WCNF parsing, 2026-08-12).
 # See cluster_staging_maxsat/DIVERGENCE.md. `DIFFERS` here is expected;
 # `IDENTICAL` would mean the staging change was lost by an rsync or a revert.
-for f in evo/memetic.py cli/run_memetic_shard.py; do
+for f in evo/memetic.py cli/run_memetic_shard.py sat/cnf.py; do
   diff -q "src/$f" "cluster_staging_maxsat/src/$f" >/dev/null \
     && echo "IDENTICAL src/$f   <-- staging change LOST" || echo "DIVERGED  src/$f   (expected)"
 done
@@ -81,10 +83,67 @@ failure signal.
 
 ## To close the divergence
 
-Port the same change into repo `src/evo/memetic.py` and
-`src/cli/run_memetic_shard.py`, then restore the single eleven-file loop. Until
-then, any *other* edit to those two files must be made in both trees by hand —
-the mirror will not catch a drift that the diff already reports as expected.
+Port the same change into repo `src/evo/memetic.py`,
+`src/cli/run_memetic_shard.py` and `src/sat/cnf.py`, then restore the single
+eleven-file loop. Until then, any *other* edit to those three files must be made
+in both trees by hand — the mirror will not catch a drift that the diff already
+reports as expected.
+
+---
+
+## New-format WCNF parsing (2026-08-12), staging only
+
+`src/sat/cnf.py` joins the diverged set. `parse_dimacs` now sniffs the format
+and dispatches: files with a `p cnf`/`p wcnf` problem line take the original
+code path unchanged, files without one are read as MSE 2022+ WCNF (`h`-prefixed
+hard clauses, leading integer weight on softs, `n_vars` taken as the largest
+variable index that occurs, `top` synthesised as total soft weight + 1).
+
+This unblocks the two instances in `scripts/tier2_skipped.txt`. Verified: all
+26 tier-2 SATLIB instances parse **byte-identically** before and after, compared
+on `n_vars`, `hard_weight`, `is_wcnf`, clause counts, weight sums, and sha256
+digests of both the full clause list and the occurrence lists. Regression tests
+in `tests/`.
+
+Because this file is now diverged, the repo-root `tests/test_cnf.py` no longer
+exercises the parser the cluster actually runs. `tests/test_cnf_legacy_formats.py`
+is a port of those cases against the staging copy; keep both green.
+
+> **This divergence was chosen deliberately over mirroring the fix into `src/`.**
+> The nine-file identity claim in `docs/TIER2_MEMETIC_PLAN.md` §2.2 is now an
+> eight-file claim.
+
+### Format gate lifted in `run_memetic_shard.py` (2026-08-12)
+
+Fixing the parser was not sufficient on its own: `run_memetic_shard.py` carried
+its own `detect_format()` and rejected anything it classified `wcnf_new`
+*before* the parser was reached, with `status="unsupported_format"` and an error
+string asserting the parser could not read it. That branch is removed; such
+files now fall through to the normal parse path.
+
+`detect_format()` itself is **kept**. It has a second, live purpose: it fills
+`rec["instance_format"]`, which `src/bench/combine_tier2.py` carries into
+`summary.csv` as a column (lines 42, 115). Removing it would have dropped a
+provenance field from every downstream row. Its docstring, which described the
+gating behaviour, was corrected.
+
+The `try/except` around `parse_dimacs` is untouched: a malformed instance still
+produces `status="parse_error"` and a non-zero exit rather than a silent record.
+
+Smoke-verified end to end (60 s, not a measurement): `00000385` runs,
+`instance_format="wcnf_new"`, sha256 matching, parsed sizes matching the file
+(6604 vars / 48294 hard / 78 soft / 78 soft weight). `uuf250-0100.cnf` still
+runs on the legacy path and reaches the RC2 optimum (`is_optimal: true`).
+
+> **Feasibility caveat for tier 2.** That smoke run ended with
+> `hard_violations: 1` — infeasible — so `abs_gap`/`rel_gap`/`is_optimal` came
+> back `null`, the runner correctly refusing to compare an infeasible
+> assignment against the oracle. The EA managed 6 generations and 3,373 flips
+> in 60 s here versus 19 generations and 405,047 flips on the 1,065-clause
+> SATLIB instance. These structured instances are a different regime, and a
+> run that never reaches feasibility yields no comparable cost at all. Confirm
+> feasibility at the real 900 s budget before reading anything into tier-2
+> results for them.
 
 ---
 

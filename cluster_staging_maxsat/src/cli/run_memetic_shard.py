@@ -81,9 +81,12 @@ def detect_format(path: str) -> str:
     Classify a DIMACS file as 'cnf', 'wcnf_old' (has a `p wcnf` header) or
     'wcnf_new' (MSE 2022+: no `p` line, hard clauses prefixed `h`).
 
-    `sat.cnf.WCNF.parse_dimacs` — the parser the memetic EA uses — supports the
-    first two and raises on the third. Detecting it here turns a stack trace on
-    a compute node into a clean `status="unsupported_format"` record.
+    All three are now read by `sat.cnf.WCNF.parse_dimacs` (staging copy, see
+    DIVERGENCE.md), so this no longer gates anything — it is kept purely as
+    provenance: the result lands in `instance_format`, which
+    `src/bench/combine_tier2.py` carries into `summary.csv` as a column to
+    stratify by. A file this returns 'unknown' for has no clauses at all and
+    will fail in the parser, loudly, which is where that belongs.
     """
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         for raw in f:
@@ -347,14 +350,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     rec["size_mb"] = round(os.path.getsize(inst) / 1e6, 4)
     rec["instance_sha256"] = sha256_file(inst)
-    fmt = detect_format(inst)
-    rec["instance_format"] = fmt
-    if fmt == "wcnf_new":
-        # MSE 2022+ format. See docs/TIER2_MEMETIC_PLAN.md §3.
-        rec["status"] = "unsupported_format"
-        rec["error"] = ("new-format WCNF (no `p` line, `h`-prefixed hard clauses); "
-                        "sat.cnf.WCNF.parse_dimacs cannot read it")
-        return emit()
+    rec["instance_format"] = detect_format(inst)
 
     try:
         wcnf = WCNF.parse_dimacs(inst)

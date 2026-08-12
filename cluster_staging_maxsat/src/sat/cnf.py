@@ -26,7 +26,122 @@ class WCNF:
         self.neg_adj: List[List[int]] = [[] for _ in range(n_vars + 1)]
 
     @staticmethod
+    def _detect_format(path: str) -> str:
+        """
+        "legacy" if the file has a `p cnf`/`p wcnf` problem line, "new" if the
+        first non-comment line is already a clause.
+
+        The new format (MaxSAT Evaluation 2022+) drops the problem line
+        entirely and prefixes hard clauses with `h`; soft clauses keep a
+        leading integer weight. Sniffing is unambiguous because a legacy file
+        must carry `p` before any clause.
+        """
+        with open(path, "r", encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("c") or line.startswith("%"):
+                    continue
+                return "legacy" if line.startswith("p") else "new"
+        raise ValueError(f"{path}: no problem line and no clauses -- empty instance")
+
+    @staticmethod
+    def _parse_new_format(path: str) -> "WCNF":
+        """
+        MaxSAT Evaluation 2022+ WCNF: no `p` line, `h <lits> 0` for hard
+        clauses, `<weight> <lits> 0` for soft ones.
+
+        `n_vars` is the largest variable index that actually occurs, since no
+        header declares it. Hard clauses are assigned the standard `top`
+        sentinel (total soft weight + 1) so the resulting object is
+        indistinguishable from the same instance written in legacy form.
+
+        Every malformed line raises with the file and line number. Nothing is
+        skipped or guessed: a record built from a misread instance is worse
+        than no record at all.
+        """
+        clauses: List[Clause] = []
+        max_var = 0
+        soft_weight_total = 0
+
+        with open(path, "r", encoding="utf-8") as f:
+            for lineno, raw in enumerate(f, 1):
+                line = raw.strip()
+                if not line or line.startswith("c"):
+                    continue
+
+                toks = line.split()
+                if toks[-1] != "0":
+                    raise ValueError(
+                        f"{path}:{lineno}: clause is not 0-terminated: {line[:80]!r}"
+                    )
+                body = toks[:-1]
+                if not body:
+                    raise ValueError(f"{path}:{lineno}: bare '0' line, not a clause")
+
+                if body[0] == "h":
+                    is_hard = True
+                    weight = 0  # replaced with `top` once it is known
+                    lit_toks = body[1:]
+                else:
+                    is_hard = False
+                    try:
+                        weight = int(body[0])
+                    except ValueError:
+                        raise ValueError(
+                            f"{path}:{lineno}: expected 'h' or an integer weight, "
+                            f"got {body[0]!r}"
+                        ) from None
+                    if weight < 0:
+                        raise ValueError(
+                            f"{path}:{lineno}: negative soft weight {weight}"
+                        )
+                    lit_toks = body[1:]
+                    soft_weight_total += weight
+
+                try:
+                    lits = [int(x) for x in lit_toks]
+                except ValueError:
+                    raise ValueError(
+                        f"{path}:{lineno}: non-integer literal in {line[:80]!r}"
+                    ) from None
+                if any(lit == 0 for lit in lits):
+                    raise ValueError(
+                        f"{path}:{lineno}: embedded 0 before end of clause: {line[:80]!r}"
+                    )
+
+                for lit in lits:
+                    if abs(lit) > max_var:
+                        max_var = abs(lit)
+                clauses.append(Clause(weight=weight, lits=lits, is_hard=is_hard))
+
+        if not clauses:
+            raise ValueError(f"{path}: new-format WCNF with no clauses")
+
+        # Standard `top` convention: strictly greater than the total soft
+        # weight, so falsifying every soft clause still costs less than
+        # breaking one hard clause.
+        top = soft_weight_total + 1
+        for cl in clauses:
+            if cl.is_hard:
+                cl.weight = top
+
+        inst = WCNF(n_vars=max_var, hard_weight=top, is_wcnf=True)
+        for cl in clauses:
+            cid = len(inst.clauses)
+            inst.clauses.append(cl)
+            for lit in cl.lits:
+                v = abs(lit)
+                if lit > 0:
+                    inst.pos_adj[v].append(cid)
+                else:
+                    inst.neg_adj[v].append(cid)
+        return inst
+
+    @staticmethod
     def parse_dimacs(path: str) -> "WCNF":
+        if WCNF._detect_format(path) == "new":
+            return WCNF._parse_new_format(path)
+
         n_vars = None
         n_clauses = None
         top = None
