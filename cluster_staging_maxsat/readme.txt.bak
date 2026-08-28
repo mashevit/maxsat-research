@@ -50,57 +50,6 @@ INTENTIONALLY ahead of the repo copies under src/ (target-cost stop, 2026-08-05)
 The §2.2 byte-identity diff loop will report DIFFERS for exactly those two files
 and that is expected. Read DIVERGENCE.md before mirroring or re-copying either.
 
-
-Tier-2 local_multistart_deeppolish (the no-EA ablation baseline)
------------------------------------------------------------------
-  src/evo/multistart.py                          the solver
-  configs/tier2/local_multistart_deeppolish.yaml the config (no `ea:` block)
-  scripts/make_local_multistart_manifest.py      manifest generator
-  scripts/manifest_tier2_local_multistart.tsv    130 jobs; line N+1 == array task N
-  scripts/tier2_local_multistart_array.sbatch    the array driver
-  scripts/submit_tier2_local_multistart.sh       counts rows, derives the range
-
-The control for "does memetic_deeppolish need its evolutionary component?".
-Independent random restarts, each polished by the SAME operator the EA applies
-to every child (evo.operators.short_polish), stopping when the certified RC2
-optimum is reached. 26 tier-2 instances x 5 seeds = 130 tasks at 900 s.
-
-  python3 scripts/make_local_multistart_manifest.py   # regenerate if needed
-  bash scripts/submit_tier2_local_multistart.sh       # counts rows, submits
-  DRY_RUN=1 bash scripts/submit_tier2_local_multistart.sh   # print, don't submit
-
-or, equivalently:
-
-  cd scripts && sbatch --array=0-129%30 tier2_local_multistart_array.sbatch
-
-Note the 0-based array, unlike the 1-based tier2_memetic_array.sbatch: task N
-reads manifest line N+1. STOP_AT_ORACLE also defaults to 1 here, not 0 --
-"restart until the optimum is reached" is this baseline's definition, not an
-opt-in benchmarking mode. To compare against the memetic arm, that arm must
-have been run with STOP_AT_ORACLE=1 as well.
-
-Optional total-flip cutoff for a flip-budget comparison that does not depend on
-machine speed (off by default; the 900 s wall budget still applies):
-
-  sbatch --array=0-129%30 --export=ALL,MAX_TOTAL_FLIPS=5000000 \
-         tier2_local_multistart_array.sbatch
-
-Smoke it first -- one instance, short budget, no SLURM:
-
-  python -m src.cli.run_memetic_shard \
-      --instance data/unsat_uuf_diff/uuf250-03.cnf \
-      --config configs/tier2/local_multistart_deeppolish.yaml \
-      --config-id local_multistart_deeppolish \
-      --seed 1 --budget-s 20 --grace-s 15 \
-      --oracle-cost 1 --stop-at-oracle \
-      --tier T2a --rc2-run uuf_diff_unsat --job-id smoke_t2lms \
-      --out results/tier2_local_multistart_smoke/smoke_t2lms.jsonl
-
-CAVEAT: under this preset the polish is bound by ls.time_limit_s (0.5 s, ~5,300
-iterations on uuf250-03), not by the 12,500-flip ceiling. memetic_deeppolish has
-the identical property so the arms stay comparable, but neither is
-bit-reproducible across machines. See the docstring in src/evo/multistart.py.
-
 The maxsat conda env needs PyYAML (requirements.txt pins pyyaml>=6.0.1):
 
   python -c "import yaml; print(yaml.__version__)"
