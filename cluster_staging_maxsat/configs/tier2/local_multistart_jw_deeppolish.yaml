@@ -1,0 +1,50 @@
+# Tier-2 pure-local-search ablation baseline for `memetic_deeppolish`,
+# Jeroslow-Wang seeded.
+#
+# Identical to configs/tier2/local_multistart_deeppolish.yaml in every key but
+# `multistart.init`. The pair is the middle arm of a three-arm design:
+#
+#   memetic_deeppolish - local_multistart_jw   isolates population/crossover/EA
+#   local_multistart_jw - local_multistart     isolates JW initialisation
+#   memetic_deeppolish - local_multistart      isolates the whole package
+#
+# Holding the seeding constant against the EA is what makes the first
+# difference attributable to the evolutionary operators alone; the uniform arm
+# on its own confounds the operators with the seeding.
+#
+# The control for "does the memetic solver need its evolutionary component?".
+# There is deliberately NO `ea:` block here -- no population, no tournament, no
+# crossover, no pmutate, no max_gens -- and `src/cli/run_memetic_shard.py` only
+# injects EA defaults on the memetic code path, so the resolved config recorded
+# in the shard carries no evolutionary knob at all.
+#
+# `solver: local_multistart` is what dispatches the runner to
+# `src/evo/multistart.py::run_multistart_ls`: independent random restarts, each
+# polished by `evo.operators.short_polish` -- the exact operator, with the exact
+# budget, that `run_memetic` applies to every child.
+#
+# The `ls:` block below is copied verbatim from
+# configs/tier2/memetic_deeppolish.yaml. Keep the two in sync: the whole
+# comparison rests on the per-restart polish being identical to the per-child
+# polish. 12500 is the deep-polish flip limit under test.
+#
+# The wall-clock budget is NOT set here: `run_memetic_shard.py` injects the
+# top-level `time_limit_s` from the manifest's budget_s column, as it does for
+# the EA presets. See configs/tier2/memetic_base.yaml for that rationale.
+solver: local_multistart
+multistart:
+  # 'jw' -- each restart is drawn from the Jeroslow-Wang prior via
+  # `Population._new_assign_from_priors`, the exact function
+  # `Population.init_seeds` builds the EA's initial population with. Not a
+  # reimplementation, and not one deterministic JW assignment: it is a biased
+  # per-variable coin, redrawn every restart, and `jw_priors` clips every prior
+  # into [0.05, 0.95] so no variable is ever pinned. A deterministic seed would
+  # collapse this arm into a single polish repeated until the budget ran out.
+  #
+  # See configs/tier2/local_multistart_deeppolish.yaml for the 'uniform' arm,
+  # which is this file with `init: uniform` and nothing else changed.
+  init: jw
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 0.5
+  flip_budget: 12500

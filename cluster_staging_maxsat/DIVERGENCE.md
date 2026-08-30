@@ -219,3 +219,123 @@ computing `rc2_solve_s / wall_time_s`. With target stops that formula is now
 *correct* rather than an upper bound, which is a happy accident, not a verified
 change. Surfacing `time_to_target_s` and `stop_reason` in `summary.csv` is a
 follow-up task.
+
+---
+
+## The JW-seeded ablation arm (2026-08-30), staging only
+
+`local_multistart_jw_deeppolish` -- `local_multistart_deeppolish` with
+Jeroslow-Wang seeding instead of uniform random seeding. It completes a
+three-arm design in which each pairwise difference isolates one factor:
+
+```
+memetic_deeppolish  - local_multistart_jw   population / crossover / EA
+local_multistart_jw - local_multistart      JW initialisation
+memetic_deeppolish  - local_multistart      the whole package
+```
+
+Why the middle arm is needed at all: `run_memetic` seeds its population from the
+JW prior (`Population.init_seeds`), so `memetic_deeppolish - local_multistart`
+confounds the evolutionary operators with the seeding. Holding the seeding
+constant is what makes the first difference attributable to the operators.
+
+New files, staging tree only:
+
+```
+configs/tier2/local_multistart_jw_deeppolish.yaml
+scripts/manifest_tier2_local_multistart_jw.tsv      130 rows
+scripts/submit_tier2_local_multistart_jw.sh
+```
+
+Modified, staging tree only:
+
+```
+src/evo/multistart.py                        `_jw_seeder`; the JW draw delegated
+configs/... (uniform arm)                     untouched
+scripts/make_local_multistart_manifest.py     --arm / --verify-against
+tests/test_local_multistart.py                section 8, and a stronger §1 guard
+readme.txt                                    both arms documented
+```
+
+`scripts/tier2_local_multistart_array.sbatch` is **reused unchanged**. It
+already reads `MANIFEST` and `OUTDIR` from the environment, so the arm is
+selected by `--export` in the submitter rather than by a forked copy of the
+driver. That matters beyond tidiness: a second sbatch could drift in `--time`,
+`GRACE` or its `STOP_AT_ORACLE` default, and any of those would surface as a
+difference between the arms that has nothing to do with seeding. There is no
+`.bak` for it because it was not edited.
+
+### The seeding is the EA's, called rather than copied
+
+`multistart.py` already had an `init: jw` branch, but it *inlined* a copy of the
+draw loop from `Population._new_assign_from_priors`. It now calls that method,
+via a `_jw_seeder` helper that returns `(Population(n_vars, 0, rng), jw_priors(wcnf))`.
+
+The `Population` is a **seed factory, not a population**: size 0, `init_seeds`
+never called on it, `members` empty for the life of the run, and the only method
+used is the draw. `tests/test_local_multistart.py` asserts this from the AST --
+`Population(` may appear exactly once in the module, in `_jw_seeder`, with a
+literal `0` size -- rather than from a text scan, which collided with the
+module docstring's own "no crossover" claim.
+
+**The draw is stochastic per restart.** This is the failure mode the arm is most
+exposed to: a deterministic JW assignment would reduce it to one polish repeated
+until the budget expired, while still emitting complete, plausible rows that no
+output inspection would flag. `jw_priors` clips every prior into `[0.05, 0.95]`,
+so no variable is ever pinned. Measured on `uuf250-0100.cnf` (250 vars): priors
+span 0.18-0.95, median 0.53, one variable at a clip, and 200 draws give 200
+distinct starting assignments.
+
+Also worth recording: **all 26 tier-2 instances are legacy all-soft `cnf` with
+zero hard clauses**, and `jw_priors` scores soft clauses only. So the prior is
+informative on every variable across the whole tier-2 set, and the usual "JW
+ignores the hard clauses" caveat does not apply here. It would apply to the MSE
+instances of the §"New-format WCNF parsing" section, where most variables occur
+only in hard clauses and would draw at 0.5, i.e. uniformly.
+
+### Two arms, one RNG contract
+
+Both `init` modes draw one `rng.random()` per variable in index order and differ
+only in the threshold (`< pri[v]` vs `< 0.5`). Verified: for both modes the
+refactored `_random_assignment` reproduces the previous inline implementation's
+output **and** leaves `random.Random` in the identical state, over 50 draws on
+`uuf250-0100.cnf`. The `uniform` arm's semantics are therefore untouched, which
+matters because `init: uniform` is the default and the existing config is
+unchanged. (No `local_multistart` results are on disk yet, so nothing already
+measured depended on this; the guarantee is for the runs to come.)
+
+### The two manifests must describe the same problem set
+
+`make_local_multistart_manifest.py` gained `--arm {uniform,jw}`, which sets the
+config, output path and `job_id` prefix together (`t2lms` / `t2lmsjw`, so the
+two arms' job ids cannot collide), and `--verify-against`, which cross-checks
+`oracle_cost` between the two manifests **joined on `instance_sha256`**, not on
+the instance path -- two manifests can name the same file and mean different
+bytes after a re-rsync. Exits 3 on any mismatch.
+
+Verified: 26/26 instances, 0 mismatches, both arms agreeing with
+`scripts/tier2_oracle.csv`, and the sha256 in that table still matching the
+bytes on disk. A bare `make_local_multistart_manifest.py` invocation still
+regenerates the uniform arm's manifest **byte-identically** to the committed
+one, so this change is not a silent rewrite of the existing arm.
+
+### Downstream
+
+`src/bench/combine_tier2.py` needs no change and got none: it groups by
+`config_id` in both `aggregate_by_instance` and `aggregate_summary`. Verified by
+running it over a shard directory holding all three `config_id`s -- three
+`summary.csv` rows, three `by_instance.csv` rows, no pooling across arms,
+nothing dropped, integrity report clean.
+
+The §2.2 eight-file identity loop still holds unchanged: `src/evo/population.py`
+is **not** edited. Lifting the draw into a module-level function there would be
+the cleaner refactor and is the reason `_jw_seeder` has to reach for a private
+method instead -- that file is byte-frozen by the invariant. Calling
+`init_seeds` per restart was the other option and was rejected: it recomputes
+`jw_priors` over every clause and rebuilds `init_hard_satisfied` on each call,
+an O(n_clauses) per-restart cost borne by the JW arm alone, which would bias the
+very comparison the arm exists to make.
+
+No SLURM job was submitted. Both submitters were exercised with `DRY_RUN=1`
+only, plus a 20 s single-task smoke of each arm on `uuf250-0100.cnf` (not a
+measurement): cost 3 uniform / 2 jw / 1 memetic, 40 restarts per multistart arm.

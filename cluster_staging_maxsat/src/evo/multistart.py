@@ -11,7 +11,10 @@ the polish alone accounts for all of it. This module is that control.
 `run_multistart_ls` is deliberately, checkably free of every evolutionary
 component:
 
-  * no population   -- exactly one assignment is live at a time,
+  * no population   -- exactly one assignment is live at a time. Under
+                       `multistart.init: jw` a `Population` object is
+                       constructed, with size 0 and no members, purely to reuse
+                       its JW draw (`_jw_seeder`); nothing is ever stored in it.
   * no selection    -- there are no parents to select from,
   * no crossover    -- each restart is independent of every previous one,
   * no EA mutation  -- the only bit changes are WalkSAT flips,
@@ -51,6 +54,21 @@ polish seed.
   `ls.time_limit_s` high enough for the flip cap to bind if bit-reproducibility
   or a true flip-budget comparison is wanted -- that is a different config id.
 
+Seeding: `multistart.init` chooses how each restart begins. `uniform` (the
+default) is an unbiased coin per variable, using no instance structure at all.
+`jw` draws from the Jeroslow-Wang prior via `Population._new_assign_from_priors`
+-- the exact function `Population.init_seeds` builds the EA's initial population
+with, called here rather than copied, so the seeding cannot drift between the
+arms. The draw is stochastic per restart, not a single deterministic JW point;
+see `_jw_seeder`. The two `init` modes are separate config ids
+(`local_multistart_deeppolish`, `local_multistart_jw_deeppolish`) and together
+with `memetic_deeppolish` form a three-arm design that separates the EA from the
+seeding:
+
+    memetic_deeppolish - local_multistart_jw   population / crossover / EA
+    local_multistart_jw - local_multistart     JW initialisation
+    memetic_deeppolish - local_multistart      the whole package
+
 Result contract is `run_memetic`'s, so `src/cli/run_memetic_shard.py` consumes
 it unchanged, plus three additive keys: `restarts`, `flips_in_target_restart`
 and `meta.restarts`.
@@ -67,7 +85,7 @@ from typing import Any, Dict, List, Optional
 # copy could drift and silently invalidate the ablation.
 from .memetic import _ls_budget
 from .operators import short_polish
-from .population import evaluate_assignment, jw_priors
+from .population import Population, evaluate_assignment, jw_priors
 
 # Independent of `run_memetic`'s nested `_assignment_exports`, which is left
 # untouched: `evo/memetic.py` diverges between the repo and this staging tree
@@ -96,25 +114,62 @@ def _multistart_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _jw_seeder(wcnf, rng: random.Random) -> "tuple[Population, List[float]]":
+    """
+    The JW seeding of `Population.init_seeds`, reused rather than reproduced.
+
+    `init_seeds` is two steps: `jw_priors(wcnf)` once, then one call to
+    `Population._new_assign_from_priors(pri)` per individual. This returns both,
+    so `run_multistart_ls` can perform the second step once per restart -- the
+    same biased per-variable draw, from the same code, off the RNG passed in.
+
+    The `Population` here is a *seed factory*, not a population: it is built
+    with `size=0`, `init_seeds` is never called on it, `members` stays empty for
+    the life of the run, and nothing is ever selected, recombined or mutated.
+    The only method used is the draw. `tests/test_local_multistart.py` asserts
+    all of that rather than trusting this comment.
+
+    Why not lift the draw into a module-level function in `population.py`, which
+    is the cleaner refactor: that file is one of the eight the §2.2 byte-identity
+    invariant covers (see ../DIVERGENCE.md), so it cannot be edited here.
+
+    Why not call `init_seeds` per restart, which would be the most literal
+    reuse: it recomputes `jw_priors` over every clause and rebuilds the
+    hard-clause list and `init_hard_satisfied` on each call. At the restart
+    counts a 900 s budget reaches that is an O(n_clauses) per-restart cost borne
+    by this arm alone, which would bias the very comparison the arm exists to
+    make. Hoisting the prior out of the loop is what `init_seeds` itself does.
+    """
+    return Population(wcnf.n_vars, 0, rng), jw_priors(wcnf)
+
+
 def _random_assignment(n_vars: int, rng: random.Random, init: str,
-                       priors: Optional[List[float]]) -> List[bool]:
+                       seeder: "Optional[Population]" = None,
+                       priors: Optional[List[float]] = None) -> List[bool]:
     """
     A fresh 1-based assignment, index 0 unused.
 
     'uniform' is the honest control for "does the EA help?": no instance
     structure is used at all, so anything the baseline achieves is attributable
-    to the polish. 'jw' is offered because `Population.init_seeds` seeds from
-    the Jeroslow-Wang prior, and isolating the EA *operators* (rather than
-    operators + seeding) needs the seeding held constant across both arms.
-    Same RNG call pattern either way, so the two differ only in the threshold.
+    to the polish. 'jw' hands the draw to `Population._new_assign_from_priors`,
+    the exact function `Population.init_seeds` builds the EA's initial
+    individuals with, so the two arms are seeded by one implementation.
+
+    Both branches draw one `rng.random()` per variable in index order, so they
+    consume the RNG stream identically and differ only in the threshold.
+
+    The JW draw is stochastic per call, which is the property that makes this a
+    multi-start at all: `jw_priors` clips every prior into [0.05, 0.95], so no
+    variable is ever pinned and no two restarts begin from the same point except
+    by chance. A deterministic JW assignment would collapse the arm into one
+    polish repeated until the budget ran out.
     """
+    if init == "jw":
+        assert seeder is not None and priors is not None
+        return seeder._new_assign_from_priors(priors)
     a = [False] * (n_vars + 1)
-    if init == "jw" and priors is not None:
-        for v in range(1, n_vars + 1):
-            a[v] = (rng.random() < priors[v])
-    else:
-        for v in range(1, n_vars + 1):
-            a[v] = (rng.random() < 0.5)
+    for v in range(1, n_vars + 1):
+        a[v] = (rng.random() < 0.5)
     return a
 
 
@@ -147,7 +202,9 @@ def run_multistart_ls(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     ls_small = _ls_budget(cfg)
 
     rng = random.Random(rng_seed)
-    priors = jw_priors(wcnf) if ms["init"] == "jw" else None
+    # Built once, exactly as `Population.init_seeds` computes the prior once for
+    # the whole initial population rather than once per individual.
+    seeder, priors = _jw_seeder(wcnf, rng) if ms["init"] == "jw" else (None, None)
 
     # Same resolution order as `run_memetic`: an injected top-level
     # `time_limit_s` (run_memetic_shard writes the manifest budget there) wins
@@ -189,7 +246,7 @@ def run_multistart_ls(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             break
 
         restarts += 1
-        assign01 = _random_assignment(wcnf.n_vars, rng, ms["init"], priors)
+        assign01 = _random_assignment(wcnf.n_vars, rng, ms["init"], seeder, priors)
         polished, flips = short_polish(
             assign01, wcnf, ls_small, rng_seed=rng.randrange(1 << 30))
         total_flips += int(flips)
@@ -214,7 +271,7 @@ def run_multistart_ls(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     # scored assignment anyway rather than None, so the shard record is
     # complete and the failure is visible as restarts == 0.
     if best_assign is None:
-        best_assign = _random_assignment(wcnf.n_vars, rng, ms["init"], priors)
+        best_assign = _random_assignment(wcnf.n_vars, rng, ms["init"], seeder, priors)
         best_soft, best_hv = evaluate_assignment(wcnf, best_assign)
 
     exports = _assignment_exports(best_assign)

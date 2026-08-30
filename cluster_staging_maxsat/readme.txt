@@ -51,27 +51,76 @@ The §2.2 byte-identity diff loop will report DIFFERS for exactly those two file
 and that is expected. Read DIVERGENCE.md before mirroring or re-copying either.
 
 
-Tier-2 local_multistart_deeppolish (the no-EA ablation baseline)
+Tier-2 local-multistart ablation arms (the no-EA controls)
 -----------------------------------------------------------------
-  src/evo/multistart.py                          the solver
-  configs/tier2/local_multistart_deeppolish.yaml the config (no `ea:` block)
-  scripts/make_local_multistart_manifest.py      manifest generator
-  scripts/manifest_tier2_local_multistart.tsv    130 jobs; line N+1 == array task N
-  scripts/tier2_local_multistart_array.sbatch    the array driver
-  scripts/submit_tier2_local_multistart.sh       counts rows, derives the range
+  src/evo/multistart.py                             the solver, both arms
+  scripts/make_local_multistart_manifest.py         manifest generator, both arms
+  scripts/tier2_local_multistart_array.sbatch       the array driver, both arms
+
+  configs/tier2/local_multistart_deeppolish.yaml    init: uniform
+  scripts/manifest_tier2_local_multistart.tsv       130 jobs; line N+1 == array task N
+  scripts/submit_tier2_local_multistart.sh          counts rows, derives the range
+
+  configs/tier2/local_multistart_jw_deeppolish.yaml init: jw
+  scripts/manifest_tier2_local_multistart_jw.tsv    130 jobs; same 26 instances, same 5 seeds
+  scripts/submit_tier2_local_multistart_jw.sh       same, + MANIFEST/OUTDIR for this arm
 
 The control for "does memetic_deeppolish need its evolutionary component?".
 Independent random restarts, each polished by the SAME operator the EA applies
 to every child (evo.operators.short_polish), stopping when the certified RC2
-optimum is reached. 26 tier-2 instances x 5 seeds = 130 tasks at 900 s.
+optimum is reached. 26 tier-2 instances x 5 seeds = 130 tasks at 900 s, per arm.
 
-  python3 scripts/make_local_multistart_manifest.py   # regenerate if needed
-  bash scripts/submit_tier2_local_multistart.sh       # counts rows, submits
+THREE ARMS, TWO FACTORS. The arms differ in exactly one knob each, so each
+pairwise difference names one cause:
+
+  memetic_deeppolish  - local_multistart_jw   population / crossover / EA
+  local_multistart_jw - local_multistart      JW initialisation
+  memetic_deeppolish  - local_multistart      the whole package
+
+The middle arm is the reason the first difference is attributable to the
+evolutionary operators at all: memetic_deeppolish seeds its population from the
+Jeroslow-Wang prior, so memetic - local_multistart (uniform) confounds the
+operators with the seeding. local_multistart_jw holds the seeding constant.
+
+Its seeding is not a lookalike: multistart.py calls
+Population._new_assign_from_priors, the exact function Population.init_seeds
+builds the EA's initial population with, once per restart off the run's own RNG.
+It is a stochastic biased draw, NOT one deterministic JW assignment -- jw_priors
+clips every prior into [0.05, 0.95] so no variable is ever pinned. A
+deterministic seed would silently reduce the arm to a single polish repeated
+until the budget ran out. tests/test_local_multistart.py section 8 asserts both.
+
+  python3 scripts/make_local_multistart_manifest.py            # uniform arm
+  python3 scripts/make_local_multistart_manifest.py --arm jw \
+      --verify-against scripts/manifest_tier2_local_multistart.tsv
+
+--verify-against re-checks, joined on instance_sha256 rather than on the
+instance path, that both arms carry the same oracle_cost for all 26 instances.
+Exits 3 on any mismatch: an ablation whose arms were given different oracles
+measures nothing. Last run clean, 26/26.
+
+  bash scripts/submit_tier2_local_multistart.sh       # uniform; counts rows, submits
+  bash scripts/submit_tier2_local_multistart_jw.sh    # jw
   DRY_RUN=1 bash scripts/submit_tier2_local_multistart.sh   # print, don't submit
+
+Both submitters drive the SAME tier2_local_multistart_array.sbatch, unchanged --
+it reads MANIFEST and OUTDIR from the environment, and the jw submitter passes
+them via --export (OUTDIR=results/tier2_local_multistart_jw/tasks). One array
+driver, so the arms cannot drift in --time, GRACE or STOP_AT_ORACLE; a forked
+copy could, and any such drift would look like a seeding effect. Consequently
+the jw submitter REFUSES a passthrough `--export`: sbatch honours the last one,
+so yours would drop MANIFEST/OUTDIR and run the jw array against the uniform
+manifest, into the uniform arm's results tree. Set the variables in the
+environment instead (STOP_AT_ORACLE=0 bash scripts/submit_..._jw.sh). It also
+refuses a manifest whose config_id column is not local_multistart_jw_deeppolish.
 
 or, equivalently:
 
   cd scripts && sbatch --array=0-129%30 tier2_local_multistart_array.sbatch
+  cd scripts && sbatch --array=0-129%30 \
+      --export=ALL,MANIFEST=scripts/manifest_tier2_local_multistart_jw.tsv,\
+OUTDIR=results/tier2_local_multistart_jw/tasks \
+      tier2_local_multistart_array.sbatch
 
 Note the 0-based array, unlike the 1-based tier2_memetic_array.sbatch: task N
 reads manifest line N+1. STOP_AT_ORACLE also defaults to 1 here, not 0 --
@@ -95,6 +144,16 @@ Smoke it first -- one instance, short budget, no SLURM:
       --oracle-cost 1 --stop-at-oracle \
       --tier T2a --rc2-run uuf_diff_unsat --job-id smoke_t2lms \
       --out results/tier2_local_multistart_smoke/smoke_t2lms.jsonl
+
+Swap the two --config/--config-id values for the jw arm. A 20 s smoke on
+uuf250-0100 (oracle 1, not a measurement) gave cost 3 uniform / cost 2 jw /
+cost 1 memetic, 40 restarts for each multistart arm -- the three arms are
+distinguishable end to end and combine_tier2.py keeps them apart.
+
+src/bench/combine_tier2.py needs no change for the third arm: it groups by
+config_id throughout, so three arms in one shard directory produce three
+summary.csv rows and three by_instance.csv rows with no pooling and nothing
+dropped. Verified on a mixed three-config_id shard directory, integrity clean.
 
 CAVEAT: under this preset the polish is bound by ls.time_limit_s (0.5 s, ~5,300
 iterations on uuf250-03), not by the 12,500-flip ceiling. memetic_deeppolish has
