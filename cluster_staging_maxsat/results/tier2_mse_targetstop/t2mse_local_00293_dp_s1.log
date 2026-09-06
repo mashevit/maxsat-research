@@ -1,0 +1,1 @@
+[shard] t2mse_local_00293_dp_s1 judgment-aggregation-ja-maxham-preflib-00049-00000293.wcnf solver=memetic_ea cfg=memetic_deeppolish seed=1 budget=1800s -> status=timeout cost=None hv=None opt=43 wall=1800.267 stop=None t_target=None restarts=None flips=None

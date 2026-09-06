@@ -1,0 +1,3 @@
+parse                      0.42s
+memetic_base         pop= 60  init_seeds      2.0s  + initial evaluate      1.4s  = SETUP      3.4s   (grace is 60s)
+memetic_deeppolish   pop= 40  init_seeds      1.2s  + initial evaluate      0.9s  = SETUP      2.1s   (grace is 60s)

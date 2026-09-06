@@ -1,0 +1,1 @@
+[shard] t2mse_local_00293_jwlp_s1 judgment-aggregation-ja-maxham-preflib-00049-00000293.wcnf solver=local_multistart cfg=local_multistart_jw_longpolish seed=1 budget=1800s -> status=ok cost=78 hv=4249 opt=43 wall=1813.042 stop=time_cap t_target=None restarts=30 flips=92966
