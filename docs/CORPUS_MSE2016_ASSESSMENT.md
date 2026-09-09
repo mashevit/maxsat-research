@@ -450,7 +450,7 @@ committed; this is the state of the working tree.
 | `cluster_staging_maxsat/scripts/manifest_mse16_smoke.txt` | 5 | smoke instances; line N == array task N |
 | `cluster_staging_maxsat/scripts/sample_mse16_screen.csv` | 105 | provenance: sha256 + structural census per pick |
 | `cluster_staging_maxsat/scripts/census_mse16.csv` | 857 | structural census of all 856 corpus instances |
-| `docs/CORPUS_MSE2016_ASSESSMENT.md` | 504 | this document |
+| `docs/CORPUS_MSE2016_ASSESSMENT.md` | 531 | this document |
 
 The two CSVs and the two manifests are **generated** by
 `make_mse16_manifest.py` and regenerate byte-identically (verified). They are
@@ -487,11 +487,38 @@ Note `cluster_staging_maxsat/results/` is **not** gitignored, so the per-task
 JSONL will show up as untracked once the array runs. That matches how
 `results/profile_uuf250/` and the other completed runs are handled in this tree.
 
-### 7.5 Untouched, still open
+### 7.5 `EvalMaxSat.ans1` — committed, and not what it looked like
 
-| Path | |
-|---|---|
-| `cluster_staging_maxsat/results/EvalMaxSat.ans1` | pre-existing stray solver transcript, untracked and unignored. Not mine to delete — see §0. |
+An earlier revision of this document called this a stray transcript to delete.
+That was wrong. It is a raw terminal paste, but it holds two completed
+EvalMaxSAT runs on the judgment-aggregation instances, and one of them is a
+result the repo does not have anywhere else:
+
+| Instance | RC2 | EvalMaxSAT |
+|---|---|---|
+| `…preflib-00049-00000293.wcnf` | optimal, 1313.8 s, cost 43 (`mse_cap1800`) | 895.9 s, `o 43` |
+| `…preflib-00049-00000253.wcnf` | **never solved** — `subprocess_killed` at cap 600 *and* at cap 1800, T3, no oracle | 1605.2 s, `o 46` |
+
+So it does two things. It **independently confirms the cost-43 oracle** that
+[`TIER2_MSE_FEASIBILITY.md`](TIER2_MSE_FEASIBILITY.md) §0 rests on — a
+second solver, a different algorithm family, same optimum. And it **supplies an
+optimum for `00000253`, which RC2 could not certify at any cap tried**, turning
+it from an instance with no oracle into one with a usable reference.
+
+Three caveats before that oracle is used anywhere:
+
+- **It is an EvalMaxSAT optimum, not an RC2 one.** Handoff §5's "do not mix
+  solvers within a single reported table" applies directly: `o 46` cannot go
+  into a column of RC2 proof times, and any table using it must name the solver.
+- **The two proof times are not comparable to the committed ones.** They were
+  measured on the workstation, unlike the cluster runs in `results/hardness/`.
+- **It is a terminal paste, not a record in the results schema.** It has no
+  sha256, no solver commit, no structured fields. Promoting it into
+  `results/hardness/` would need the subprocess runner from handoff §5, which
+  emits the existing JSONL schema plus `solver` and `solver_commit`.
+
+It is committed as-is rather than reformatted, because the paste is the
+primary evidence and rewriting it by hand would lose that.
 
 ### 7.6 What was NOT changed
 
