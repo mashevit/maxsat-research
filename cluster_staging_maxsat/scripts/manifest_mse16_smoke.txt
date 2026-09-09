@@ -1,0 +1,5 @@
+data/mse16/ms_crafted/maxcut/dimacs-mod/c-fat500-1.clq.cnf
+data/mse16/ms_crafted/maxcut/spinglass/t3pm3-5555.spn.cnf
+data/mse16/ms_crafted/set-covering/scpclr/scpclr10_maxsat.cnf
+data/mse16/ms_random/highgirth/4sat/HG-4SAT-V100-C900-14.cnf
+data/mse16/ms_random/abrame-habet/max3sat/70v/s3v70c700-1.cnf

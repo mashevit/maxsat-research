@@ -19,6 +19,48 @@ otherwise PySAT parses it as two empty clauses and the optimum shifts by 2:
   sed -i '/^%$/,$d' *.cnf
 
 
+MSE-2016 corpus screen (ready to run -- see docs/CORPUS_MSE2016_ASSESSMENT.md)
+------------------------------------------------------------------------------
+  scripts/smoke_mse16_array.sbatch      5 tasks, cap 20 s -- run this first
+  scripts/manifest_mse16_smoke.txt      the 5 smoke instances
+  scripts/screen_mse16_array.sbatch     cap 900, manifest_mse16_screen.txt
+  scripts/submit_mse16_screen.sh        derives --array from the manifest
+  scripts/manifest_mse16_screen.txt     104 instances; line N == array task N
+  scripts/sample_mse16_screen.csv       sha256 + structural census per pick
+  scripts/census_mse16.csv              census of all 856 corpus instances
+
+  sbatch scripts/smoke_mse16_array.sbatch          # ~1 min, self-verifying
+  bash   scripts/submit_mse16_screen.sh            # or DRY_RUN=1 to inspect
+
+The smoke's 5 are hand-picked to cover every clause shape in the corpus (units,
+binary, ternary, quaternary, and clauses up to 126 literals) and both of
+profile_hardness's outcomes. EXPECT tasks 1-2 optimal at cost 2 and 17, and
+tasks 3-5 to hit the 20 s cap -- three capped tasks is a PASS. Each task
+self-verifies and exits non-zero on a real failure, so `sacct` alone tells you
+whether it passed. Full expectations are in the sbatch header.
+
+Regenerate the manifest and restage the instances from the repo root with:
+
+  python -m src.bench.make_mse16_manifest --k 5 --run-name screen
+
+The screen answers which leaf directories yield tier 2 at all. After the array,
+rsync results/profile_mse16/ back and aggregate ON THE WORKSTATION (the staging
+tree carries no src/bench/):
+
+  python -m src.bench.analyze_tiers \
+      --in-dir  cluster_staging_maxsat/results/profile_mse16 \
+      --out-dir results/hardness/mse16_screen
+
+Its "Tier x benchmark dir" table is the answer. Then fill the directories that
+paid off, without re-picking what you already ran:
+
+  python -m src.bench.make_mse16_manifest --k 45 --run-name fill \
+      --only <family> --exclude cluster_staging_maxsat/scripts/sample_mse16_screen.csv
+  MANIFEST=manifest_mse16_fill.txt bash scripts/submit_mse16_screen.sh
+
+Unlike the SATLIB files above, these need no %/0 stripping -- checked, none of
+the 856 carries a trailing marker.
+
 Tier-2 memetic EA (ready to run -- see docs/TIER2_MEMETIC_PLAN.md)
 ------------------------------------------------------------------
   scripts/smoke_tier2_memetic.sbatch    5 tasks, 10 s budget -- run this first

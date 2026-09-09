@@ -61,10 +61,23 @@ data/generated/**
 .DS_Store
 Thumbs.db
 *:Zone.Identifier
-
+solver_EvalMaxSat/
 garbage/
 cluster_staging/data/
 cluster_staging/folder_tree.txt
 
 cluster_staging_maxsat/data/
 cluster_staging_maxsat/folder_tree.txt
+
+# MSE-2016 ms_random / ms_crafted benchmark (more_data/): 856 instances, 32 MB,
+# downloaded not generated. Same convention as data/generated above -- instances
+# out, documentation and manifests in. The sampled subset that experiments
+# actually run against is staged into cluster_staging_maxsat/data/mse16/ (also
+# ignored) and is recoverable from scripts/sample_mse16_screen.csv, which
+# records every pick's sha256.
+# Note: excluding files (not the directory) so the negations below can still
+# match -- git does not descend into an excluded directory.
+more_data/**
+!more_data/**/
+!more_data/**/*.md
+!more_data/**/manifest.jsonl
