@@ -46,7 +46,7 @@ source activate maxsat
 cd ..
 
 MANIFEST="${MANIFEST:-scripts/manifest_evalmaxsat_more_data.txt}"
-EVALMAXSAT_BIN="${EVALMAXSAT_BIN:-$PWD/solver_EvalMaxSat/EvalMaxSAT/build/main/EvalMaxSAT_bin}"
+EVALMAXSAT_BIN="${EVALMAXSAT_BIN:-$PWD/EvalMaxSAT/build/main/EvalMaxSAT_bin}"
 TIMEOUT="${TIMEOUT:-1800}"
 OUTDIR="${OUTDIR:-results/oracle_evalmaxsat}"
 
