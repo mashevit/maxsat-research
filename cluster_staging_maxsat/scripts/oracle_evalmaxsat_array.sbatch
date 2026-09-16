@@ -32,7 +32,7 @@
 #   cat results/oracle_evalmaxsat/task_*.jsonl > results/oracle_more_data.jsonl
 #
 # Timeout semantics: EvalMaxSAT prints no intermediate `o` lines
-# (docs/ORACLE_EVALMAXSAT.md), so a task that hits TIMEOUT records
+# (docs/archive/ORACLE_EVALMAXSAT.md), so a task that hits TIMEOUT records
 # status=timeout with best_cost=null -- no bound at all. The set-covering and
 # max2sat families are expected to do that at 1800 s; that is a result, not a
 # failure, and the task still exits 0.
@@ -71,7 +71,7 @@ mkdir -p "$OUTDIR"
 
 # Plain `p cnf` files are converted to all-soft WCNF by the driver before the
 # solver sees them; fed raw, EvalMaxSAT answers `s UNSATISFIABLE` in 0 s
-# (docs/CORPUS_MSE2016_ASSESSMENT.md). The driver also re-checks the model
+# (docs/archive/CORPUS_MSE2016_ASSESSMENT.md). The driver also re-checks the model
 # against the formula, so opt_cost is only recorded when verified.
 python src/cli/oracle_evalmaxsat.py "$INSTANCE" \
     --bin "$EVALMAXSAT_BIN" \

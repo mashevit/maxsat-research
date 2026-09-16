@@ -211,7 +211,7 @@ def run_multistart_ls(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     # over the per-polish `ls.time_limit_s`.
     time_cap = float(cfg.get("time_limit_s", cfg.get("ls", {}).get("time_limit_s", 10.0)))
 
-    # THE UNIT TRAP (docs/TIER2_MEMETIC_PLAN.md §6.3 trap 1), same as in
+    # THE UNIT TRAP (docs/archive/TIER2_MEMETIC_PLAN.md §6.3 trap 1), same as in
     # `run_memetic`: the solver tracks satisfied soft weight, `target_cost` is
     # unsatisfied soft weight. Converted once, at the one comparison site.
     total_soft_weight = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)

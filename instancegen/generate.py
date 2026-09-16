@@ -1,6 +1,6 @@
 """Pure weighted random k-SAT generator: GenParams -> in-memory Instance.
 
-Plan: docs/INSTANCEGEN_PLAN.md §8 (step 1 of §13).
+Plan: docs/archive/INSTANCEGEN_PLAN.md §8 (step 1 of §13).
 
 Purity contract, and why it matters (§7):
   - no file I/O;

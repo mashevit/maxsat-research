@@ -1,9 +1,9 @@
 # Work-order report — target-cost early stop, single 900 s budget, staging-only
 
 **Date: 2026-08-05.** Companion to
-[`docs/TIER2_TARGET_STOP.md`](TIER2_TARGET_STOP.md) (how the feature works and
-how to run it), [`docs/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (§2.2, §5,
-§6.3, §6.6, §7) and [`cluster_staging_maxsat/DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md).
+[`docs/archive/TIER2_TARGET_STOP.md`](TIER2_TARGET_STOP.md) (how the feature works and
+how to run it), [`docs/archive/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (§2.2, §5,
+§6.3, §6.6, §7) and [`cluster_staging_maxsat/DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md).
 
 This is the completion record for the work order: what changed, what was
 verified, and what was deliberately left alone.

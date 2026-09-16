@@ -1,6 +1,6 @@
 """Parametric weighted MaxSAT instance generation.
 
-Plan of record: docs/INSTANCEGEN_PLAN.md. Steps 1-2 of that doc's §13 are
+Plan of record: docs/archive/INSTANCEGEN_PLAN.md. Steps 1-2 of that doc's §13 are
 implemented here (generate.py, wcnf_io.py, feasible.py); tiers.py, calibrate.py
 and cli.py are still plan-only.
 

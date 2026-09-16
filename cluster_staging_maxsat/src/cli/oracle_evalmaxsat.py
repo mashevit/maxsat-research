@@ -5,7 +5,7 @@ Find optimum costs with EvalMaxSAT for a set of (W)CNF instances.
 Plain `p cnf` files are converted to all-soft WCNF (weight 1, top = m+1)
 before being handed to EvalMaxSAT -- fed a raw `p cnf` file it treats every
 clause as hard and silently answers `s UNSATISFIABLE`
-(see docs/CORPUS_MSE2016_ASSESSMENT.md, "EvalMaxSAT does not accept them").
+(see docs/archive/CORPUS_MSE2016_ASSESSMENT.md, "EvalMaxSAT does not accept them").
 `.wcnf` files are passed through unchanged.
 
 Each result is appended as one JSON line; re-running on the same output file

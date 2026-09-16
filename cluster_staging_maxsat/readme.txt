@@ -6,7 +6,31 @@ to ~/maxsat-lab on the cluster, then submit from ~/maxsat-lab/scripts.
   rsync -av --exclude '__pycache__' cluster_staging_maxsat/ <user>@<cluster>:~/maxsat-lab/
 
 
-RC2 hardness profiling (done -- see docs/RC2_STATUS.md)
+Corpus calibration, batch calib_a (ready to run -- docs/CORPUS_CALIBRATION_GOALS.md)
+-----------------------------------------------------------------------------------
+  scripts/rc2_profile_array.sbatch      RC2 array; MANIFEST/OUTDIR/CAP/GRACE via --export
+  scripts/submit_rc2_profile.sh         derives --array from the manifest, checks sha256,
+                                        THROTTLE (default 30), RESUME=1, DRY_RUN=1
+  scripts/rc2_row_state.py              resume logic (skip completed / censored-at-cap rows)
+  scripts/manifest_calib_a_rc2.txt      180 generated instances; line N == array task N
+  scripts/manifest_calib_a_rc2.sha256   `cd .. && sha256sum -c scripts/manifest_calib_a_rc2.sha256`
+  data/generated/calib_a/               the instances (rsynced, not in git) + manifest.jsonl
+
+  cd ~/maxsat-lab/scripts && mkdir -p logs
+  DRY_RUN=1 bash submit_rc2_profile.sh   # inspect
+  bash submit_rc2_profile.sh             # 180 tasks, %30, cap 900 + grace 60, --time 20 min
+  RESUME=1 bash submit_rc2_profile.sh    # resubmit only the tasks without a valid row
+
+Worst case 180 x 960 s = 48 CPU-h; at %30 that is 6 waves of ~17 min, ~1.7 h
+of compute, plus whatever the queue adds. Rsync results/profile_calib_a/ back
+and aggregate on the workstation (M3, src/bench/calib_summary.py -- not yet
+written). Regenerate the instances and manifests from the repo root with:
+
+  python -m instancegen.cli generate-grid --grid instancegen/grids/calib_a.yaml \
+      --staging-root cluster_staging_maxsat          # add --check to verify only
+
+
+RC2 hardness profiling (done -- see docs/archive/RC2_STATUS.md)
 -------------------------------------------------------
   scripts/full_mse23_array.sbatch          cap 600,  manifest_mse23_full.txt
   scripts/full_mse23_array_cap1800.sbatch  cap 1800, manifest_mse23_full.txt
@@ -19,7 +43,7 @@ otherwise PySAT parses it as two empty clauses and the optimum shifts by 2:
   sed -i '/^%$/,$d' *.cnf
 
 
-MSE-2016 corpus screen (ready to run -- see docs/CORPUS_MSE2016_ASSESSMENT.md)
+MSE-2016 corpus screen (ready to run -- see docs/archive/CORPUS_MSE2016_ASSESSMENT.md)
 ------------------------------------------------------------------------------
   scripts/smoke_mse16_array.sbatch      5 tasks, cap 20 s -- run this first
   scripts/manifest_mse16_smoke.txt      the 5 smoke instances
@@ -61,7 +85,7 @@ paid off, without re-picking what you already ran:
 Unlike the SATLIB files above, these need no %/0 stripping -- checked, none of
 the 856 carries a trailing marker.
 
-Tier-2 memetic EA (ready to run -- see docs/TIER2_MEMETIC_PLAN.md)
+Tier-2 memetic EA (ready to run -- see docs/archive/TIER2_MEMETIC_PLAN.md)
 ------------------------------------------------------------------
   scripts/smoke_tier2_memetic.sbatch    5 tasks, 10 s budget -- run this first
   scripts/tier2_memetic_array.sbatch    the array driver

@@ -62,7 +62,7 @@ Therefore:
 
 | knob | value | how established |
 |---|---|---|
-| RC2 variant | **plain `RC2`** — `RC2Stratified` is never imported or referenced in any code | `grep -rn "RC2Stratified" --include="*.py" .` → 0 hits. (It is mentioned only in the forward-looking `docs/INSTANCEGEN_PLAN.md`, which independently states at line 504 that "the existing tier tables were produced with **plain `RC2`**".) |
+| RC2 variant | **plain `RC2`** — `RC2Stratified` is never imported or referenced in any code | `grep -rn "RC2Stratified" --include="*.py" .` → 0 hits. (It is mentioned only in the forward-looking `docs/archive/INSTANCEGEN_PLAN.md`, which independently states at line 504 that "the existing tier tables were produced with **plain `RC2`**".) |
 | SAT backend | **`g3` = Glucose 3** | `solve_rc2_with_timeout(..., solver="g3")` default; `profile_hardness.py` never passes `--solver`, so the default stands |
 | `adapt` | **False** (PySAT default) | not passed; `inspect.signature(RC2.__init__)` → `adapt=False` |
 | `exhaust` | **False** (default) | as above |

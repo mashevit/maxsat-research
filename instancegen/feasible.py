@@ -1,6 +1,6 @@
 """Hard-part feasibility guard: generate -> SAT-check hard part -> resample.
 
-Plan: docs/INSTANCEGEN_PLAN.md D8, §7, §8.
+Plan: docs/archive/INSTANCEGEN_PLAN.md D8, §7, §8.
 
 The soft part is left unconstrained -- that is what makes the result a real
 MaxSAT instance. The hard part is made satisfiable by construction:

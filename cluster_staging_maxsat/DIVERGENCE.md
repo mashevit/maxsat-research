@@ -1,10 +1,10 @@
 # Staging tree divergence from `src/`
 
 **Date: 2026-08-05.** Full documentation of the change that caused this
-divergence: [`docs/TIER2_TARGET_STOP.md`](../docs/TIER2_TARGET_STOP.md); the
-work-order completion record: [`docs/TIER2_TARGET_STOP_REPORT.md`](../docs/TIER2_TARGET_STOP_REPORT.md).
+divergence: [`docs/archive/TIER2_TARGET_STOP.md`](../docs/archive/TIER2_TARGET_STOP.md); the
+work-order completion record: [`docs/archive/TIER2_TARGET_STOP_REPORT.md`](../docs/archive/TIER2_TARGET_STOP_REPORT.md).
 
-`docs/TIER2_MEMETIC_PLAN.md` §2.2 asserts that the memetic dependency closure in
+`docs/archive/TIER2_MEMETIC_PLAN.md` §2.2 asserts that the memetic dependency closure in
 this staging tree is **byte-identical** to the repo copies under `src/`, and
 gives a `diff -q` loop to verify it. As of the date above that invariant no
 longer holds for two files, **deliberately**.
@@ -56,7 +56,7 @@ divergence rather than a mirrored edit.
 
 Excluding the two divergent files keeps the identity check meaningful instead of
 permanently noisy (a check that always prints `DIFFERS` is a check nobody reads).
-Use this in place of the loop in `docs/TIER2_MEMETIC_PLAN.md` §2.2:
+Use this in place of the loop in `docs/archive/TIER2_MEMETIC_PLAN.md` §2.2:
 
 ```bash
 # Eight files that MUST stay byte-identical.
@@ -110,7 +110,7 @@ exercises the parser the cluster actually runs. `tests/test_cnf_legacy_formats.p
 is a port of those cases against the staging copy; keep both green.
 
 > **This divergence was chosen deliberately over mirroring the fix into `src/`.**
-> The nine-file identity claim in `docs/TIER2_MEMETIC_PLAN.md` §2.2 is now an
+> The nine-file identity claim in `docs/archive/TIER2_MEMETIC_PLAN.md` §2.2 is now an
 > eight-file claim.
 
 ### Format gate lifted in `run_memetic_shard.py` (2026-08-12)

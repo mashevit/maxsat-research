@@ -1,4 +1,4 @@
-"""Step 1 tests: docs/INSTANCEGEN_PLAN.md §12 test 1, in-memory half.
+"""Step 1 tests: docs/archive/INSTANCEGEN_PLAN.md §12 test 1, in-memory half.
 
 Fails before instancegen/generate.py exists; passes after. Imports no solver --
 that is the point of §7's pure/impure split.

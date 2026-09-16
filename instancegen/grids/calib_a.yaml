@@ -1,0 +1,27 @@
+# Calibration batch `calib_a` -- docs/CORPUS_CALIBRATION_GOALS.md §3.
+#
+# 36 cells x 5 generator seeds = 180 instances. Both families are pure soft
+# (hard_ratio 0, unit weights), m = round(alpha * n) exactly, written in the
+# old wcnf dialect so both the RC2 profiler and the staging memetic runner
+# read them. The corner cells expected to be censored at 900 s (3-SAT n=250
+# alpha=8, 2-SAT n=400 alpha=6) are kept on purpose: the censoring boundary is
+# measured, not inferred from the 60 s pilot.
+#
+# Seeds 1-5 are the calibration range. The final corpus (M4) uses a disjoint
+# range (1001+) so calib_a rows never enter a reported rho.
+batch: calib_a
+dialect: old
+params:
+  hard_ratio: 0.0
+  w_max: 1
+  weight_dist: uniform
+seeds: [1, 2, 3, 4, 5]
+families:
+  - family: max3sat
+    k: 3
+    n: [50, 70, 100, 150, 250]
+    alpha: [4.26, 5, 6, 8]
+  - family: max2sat
+    k: 2
+    n: [100, 150, 250, 400]
+    alpha: [2, 3, 4, 6]

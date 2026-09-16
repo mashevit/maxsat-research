@@ -1,6 +1,6 @@
 # Instance Stratification Plan
 
-Status: **active.** Pairs with `docs/HARNESS_PLAN.md`. Stratification
+Status: **active.** Pairs with `docs/archive/HARNESS_PLAN.md`. Stratification
 produces an instance-level tier manifest; the harness consumes it.
 
 This document is intentionally short. The full design dialogue lives in

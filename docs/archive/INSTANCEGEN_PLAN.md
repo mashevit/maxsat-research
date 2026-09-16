@@ -19,7 +19,7 @@ tiers, not to keep hunting for them.
 is in progress and is **not touched by anything here**. This doc's deliverable is
 a new top-level `instancegen/` package; see §7 for the placement argument.
 
-**Pairs with** `docs/STRATIFICATION_PLAN.md`, which owns the existing tier
+**Pairs with** `docs/archive/STRATIFICATION_PLAN.md`, which owns the existing tier
 definitions. This doc reuses those thresholds by value and records why they are
 not directly comparable (§4).
 
@@ -69,7 +69,7 @@ DEFAULT_CAP = 600.0
 
 Boundary convention is **inclusive upper** (`solve_s <= X`).
 
-Prose spec: `docs/STRATIFICATION_PLAN.md` §2, same 60/300/600 boundaries,
+Prose spec: `docs/archive/STRATIFICATION_PLAN.md` §2, same 60/300/600 boundaries,
 justified as the MSE anytime track's cutoffs. §7 of that doc explicitly leaves
 open "whether 60 / 300 / 600 are the right boundaries."
 
@@ -157,7 +157,7 @@ Two replicated quirks that constrain any writer (`PORT_NOTES.md` §9):
   dropped** (§9.5). A soft clause with weight 0 would vanish without error.
 - `cnf.py:92-99` — a `.cnf` file loads all-soft, weight 1, zero hard (§9.6).
 
-`docs/STRATIFICATION_PLAN.md` §5 states the project's standing position
+`docs/archive/STRATIFICATION_PLAN.md` §5 states the project's standing position
 independently: *"Toy files use the old MSE format... The newer 2022+ format (`h`
 prefix, no header) is not portable across pysat versions... Old format is the
 safe default for files we commit."*
@@ -233,7 +233,7 @@ file{path, name, ext, size_bytes, sha256, family}
 families — `file_rwpms_` -> `random_weighted_partial_maxsat`, etc. **No solve
 time, no tier.**
 
-**(b) Profile/tier manifest** — `docs/STRATIFICATION_PLAN.md` §3, realised in
+**(b) Profile/tier manifest** — `docs/archive/STRATIFICATION_PLAN.md` §3, realised in
 `results/profile/*.jsonl` and `results/hardness/*/all_results.jsonl`:
 
 ```json

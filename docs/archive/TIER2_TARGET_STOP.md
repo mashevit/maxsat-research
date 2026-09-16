@@ -5,11 +5,11 @@ it. This turns `wall_time_s` on successful runs from a constant (the budget) int
 a real **time-to-optimum** measurement.
 
 Written 2026-08-05. Companion to
-[`docs/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (the tier-2 run itself),
-[`docs/RC2_STATUS.md`](RC2_STATUS.md) (§4.2, §4.4c — where the oracle labels and
+[`docs/archive/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (the tier-2 run itself),
+[`docs/archive/RC2_STATUS.md`](RC2_STATUS.md) (§4.2, §4.4c — where the oracle labels and
 the RC2 caps come from), the completion record in
-[`docs/TIER2_TARGET_STOP_REPORT.md`](TIER2_TARGET_STOP_REPORT.md), and
-[`cluster_staging_maxsat/DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md).
+[`docs/archive/TIER2_TARGET_STOP_REPORT.md`](TIER2_TARGET_STOP_REPORT.md), and
+[`cluster_staging_maxsat/DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md).
 
 ---
 

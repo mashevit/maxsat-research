@@ -1,6 +1,6 @@
 # RC2 Profiling — What I Found
 
-Executive summary of the read-only audit in [`docs/RC2_STATUS.md`](RC2_STATUS.md),
+Executive summary of the read-only audit in [`docs/archive/RC2_STATUS.md`](RC2_STATUS.md),
 which holds the full evidence, schema, tables, and the commands used to compute
 every number. Written 2026-07-31 against `HEAD = 63f3ae5` (working tree clean).
 

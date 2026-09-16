@@ -7,9 +7,9 @@ put to this thread:
 2. Which subdirectories yield tier-2 instances, and how do I sample them?
 3. What counts as "enough variety"?
 
-Companion to [`more_data/CORPUS_BROADENING_HANDOFF.md`](../more_data/CORPUS_BROADENING_HANDOFF.md)
+Companion to [`more_data/CORPUS_BROADENING_HANDOFF.md`](../../more_data/CORPUS_BROADENING_HANDOFF.md)
 (the plan this corpus is being measured against) and
-[`docs/RC2_STATUS.md`](RC2_STATUS.md) (the tier definition).
+[`docs/archive/RC2_STATUS.md`](RC2_STATUS.md) (the tier definition).
 
 Every number below is measured on this workstation, not inferred.
 **§7 is the inventory of every file this work added or changed.**
@@ -450,7 +450,7 @@ committed; this is the state of the working tree.
 | `cluster_staging_maxsat/scripts/manifest_mse16_smoke.txt` | 5 | smoke instances; line N == array task N |
 | `cluster_staging_maxsat/scripts/sample_mse16_screen.csv` | 105 | provenance: sha256 + structural census per pick |
 | `cluster_staging_maxsat/scripts/census_mse16.csv` | 857 | structural census of all 856 corpus instances |
-| `docs/CORPUS_MSE2016_ASSESSMENT.md` | 531 | this document |
+| `docs/archive/CORPUS_MSE2016_ASSESSMENT.md` | 531 | this document |
 
 The two CSVs and the two manifests are **generated** by
 `make_mse16_manifest.py` and regenerate byte-identically (verified). They are
@@ -527,5 +527,5 @@ No solver, EA or profiler code was modified. In particular `src/sat/cnf.py`,
 `src/evo/` are untouched — the corpus is drop-in (§1), so the screen is new
 scripts around existing code, not a change to it. `cluster_staging_maxsat/src/`
 is likewise untouched, so the divergence recorded in
-[`DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md) is unaffected and
+[`DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md) is unaffected and
 needs no new entry.

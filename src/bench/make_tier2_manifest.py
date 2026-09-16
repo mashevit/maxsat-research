@@ -2,7 +2,7 @@
 """
 Build the tier-2 memetic job manifest from the committed RC2 hardness profiles.
 
-"Tier 2" is an *output* of RC2 profiling, not an input (docs/RC2_STATUS.md §0):
+"Tier 2" is an *output* of RC2 profiling, not an input (docs/archive/RC2_STATUS.md §0):
 it is the set of instances RC2 solved to optimality in 60-600 s. Those are
 exactly the instances that are (a) non-trivial and (b) carry an oracle optimum,
 so they are the only ones on which a memetic-vs-exact comparison is meaningful.
@@ -77,7 +77,7 @@ def select_records(hardness_dir: str, tiers: List[str],
     Collect every RC2 record that qualifies as tier 2, i.e. solved to optimality
     and labelled with one of `tiers` -- plus, when `include_solved_t3`, records
     that are `completed=true` but landed in T3 because `assign_tier()`'s cutoffs
-    ignore `--cap` (docs/RC2_STATUS.md §4.6). Those carry a valid oracle optimum
+    ignore `--cap` (docs/archive/RC2_STATUS.md §4.6). Those carry a valid oracle optimum
     and would otherwise be silently dropped.
     """
     out: List[Dict[str, Any]] = []
@@ -110,7 +110,7 @@ def select_records(hardness_dir: str, tiers: List[str],
 def dedupe(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     The 75 MSE instances were profiled twice, at cap 600 and cap 1800
-    (docs/RC2_STATUS.md §4.2), so an instance can qualify from two runs. Keep
+    (docs/archive/RC2_STATUS.md §4.2), so an instance can qualify from two runs. Keep
     the fastest RC2 solve as the reference and note every run it came from.
     """
     by_key: Dict[str, Dict[str, Any]] = {}

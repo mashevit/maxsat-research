@@ -21,7 +21,7 @@ earlier docs:
   n=100, m/n=4 gave c\*=25 in 5.5 s; the crafted `p_hat300-1` gave c\*=49 in
   22 s. So MaxCut / Max-2-SAT generators are not optional — they are the only
   way to populate the c\* ≥ 20 decade. The reachable range is ~2 decades, not
-  the 3 that `CORPUS_MSE2016_ASSESSMENT.md` §5.1 targeted; the plan says to
+  the 3 that `archive/CORPUS_MSE2016_ASSESSMENT.md` §5.1 targeted; the plan says to
   state that as a limitation.
 
 ## One correction to the premise

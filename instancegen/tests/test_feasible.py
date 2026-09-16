@@ -1,4 +1,4 @@
-"""Step 2 test: docs/INSTANCEGEN_PLAN.md §12 test 9 (D8 feasibility guard).
+"""Step 2 test: docs/archive/INSTANCEGEN_PLAN.md §12 test 9 (D8 feasibility guard).
 
 Fails before instancegen/feasible.py exists; passes after. This is the only test
 in steps 1-2 that needs pysat installed.

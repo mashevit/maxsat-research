@@ -44,7 +44,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     RC2 convention, i.e. what `--oracle-cost` carries. When given, the loop stops
     as soon as the incumbent reaches it, so `elapsed_sec` becomes a real
     time-to-optimum measurement instead of "the budget was spent"
-    (docs/TIER2_MEMETIC_PLAN.md §6.6). `None` (the default) preserves the
+    (docs/archive/TIER2_MEMETIC_PLAN.md §6.6). `None` (the default) preserves the
     historical behaviour exactly: the only stop conditions are `time_cap` and
     `max_gens`.
 
@@ -79,7 +79,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     max_gens = int(cfg.get("ea", {}).get("max_gens", 100))
 
     # --- target-cost stop -----------------------------------------------------
-    # THE UNIT TRAP (docs/TIER2_MEMETIC_PLAN.md §6.3 trap 1): the EA tracks
+    # THE UNIT TRAP (docs/archive/TIER2_MEMETIC_PLAN.md §6.3 trap 1): the EA tracks
     # *satisfied* soft weight (`Individual.fitness` == soft weight when there are
     # no hard violations), while `target_cost` is *unsatisfied* soft weight. They
     # are never compared directly; the conversion happens at the comparison site:

@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-14. Written against commit `3e79701`. Supersedes the
 "you need one generator, not six" verdict of
-[`CORPUS_MSE2016_ASSESSMENT.md`](CORPUS_MSE2016_ASSESSMENT.md) §2, for the
-reason in §1 below. Builds on [`INSTANCEGEN_PLAN.md`](INSTANCEGEN_PLAN.md)
+[`archive/CORPUS_MSE2016_ASSESSMENT.md`](archive/CORPUS_MSE2016_ASSESSMENT.md) §2, for the
+reason in §1 below. Builds on [`archive/INSTANCEGEN_PLAN.md`](archive/INSTANCEGEN_PLAN.md)
 (the generator that already exists) and
 [`more_data/CORPUS_BROADENING_HANDOFF.md`](../more_data/CORPUS_BROADENING_HANDOFF.md)
 (the four axes and the family list).
@@ -40,8 +40,8 @@ calibration CLI on top of the `instancegen/` package that already ships.
 | Source | Instances | Oracle | Cap | Outcome |
 |---|---:|---|---:|---|
 | `results/oracle_more_data.jsonl` | 12 (`scpclr`, `scpcyc`, `max2sat/120v`) | EvalMaxSAT | 60 / 120 / **1800** s | **12/12 timeout**, incl. `scpclr10` at 1800 s |
-| `CORPUS_MSE2016_ASSESSMENT.md` §3.3 | 10 (`bipartite/maxcut-140-630-*`) | RC2 | 300 s | **10/10 T3** |
-| `CORPUS_MSE2016_ASSESSMENT.md` §3.3 | 3 (`dimacs-mod`, `spinglass`) | RC2 | 300 s | **3/3 T1**, c\* = 2, 17, 49 |
+| `archive/CORPUS_MSE2016_ASSESSMENT.md` §3.3 | 10 (`bipartite/maxcut-140-630-*`) | RC2 | 300 s | **10/10 T3** |
+| `archive/CORPUS_MSE2016_ASSESSMENT.md` §3.3 | 3 (`dimacs-mod`, `spinglass`) | RC2 | 300 s | **3/3 T1**, c\* = 2, 17, 49 |
 | `results/hardness/mse23_full` | 75 (MSE-2023 uw-small) | RC2 | 600 s | 74/75 T3 |
 
 The uuf250 corpus that produced the committed tier-2 results is the

@@ -3,9 +3,9 @@
 How to run the memetic EA on the tier-2 instances and how to combine those
 results with the RC2 tier tables in `results/hardness/`.
 
-Companion to [`docs/RC2_STATUS.md`](RC2_STATUS.md) (the audit of what RC2 did),
-[`docs/RC2_FINDINGS.md`](RC2_FINDINGS.md) (its executive summary), and
-[`docs/HARNESS_PLAN.md`](HARNESS_PLAN.md) (the eventual unified harness, still
+Companion to [`docs/archive/RC2_STATUS.md`](RC2_STATUS.md) (the audit of what RC2 did),
+[`docs/archive/RC2_FINDINGS.md`](RC2_FINDINGS.md) (its executive summary), and
+[`docs/archive/HARNESS_PLAN.md`](HARNESS_PLAN.md) (the eventual unified harness, still
 plan-only). This document describes what is **implemented and tested now**, on
 top of the existing `src/evo/memetic.py` — it does not wait for the harness in
 HARNESS_PLAN §6.
@@ -473,7 +473,7 @@ in the CSV for cross-corpus comparability later, but do not put it in a headline
 The same fact caps the ambition of this experiment: on this corpus the EA's task
 is to satisfy all but one clause out of 1065, and "success" is nearly
 all-or-nothing. A corpus with a graded cost distribution — which is exactly what
-`docs/INSTANCEGEN_PLAN.md` is for — is needed before gap curves mean much.
+`docs/archive/INSTANCEGEN_PLAN.md` is for — is needed before gap curves mean much.
 
 ### 6.6 Speed comparison, and its limit
 

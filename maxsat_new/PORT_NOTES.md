@@ -13,7 +13,7 @@ ported module docstring as the port source).
 
 ## 1. What I read; what surprised me
 
-Read: `docs/HARNESS_PLAN.md`, `docs/STRATIFICATION_PLAN.md`,
+Read: `docs/archive/HARNESS_PLAN.md`, `docs/archive/STRATIFICATION_PLAN.md`,
 `src/evo/memetic.py`, `src/evo/operators.py`, `src/evo/population.py`,
 `src/sat/walksat.py`, `src/sat/state.py`, `src/sat/cnf.py`, `src/llm/advisor.py`,
 `src/llm/prompt.py`, `src/llm/providers/noop.py`, `src/cli/run_ea.py`, all 12

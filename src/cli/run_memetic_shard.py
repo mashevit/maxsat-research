@@ -7,11 +7,11 @@ per SLURM array task, one shard file out, aggregated afterwards. It exists
 instead of reusing `src/cli/run_experiment.py` because that CLI writes a CSV
 keyed on the *basename* of the instance and records nothing about the solver
 configuration, which makes a join against the RC2 tier tables ambiguous and
-unauditable. Every provenance gap listed in `docs/RC2_STATUS.md` §6 is closed
+unauditable. Every provenance gap listed in `docs/archive/RC2_STATUS.md` §6 is closed
 here: sha256 of the instance, the resolved absolute path, the full effective
 config plus its hash, the git sha, and the host.
 
-Cost convention (docs/HARNESS_PLAN.md §5.1): `best_cost` is the **total weight
+Cost convention (docs/archive/HARNESS_PLAN.md §5.1): `best_cost` is the **total weight
 of UNSATISFIED soft clauses** — lower is better, and directly comparable with
 `profile.final_cost` from the RC2 records. `hard_violations` is reported
 separately and a record with `hard_violations > 0` is infeasible, so its
@@ -313,7 +313,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     fmt = detect_format(inst)
     rec["instance_format"] = fmt
     if fmt == "wcnf_new":
-        # MSE 2022+ format. See docs/TIER2_MEMETIC_PLAN.md §3.
+        # MSE 2022+ format. See docs/archive/TIER2_MEMETIC_PLAN.md §3.
         rec["status"] = "unsupported_format"
         rec["error"] = ("new-format WCNF (no `p` line, `h`-prefixed hard clauses); "
                         "sat.cnf.WCNF.parse_dimacs cannot read it")

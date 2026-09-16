@@ -1,12 +1,12 @@
 # Feasibility on the MSE instances — why the stack can't reach it, and the three fixes
 
 **Date: 2026-09-06.** Written against `6335021`. Follow-on to
-[`docs/TIER2_MSE_TARGETSTOP_REPORT.md`](TIER2_MSE_TARGETSTOP_REPORT.md) §3, which
+[`docs/archive/TIER2_MSE_TARGETSTOP_REPORT.md`](TIER2_MSE_TARGETSTOP_REPORT.md) §3, which
 established that no arm reaches a feasible assignment on
 `judgment-aggregation-ja-maxham-preflib-00049-00000293.wcnf` and that fixing the
 watchdog would therefore only convert null records into infeasible ones.
-Companions: [`docs/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),
-[`cluster_staging_maxsat/DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md).
+Companions: [`docs/archive/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),
+[`cluster_staging_maxsat/DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md).
 
 Every number below was measured on this instance, on the workstation, not
 inferred.

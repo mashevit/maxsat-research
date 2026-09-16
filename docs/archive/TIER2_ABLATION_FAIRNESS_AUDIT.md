@@ -4,7 +4,7 @@
 experiments were launched. Companion to
 [`TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),
 [`TIER2_TARGET_STOP.md`](TIER2_TARGET_STOP.md), and
-[`../cluster_staging_maxsat/DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md).
+[`../cluster_staging_maxsat/DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md).
 
 **Question.** A separate analysis reported that `memetic_deeppolish` beats
 `local_multistart_deeppolish` in time to target: geometric mean of per-instance

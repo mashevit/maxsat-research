@@ -1,4 +1,4 @@
-"""Step 2 tests: docs/INSTANCEGEN_PLAN.md §12 tests 1 (files), 2, 3, 4, 5.
+"""Step 2 tests: docs/archive/INSTANCEGEN_PLAN.md §12 tests 1 (files), 2, 3, 4, 5.
 
 Fails before instancegen/wcnf_io.py exists; passes after.
 """

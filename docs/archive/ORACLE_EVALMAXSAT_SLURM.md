@@ -5,7 +5,7 @@ cluster. The login node forbids heavy work, so the solver must run inside a
 job -- and at an 1800 s cap over 856 instances that means an **array** job
 (one instance per task), not one long job.
 
-Companion to `docs/ORACLE_EVALMAXSAT.md` (the driver itself). Added in
+Companion to `docs/archive/ORACLE_EVALMAXSAT.md` (the driver itself). Added in
 `22ee3c3`.
 
 ## Files in the staging tree
@@ -110,7 +110,7 @@ sbatch --time=01:05:00 --export=ALL,TIMEOUT=3600 oracle_evalmaxsat_array.sbatch
 
 - The driver converts plain `p cnf` to all-soft WCNF before calling the solver
   (fed raw, EvalMaxSAT answers `s UNSATISFIABLE` in 0 s -- see
-  `docs/CORPUS_MSE2016_ASSESSMENT.md`) and re-checks the returned model
+  `docs/archive/CORPUS_MSE2016_ASSESSMENT.md`) and re-checks the returned model
   against the formula, so `opt_cost` is only recorded when verified.
 
 - A timeout gives **no bound**: EvalMaxSAT prints no intermediate `o` lines,

@@ -7,11 +7,11 @@ per SLURM array task, one shard file out, aggregated afterwards. It exists
 instead of reusing `src/cli/run_experiment.py` because that CLI writes a CSV
 keyed on the *basename* of the instance and records nothing about the solver
 configuration, which makes a join against the RC2 tier tables ambiguous and
-unauditable. Every provenance gap listed in `docs/RC2_STATUS.md` §6 is closed
+unauditable. Every provenance gap listed in `docs/archive/RC2_STATUS.md` §6 is closed
 here: sha256 of the instance, the resolved absolute path, the full effective
 config plus its hash, the git sha, and the host.
 
-Cost convention (docs/HARNESS_PLAN.md §5.1): `best_cost` is the **total weight
+Cost convention (docs/archive/HARNESS_PLAN.md §5.1): `best_cost` is the **total weight
 of UNSATISFIED soft clauses** — lower is better, and directly comparable with
 `profile.final_cost` from the RC2 records. `hard_violations` is reported
 separately and a record with `hard_violations > 0` is infeasible, so its
@@ -20,7 +20,7 @@ separately and a record with `hard_violations > 0` is infeasible, so its
 `--stop-at-oracle` (off by default) forwards `--oracle-cost` into the solver as
 a target and stops the run the moment the incumbent reaches it, so `wall_time_s`
 becomes a time-to-optimum measurement rather than "the budget was spent"
-(docs/TIER2_MEMETIC_PLAN.md §6.6). It is opt-in because an oracle-terminated run
+(docs/archive/TIER2_MEMETIC_PLAN.md §6.6). It is opt-in because an oracle-terminated run
 is a *benchmarking* mode, not a solver mode. `stop_reason` says which condition
 ended the run.
 
@@ -346,7 +346,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         # a large gap means the node was oversubscribed and the wall-clock
         # comparison for that row is not trustworthy.
         "cpu_time_s": None,
-        # Target-cost early stop (docs/TIER2_MEMETIC_PLAN.md §6.6).
+        # Target-cost early stop (docs/archive/TIER2_MEMETIC_PLAN.md §6.6).
         # `wall_time_s` keeps its meaning -- total loop wall time. It now equals
         # `time_to_target_s` on target-stopped runs and the budget otherwise;
         # `stop_reason` is what disambiguates, so downstream code never has to
@@ -495,7 +495,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         rec["rel_gap"] = round((unsat_w - opt) / opt, 6) if opt > 0 else None
         rec["is_optimal"] = bool(unsat_w == opt)
 
-    # Cost cross-check (docs/TIER2_MEMETIC_PLAN.md §6.3). `best_cost` is
+    # Cost cross-check (docs/archive/TIER2_MEMETIC_PLAN.md §6.3). `best_cost` is
     # re-derived from meta.assign_bits; the solver's own number lives in
     # `best_soft_weight_reported`. If the solver stopped because *its* incumbent
     # reached the target but the re-derived cost is worse than the target, the

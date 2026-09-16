@@ -7,7 +7,7 @@ array manifest for the RC2 hardness screen.
 Why a separate generator from `make_tier2_manifest.py`: that one reads RC2
 profiles and emits *memetic jobs* (tier 2 is its input). This one runs one step
 earlier -- it picks which instances get profiled by RC2 at all, which is what
-decides tier membership in the first place (docs/RC2_STATUS.md §0).
+decides tier membership in the first place (docs/archive/RC2_STATUS.md §0).
 
 Sampling is stratified *within* each leaf directory by clause count, so a sample
 of k spans that directory's density range instead of clustering at one end --

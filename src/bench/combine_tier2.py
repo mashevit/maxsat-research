@@ -18,11 +18,11 @@ Outputs:
   integrity.txt       shard/manifest reconciliation and every anomaly found
 
 Join key is `instance_sha256`, with a basename fallback. The RC2 records have no
-checksum (docs/RC2_STATUS.md §2.5), so the oracle CSV carries the sha the
+checksum (docs/archive/RC2_STATUS.md §2.5), so the oracle CSV carries the sha the
 manifest generator computed at build time; a mismatch means the corpus moved
 between manifest build and run, and is reported rather than silently joined.
 
-Metric guidance is in docs/TIER2_MEMETIC_PLAN.md §6. The short version: on the
+Metric guidance is in docs/archive/TIER2_MEMETIC_PLAN.md §6. The short version: on the
 SATLIB half of tier 2 the optimum is 1 or 2, so `rel_gap` is a nearly binary
 quantity and a poor headline number. Read `hit_rate` (fraction of seeds that
 reach the optimum) and `best_cost` spread instead.

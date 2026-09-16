@@ -1,6 +1,6 @@
 """DIMACS wcnf writer with an explicitly required dialect.
 
-Plan: docs/INSTANCEGEN_PLAN.md §9 (step 2 of §13).
+Plan: docs/archive/INSTANCEGEN_PLAN.md §9 (step 2 of §13).
 
 Two dialects (D1 = option (a): implement both, calibrate and commit with "old"):
 

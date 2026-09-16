@@ -2,11 +2,11 @@
 
 **Date: 2026-09-06.** Run against `bc8859f`, on the workstation (`host: Ilia`,
 Python 3.11.13, WSL2), not on SLURM. Companion to
-[`docs/TIER2_TARGET_STOP.md`](TIER2_TARGET_STOP.md) (how the early stop works),
-[`docs/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (§6.3 the unit trap, §6.6
-time-to-optimum), [`cluster_staging_maxsat/MSE_RUN_NOTES.md`](../cluster_staging_maxsat/MSE_RUN_NOTES.md)
+[`docs/archive/TIER2_TARGET_STOP.md`](TIER2_TARGET_STOP.md) (how the early stop works),
+[`docs/archive/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md) (§6.3 the unit trap, §6.6
+time-to-optimum), [`cluster_staging_maxsat/MSE_RUN_NOTES.md`](../../cluster_staging_maxsat/MSE_RUN_NOTES.md)
 (the SLURM submit for this manifest) and
-[`cluster_staging_maxsat/DIVERGENCE.md`](../cluster_staging_maxsat/DIVERGENCE.md).
+[`cluster_staging_maxsat/DIVERGENCE.md`](../../cluster_staging_maxsat/DIVERGENCE.md).
 
 Five 1800 s runs, ~2.5 CPU-hours. **Four returned no record at all and the fifth
 returned an infeasible one.** Nothing here is oracle-comparable. The value of the

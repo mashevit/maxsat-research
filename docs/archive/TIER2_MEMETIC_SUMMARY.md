@@ -1,6 +1,6 @@
 # Tier-2 Memetic — What I Built
 
-Executive summary of [`docs/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),
+Executive summary of [`docs/archive/TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),
 which holds the full plan, the measurements, and the reproduction commands.
 Written 2026-08-04.
 
@@ -8,7 +8,7 @@ Written 2026-08-04.
 
 ## What I built
 
-**Doc:** `docs/TIER2_MEMETIC_PLAN.md` — the plan, the scripts, and §6 on
+**Doc:** `docs/archive/TIER2_MEMETIC_PLAN.md` — the plan, the scripts, and §6 on
 combining RC2 + memetic results.
 
 **Repo (`src/`, `configs/`):**

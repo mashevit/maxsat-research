@@ -66,7 +66,12 @@ garbage/
 cluster_staging/data/
 cluster_staging/folder_tree.txt
 
-cluster_staging_maxsat/data/
+# Staging tree data: instances out, generated-corpus manifests in (same
+# file-not-directory exclusion trick as data/generated above, so the negation
+# for manifest.jsonl can match). docs/CORPUS_CALIBRATION_GOALS.md §6 M1.
+cluster_staging_maxsat/data/**
+!cluster_staging_maxsat/data/**/
+!cluster_staging_maxsat/data/generated/**/manifest.jsonl
 cluster_staging_maxsat/folder_tree.txt
 
 # MSE-2016 ms_random / ms_crafted benchmark (more_data/): 856 instances, 32 MB,
