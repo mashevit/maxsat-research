@@ -15,6 +15,7 @@ from instancegen.cli import Cell, load_grid, main, render
 
 REPO = Path(__file__).resolve().parents[2]
 CALIB_A = REPO / "instancegen" / "grids" / "calib_a.yaml"
+CALIB_B = REPO / "instancegen" / "grids" / "calib_b.yaml"
 
 SMALL_GRID = """\
 batch: t_small
@@ -72,6 +73,108 @@ def test_calib_a_reproduces_pilot_cells() -> None:
 def test_cell_id_format() -> None:
     assert Cell("max3sat", 3, 250, 4.26).cell_id == "max3sat_n250_a4.26"
     assert Cell("max2sat", 2, 100, 2.0).cell_id == "max2sat_n100_a2"
+
+
+# --- calib_b: the alpha-refinement grid (docs/CALIB_B_PLAN.md) --------------
+
+def test_calib_b_grid_shape() -> None:
+    g = load_grid(str(CALIB_B))
+    assert g.batch == "calib_b"
+    assert g.dialect == "old"
+    assert len(g.cells) == 22
+    items = list(g.items())
+    assert len(items) == 110
+    names = [render(g, c, s)[2] for c, s in items]
+    assert len(set(names)) == 110
+
+
+def test_calib_b_cell_kinds_and_seed_ranges() -> None:
+    """17 exploratory cells at seeds 1-5, 5 reinforcement cells at 6-10
+    (plan §4a/§4b). The reinforcement seeds must be disjoint from calib_a's
+    1-5 and from the final corpus's 1001-1020, or instances would be
+    regenerated rather than added."""
+    g = load_grid(str(CALIB_B))
+    explore = [c for c in g.cells if g.cell_seeds(c) == [1, 2, 3, 4, 5]]
+    reinforce = [c for c in g.cells if g.cell_seeds(c) == [6, 7, 8, 9, 10]]
+    assert len(explore) == 17 and len(reinforce) == 5
+    assert len(explore) + len(reinforce) == len(g.cells)
+    assert {c.cell_id for c in reinforce} == {
+        "max3sat_n50_a8", "max3sat_n70_a6", "max3sat_n250_a4.26",
+        "max2sat_n150_a3", "max2sat_n400_a2",
+    }
+
+
+def test_calib_b_reinforcement_cells_exist_in_calib_a_and_explore_cells_do_not() -> None:
+    """Reinforcement cells must be calib_a cells (same (k, n, alpha)) so the
+    extra seeds enlarge an existing cell; exploratory cells must be new, or
+    the round would re-measure what A1 already measured."""
+    a = {(c.k, c.n, c.alpha) for c in load_grid(str(CALIB_A)).cells}
+    g = load_grid(str(CALIB_B))
+    for cell in g.cells:
+        key = (cell.k, cell.n, cell.alpha)
+        if g.cell_seeds(cell) == [6, 7, 8, 9, 10]:
+            assert key in a, f"reinforcement cell {cell.cell_id} is not a calib_a cell"
+        else:
+            assert key not in a, f"exploratory cell {cell.cell_id} duplicates calib_a"
+
+
+def test_calib_b_shares_calib_a_generator_conventions() -> None:
+    a = load_grid(str(CALIB_A))
+    g = load_grid(str(CALIB_B))
+    assert g.params == a.params and g.dialect == a.dialect
+    for cell in g.cells:
+        p = g.gen_params(cell, 1)
+        assert p.hard_ratio == 0.0 and p.w_max == 1 and p.weight_dist == "uniform"
+        assert p.n_hard == 0
+        assert p.n_soft == int(round(cell.alpha * cell.n))
+
+
+def test_calib_b_filenames_are_disjoint_from_calib_a() -> None:
+    """Different batches write to different directories, but a filename
+    collision would still mean two identical instances counted twice in a
+    pooled Tier-2 manifest."""
+    a = load_grid(str(CALIB_A))
+    g = load_grid(str(CALIB_B))
+    names_a = {render(a, c, s)[2] for c, s in a.items()}
+    names_b = {render(g, c, s)[2] for c, s in g.items()}
+    assert names_a & names_b == set()
+
+
+# --- per-family seed override ----------------------------------------------
+
+def test_per_family_seeds_override_top_level(tmp_path: Path) -> None:
+    grid = tmp_path / "g.yaml"
+    grid.write_text(SMALL_GRID.replace(
+        "  - {family: max2sat, k: 2, n: [25], alpha: [2, 3]}",
+        "  - {family: max2sat, k: 2, n: [25], alpha: [2, 3], seeds: [7, 8, 9]}"))
+    g = load_grid(str(grid))
+    assert g.seeds == [1, 2]
+    by_id = {c.cell_id: c for c in g.cells}
+    assert g.cell_seeds(by_id["max3sat_n20_a4.26"]) == [1, 2]
+    assert g.cell_seeds(by_id["max2sat_n25_a2"]) == [7, 8, 9]
+    assert len(list(g.items())) == 4 * 2 + 2 * 3
+    root = tmp_path / "staging"
+    assert main(["generate-grid", "--grid", str(grid), "--staging-root", str(root)]) == 0
+    rows = [json.loads(l) for l in
+            (root / "data" / "generated" / "t_small" / "manifest.jsonl").read_text().splitlines()]
+    assert len(rows) == 14
+    assert sorted(r["seed"] for r in rows if r["k"] == 2) == [7, 7, 8, 8, 9, 9]
+    assert sorted(set(r["seed"] for r in rows if r["k"] == 3)) == [1, 2]
+    assert main(["generate-grid", "--grid", str(grid), "--staging-root", str(root),
+                 "--check"]) == 0
+
+
+@pytest.mark.parametrize("bad, match", [
+    ("seeds: [7, 7]", "duplicate seeds"),
+    ("seeds: []", "empty seeds"),
+])
+def test_bad_per_family_seeds_rejected(tmp_path: Path, bad: str, match: str) -> None:
+    grid = tmp_path / "g.yaml"
+    grid.write_text(SMALL_GRID.replace(
+        "  - {family: max2sat, k: 2, n: [25], alpha: [2, 3]}",
+        f"  - {{family: max2sat, k: 2, n: [25], alpha: [2, 3], {bad}}}"))
+    with pytest.raises(ValueError, match=match):
+        load_grid(str(grid))
 
 
 def test_duplicate_cells_rejected(tmp_path: Path) -> None:

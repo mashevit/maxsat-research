@@ -27,6 +27,12 @@ Grid file shape (see instancegen/grids/calib_a.yaml):
     seeds: [1, 2, 3, 4, 5]
     families:
       - {family: max3sat, k: 3, n: [50, 70], alpha: [4.26, 5]}
+      - {family: max2sat, k: 2, n: [150], alpha: [3], seeds: [6, 7, 8, 9, 10]}
+
+A family entry may carry its own `seeds:`, which replaces the top-level list
+for that entry's cells; that is how a refinement batch re-samples a cell an
+earlier batch already ran (calib_b, docs/CALIB_B_PLAN.md §4b) without
+regenerating the earlier seeds. Cell sizes are then unequal by design.
 
 `alpha` is the soft clause density m/n and maps straight onto
 GenParams.soft_ratio, so m = round(alpha * n) is what generate.py produces.
@@ -59,6 +65,7 @@ class Cell:
     k: int
     n: int
     alpha: float
+    seeds: Optional[tuple] = None  # None => the grid's top-level seeds
 
     @property
     def cell_id(self) -> str:
@@ -84,10 +91,21 @@ class Grid:
             weight_dist=str(self.params["weight_dist"]),
         )
 
+    def cell_seeds(self, cell: Cell) -> List[int]:
+        """The cell's seeds: its own override, else the grid's top-level list.
+
+        A per-family `seeds:` is how a refinement batch re-samples a cell that
+        already exists in an earlier batch (calib_b §4b: seeds 6-10 on the five
+        cells calib_a ran at seeds 1-5) without regenerating the earlier
+        instances. Cell sizes are then unequal, which every downstream table
+        has to state -- see docs/CALIB_B_PLAN.md §4b.
+        """
+        return list(cell.seeds) if cell.seeds is not None else list(self.seeds)
+
     def items(self) -> Iterator[tuple[Cell, int]]:
         """(cell, seed) in manifest order: families as listed, n, alpha, seed."""
         for cell in self.cells:
-            for seed in self.seeds:
+            for seed in self.cell_seeds(cell):
                 yield cell, seed
 
 
@@ -100,17 +118,27 @@ def load_grid(path: str) -> Grid:
     for key in ("hard_ratio", "w_max", "weight_dist"):
         if key not in raw["params"]:
             raise ValueError(f"grid {path}: params missing {key!r}")
-    seeds = [int(s) for s in raw["seeds"]]
-    if len(set(seeds)) != len(seeds):
-        raise ValueError(f"grid {path}: duplicate seeds {seeds}")
+
+    def _seed_list(raw_seeds, where: str) -> List[int]:
+        out = [int(s) for s in raw_seeds]
+        if not out:
+            raise ValueError(f"grid {path}: empty seeds in {where}")
+        if len(set(out)) != len(out):
+            raise ValueError(f"grid {path}: duplicate seeds {out} in {where}")
+        return out
+
+    seeds = _seed_list(raw["seeds"], "top level")
     cells: List[Cell] = []
     for fam in raw["families"]:
         for key in ("family", "k", "n", "alpha"):
             if key not in fam:
                 raise ValueError(f"grid {path}: family entry missing {key!r}: {fam}")
+        fam_seeds = (tuple(_seed_list(fam["seeds"], f"family {fam.get('family')!r}"))
+                     if "seeds" in fam else None)
         for n in fam["n"]:
             for alpha in fam["alpha"]:
-                cells.append(Cell(str(fam["family"]), int(fam["k"]), int(n), float(alpha)))
+                cells.append(Cell(str(fam["family"]), int(fam["k"]), int(n),
+                                  float(alpha), fam_seeds))
     ids = [c.cell_id for c in cells]
     if len(set(ids)) != len(ids):
         dup = sorted({i for i in ids if ids.count(i) > 1})
@@ -253,7 +281,9 @@ def cmd_generate_grid(args: argparse.Namespace) -> int:
         for sha, rel in zip(shas, rel_paths):
             f.write(f"{sha}  {rel}\n")
 
-    print(f"batch={grid.batch} cells={len(grid.cells)} seeds={len(grid.seeds)} "
+    seed_sizes = sorted({len(grid.cell_seeds(c)) for c in grid.cells})
+    print(f"batch={grid.batch} cells={len(grid.cells)} "
+          f"seeds/cell={','.join(str(x) for x in seed_sizes)} "
           f"instances={len(rows)} written={n_written} unchanged={n_same}")
     print(f"instances : {out_dir}")
     print(f"manifest  : {manifest}")

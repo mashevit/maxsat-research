@@ -1,0 +1,11 @@
+batch,cell_id,family,k,n,alpha,m,seed,instance,instance_sha256,oracle_cost,rc2_solve_s,rc2_cap_s,tier,pysat_version
+calib_a,max2sat_n100_a4,max2sat,2,100,4.0,400,3,data/generated/calib_a/wksat_v100_k2_sr4.00_hr0.00_w1_uniform_s3.wcnf,1bf6431e65d0ee4118808652c665277d8a2a9ba66fb1c9706fb8f000be3356f8,31,173.651,900.0,T2a,1.9.dev3
+calib_a,max2sat_n150_a3,max2sat,2,150,3.0,450,3,data/generated/calib_a/wksat_v150_k2_sr3.00_hr0.00_w1_uniform_s3.wcnf,896f8138027145c639c73e12b215c4e874a6b25d93e256c98f86f912ea9c021c,23,65.08,900.0,T2a,1.9.dev3
+calib_a,max3sat_n50_a8,max3sat,3,50,8.0,400,1,data/generated/calib_a/wksat_v50_k3_sr8.00_hr0.00_w1_uniform_s1.wcnf,6c42f48dd5be35d928c1a529c6941dcf3cabeff4b5391eed718aff57a0d3f4a3,10,65.659,900.0,T2a,1.9.dev3
+calib_a,max3sat_n50_a8,max3sat,3,50,8.0,400,2,data/generated/calib_a/wksat_v50_k3_sr8.00_hr0.00_w1_uniform_s2.wcnf,308041817cf320b05bb62a0225928a6c600855e2f9fa5b153966fee2096921fa,10,88.686,900.0,T2a,1.9.dev3
+calib_a,max3sat_n50_a8,max3sat,3,50,8.0,400,4,data/generated/calib_a/wksat_v50_k3_sr8.00_hr0.00_w1_uniform_s4.wcnf,4847f9a215a190a115626c51f6a99a8be32098f8ef0310390c504ed20911cd48,11,76.107,900.0,T2a,1.9.dev3
+calib_a,max3sat_n70_a6,max3sat,3,70,6.0,420,2,data/generated/calib_a/wksat_v70_k3_sr6.00_hr0.00_w1_uniform_s2.wcnf,55084c5ac6ab8ef8886112e05dd9d245542c0653b33fb106619a3e6fe81a11ee,7,159.513,900.0,T2a,1.9.dev3
+calib_a,max3sat_n70_a6,max3sat,3,70,6.0,420,5,data/generated/calib_a/wksat_v70_k3_sr6.00_hr0.00_w1_uniform_s5.wcnf,ef29b3a0a96cc809785c9cfe729a17b008ec29831b9cb4a57a093492454a0bb1,6,75.355,900.0,T2a,1.9.dev3
+calib_a,max3sat_n100_a5,max3sat,3,100,5.0,500,2,data/generated/calib_a/wksat_v100_k3_sr5.00_hr0.00_w1_uniform_s2.wcnf,80fed4b8e5bf2b9cb4bae3bda9b6781d8cbf39cfd10c34c5e9b82725abfc4b06,4,93.01,900.0,T2a,1.9.dev3
+calib_a,max3sat_n250_a4.26,max3sat,3,250,4.26,1065,2,data/generated/calib_a/wksat_v250_k3_sr4.26_hr0.00_w1_uniform_s2.wcnf,a467213a83ad3e50c481e229ce1d133789b3d94a6110592f3080f72af3f16e11,1,281.412,900.0,T2a,1.9.dev3
+calib_a,max3sat_n250_a4.26,max3sat,3,250,4.26,1065,4,data/generated/calib_a/wksat_v250_k3_sr4.26_hr0.00_w1_uniform_s4.wcnf,be4183b0bd4dbeab650cc5a709ddacfd03be88ce4f27182aa31521b4ca2b366a,1,387.757,900.0,T2b,1.9.dev3

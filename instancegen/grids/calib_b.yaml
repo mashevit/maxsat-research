@@ -1,0 +1,67 @@
+# Calibration batch `calib_b` -- the alpha-refinement round reserved by
+# docs/CORPUS_CALIBRATION_GOALS.md §3 and specified in docs/CALIB_B_PLAN.md.
+#
+# 22 cells x 5 generator seeds = 110 instances. Same generator conventions,
+# solver configuration and cap (900 s + 60 s grace) as calib_a: this batch
+# adds rows to the same measurement, it does not change it.
+#
+# Two kinds of cell (plan §4):
+#
+#   4a. exploratory, seeds 1-5, 17 cells -- new alpha values placed inside the
+#       bracket between the last certified and first censored calib_a cell of
+#       the same (n, k) row, targeting RC2 `solve_s` in the repo's Tier-2
+#       window (60-600 s, `assign_tier()` in src/cli/profile_hardness.py).
+#       Placement comes from A1's measured per-row dc*/dm and d log10(t)/dc*
+#       slopes, fitted per row because they differ by ~3x between rows -- not
+#       from an assumption that c* alone sets RC2 time, and not from any
+#       assumption that higher alpha is the direction needed: three rows are
+#       refined *downward* from the first censored cell and one (3-SAT n=250)
+#       sits barely above the existing alpha, whose wall is already crossed.
+#
+#   4b. reinforcement, seeds 6-10, 5 cells -- the five cells that pass the RC2
+#       half of the §5.3 rules on A1 (certified >= 4/5, median solve_s >= 10 s),
+#       re-sampled with five fresh generator seeds. Seeds 6-10 are disjoint
+#       from calib_a's 1-5 and from the final corpus's 1001-1020, so nothing
+#       is regenerated and no calib_a row is superseded. These cells then hold
+#       10 seeds against 5 elsewhere: every downstream table must state the
+#       unequal cell sizes (certified fraction is x/10, not x/5).
+#
+# Cell selection (which alphas to sample) is separate from instance
+# eligibility (which instances enter Tier 2). This file decides only the
+# former; the latter is applied per instance by src/bench/calib_tier2_select.py
+# from each instance's own RC2 row.
+batch: calib_b
+dialect: old
+params:
+  hard_ratio: 0.0
+  w_max: 1
+  weight_dist: uniform
+seeds: [1, 2, 3, 4, 5]
+families:
+  # --- 4a. exploratory cells, seeds 1-5 -------------------------------------
+  # 3-SAT. n=50 is the one row whose wall lies outside the calib_a grid
+  # (alpha=8 certified c*=8-11 in 10-89 s), so it is the one row refined
+  # upward. n=70/100 bracket a wall at c*~8 / c*~5. n=150's wall is at c*~4,
+  # already crossed at alpha=5 (3/5), so its new cells sit *below* alpha=5.
+  - {family: max3sat, k: 3, n: [50],  alpha: [8.5, 9.0]}
+  - {family: max3sat, k: 3, n: [70],  alpha: [6.2, 6.5]}
+  - {family: max3sat, k: 3, n: [100], alpha: [5.2, 5.5]}
+  - {family: max3sat, k: 3, n: [150], alpha: [4.6, 4.8]}
+  # n=250: the whole 60-600 s window is c*=1, which alpha=4.26 already
+  # produces (166-388 s); alpha=5 is censored at LB 2. One cell only, just
+  # above 4.26, to shift mass off c*=0 without reaching c*=2. This row's
+  # yield comes from the reinforcement cell below.
+  - {family: max3sat, k: 3, n: [250], alpha: [4.35]}
+  # 2-SAT. n=100's wall is at c*~50, n=150's at c*~27, n=400's at c*~20-24;
+  # n=250 has no measured wall (alpha=2 trivial, alpha=3 censored) and is
+  # placed from the ceiling's trend in n across the other three rows.
+  - {family: max2sat, k: 2, n: [100], alpha: [4.5, 5.0]}
+  - {family: max2sat, k: 2, n: [150], alpha: [3.15, 3.30]}
+  - {family: max2sat, k: 2, n: [250], alpha: [2.35, 2.50]}
+  - {family: max2sat, k: 2, n: [400], alpha: [2.15, 2.30]}
+  # --- 4b. reinforcement cells, seeds 6-10 ----------------------------------
+  - {family: max3sat, k: 3, n: [50],  alpha: [8.0],  seeds: [6, 7, 8, 9, 10]}
+  - {family: max3sat, k: 3, n: [70],  alpha: [6.0],  seeds: [6, 7, 8, 9, 10]}
+  - {family: max3sat, k: 3, n: [250], alpha: [4.26], seeds: [6, 7, 8, 9, 10]}
+  - {family: max2sat, k: 2, n: [150], alpha: [3.0],  seeds: [6, 7, 8, 9, 10]}
+  - {family: max2sat, k: 2, n: [400], alpha: [2.0],  seeds: [6, 7, 8, 9, 10]}

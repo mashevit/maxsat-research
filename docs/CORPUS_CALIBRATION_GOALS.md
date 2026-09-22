@@ -160,6 +160,15 @@ Expected cost of the RC2 arm is bounded in §4.5. The grid is small on purpose:
 if the strip of §2.4 H3 falls between grid lines, `calib_b` refines around it
 with the same tooling before anything is frozen.
 
+**`calib_b` was invoked (2026-09-22, log Checkpoint 3).** A1 found the strip
+one grid step wide and between grid lines in 5 of 9 (n, k) rows, leaving 10
+instances that are both certified and RC2-nontrivial. The refinement grid is
+`instancegen/grids/calib_b.yaml` (22 cells, 110 instances, same cap and
+solver configuration) and its rationale is
+[`CALIB_B_PLAN.md`](CALIB_B_PLAN.md). It runs before M2; note that its five
+reinforcement cells carry 10 seeds instead of 5, so cell-level fractions in
+§5.3 read as proportions, not as x/5.
+
 ---
 
 ## 4. Measurements, solver configurations, budgets, timeouts

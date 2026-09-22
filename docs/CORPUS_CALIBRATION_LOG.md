@@ -502,3 +502,235 @@ the RC2 half of the proposed rules, 3 miss narrowly; 70 of the 92 certified
 instances are sub-10 s for RC2. Points to a `calib_b` α-refinement round;
 whether it precedes M2 is the next decision. Item 1 of "Next" above is
 done; items 2–3 still await approval.
+
+---
+
+## 2026-09-22 — Checkpoint 3: calib_b prepared (grid refinement before M2)
+
+Against commit `ccf2735` (calib_a A1 results committed). Work tree at the end
+of this checkpoint is **uncommitted**. **No job was submitted** — this
+workstation has no cluster access (goals §7); the commands are below.
+**M2 was not run.**
+
+### Decision: grid refinement precedes M2, and why
+
+The A1 read-out recommended M2 first. That is superseded here. The reason is
+a count, not a preference:
+
+| A1 outcome (180 instances) | count |
+|---|---:|
+| certified (RC2 proved c\*) | 92 |
+| certified **and** `60 s < solve_s ≤ 600 s` — the repo's Tier-2 window | **10** |
+| certified and `60 s < solve_s ≤ cap` (`include_solved_t3` reading) | 12 |
+| certified and `solve_s ≥ 30 s` (sensitivity only, not an adopted rule) | 17 |
+| certified and `solve_s < 10 s` | 70 |
+| censored at 900 s | 88 |
+
+**The immediate bottleneck is the number and runtime spread of
+RC2-nontrivial, certified instances, not the memetic arm.** Tier 2 excludes
+RC2-trivial instances by construction, so M2's 276 tasks (≤ 69 CPU-h) would
+be spent mostly on the 70 sub-10-second instances and would produce a memetic
+read-out over an eligible population of 10 instances drawn from 6 cells, 3 of
+them from a single cell. Refining the grid first costs less (≤ 29.3 CPU-h),
+and it changes the size of the set M2 runs on. Goals §3 already reserves
+`calib_b` for exactly the finding A1 produced — the informative strip is one
+grid step wide and falls between grid lines in 5 of 9 (n, k) rows.
+
+Plan written before any implementation: **`docs/CALIB_B_PLAN.md`**.
+
+### Tier 2 — the established definition was checked, not replaced
+
+`assign_tier()` (`src/cli/profile_hardness.py`) has held `T1_MAX_S = 60`,
+`T2A_MAX_S = 300`, `T2B_MAX_S = 600` since the tier-2 runs; an instance is
+Tier 2 iff RC2 **completed** and `60 s < solve_s ≤ 600 s`.
+`make_tier2_manifest.py`'s `include_solved_t3` rescue extends the upper edge
+to the batch cap. The 30–900 s band discussed when this round was requested
+is **not** that rule: the repository's floor is 60 s, not 30 s. No threshold
+constant was edited. The ≥ 30 s count is carried as a labelled sensitivity
+column (it would take calib_a from 10 eligible to 17); adopting it is a
+decision for this log, with a reason, not a side effect of a refinement round.
+**Open.**
+
+Kept separate throughout (plan §2): **cell-level** rules (goals §5.3,
+certified ≥ 4/5 and median `solve_s` ≥ 10 s) decide where to *sample*;
+**per-instance** rules decide what is *eligible*. A cell median above the
+threshold does not make its seeds eligible, and three calib_a instances are
+eligible from cells that fail the cell rule (2-SAT n = 100 α = 4 s3 at 174 s;
+3-SAT n = 100 α = 5 s2 at 93 s; 3-SAT n = 150 α = 5 s3 at 772 s, over the
+600 s edge).
+
+### The grid: 22 cells, 110 instances
+
+`instancegen/grids/calib_b.yaml`. α refined at fixed (n, k) within every row.
+Placement is from A1's measured per-row `dc*/dm` and `d log10(solve_s)/dc*`
+slopes, fitted per row because they differ by ~3× across rows — c\* is used
+inside a row, never as a global predictor of RC2 time.
+
+- **17 exploratory cells, seeds 1–5** (plan §4a). Two α per row: one inside
+  the certified side of the bracket, one nearer the wall. Three rows are
+  refined *downward* from the first censored cell (2-SAT n = 250, n = 400;
+  3-SAT n = 150) and 3-SAT n = 250 sits barely above its existing α — higher
+  α is not assumed to be the needed direction. 3-SAT n = 50 is the one row
+  refined upward, because its wall is outside the calib_a grid.
+  - 3-SAT: n = 50 {8.5, 9.0}; n = 70 {6.2, 6.5}; n = 100 {5.2, 5.5};
+    n = 150 {4.6, 4.8}; n = 250 {4.35}
+  - 2-SAT: n = 100 {4.5, 5.0}; n = 150 {3.15, 3.30}; n = 250 {2.35, 2.50};
+    n = 400 {2.15, 2.30}
+- **5 reinforcement cells, seeds 6–10** (plan §4b): the five cells that pass
+  the RC2 half of the §5.3 rules on A1 (2-SAT n = 150 α = 3, n = 400 α = 2;
+  3-SAT n = 50 α = 8, n = 70 α = 6, n = 250 α = 4.26). Seeds 6–10 are
+  disjoint from calib_a's 1–5 and from M4's 1001–1020, so nothing is
+  regenerated. **Consequence to carry downstream: these five cells now hold
+  10 seeds against 5 elsewhere — certified fraction is x/10 there, and every
+  table must state the unequal cell sizes.**
+
+Not in this round: n refinement (the strongest calib_c candidate is 3-SAT
+α = 4.26 at n ≈ 180–200, between n = 150's 0.04 s median and n = 250's 166 s);
+raising the cap; any recursive search.
+
+### Configuration preserved
+
+Cap **900 s** + 60 s grace, `RC2(wcnf, solver="g3")` with
+`adapt=exhaust=minz=False`, `rc2_profile_array.sbatch` / `submit_rc2_profile.sh`
+unchanged, same generator conventions (pure soft, `w_max = 1`, uniform,
+`m = round(α·n)`, old dialect). Nothing in the solver environment was
+upgraded, installed or re-pinned.
+
+**PySAT (Checkpoint 2's open item) — still open, and not pre-empted.**
+calib_b runs on the same cluster `maxsat` env that produced A1's uniform
+1.9.dev3. Comparability rests on the env being *recorded per task* rather
+than assumed: `task_N.env.json` carries `pysat_version`, and
+`aggregate_rc2_profile.py` (new, below) prints the per-batch version spread
+and warns if a batch is not uniform. If the cluster env has moved since
+2026-09-22 the aggregation will say so, and calib_b is not pooled with
+calib_a until that is resolved. Optima are version-robust (Checkpoint 2's
+two cross-checks gave identical c\*); only timings move, and they already
+carry A1's 29-host spread. Running B1 under A1's env is the option that keeps
+both Checkpoint 2 choices (freeze dev3 / upgrade and re-run both) available.
+
+### Implemented
+
+| file | what |
+|---|---|
+| `docs/CALIB_B_PLAN.md` | the plan (new) — selection rule, grid, budget, comparability, what the results decide |
+| `instancegen/grids/calib_b.yaml` | the 22-cell grid (new) |
+| `instancegen/cli.py` | per-family `seeds:` override, so a refinement batch can re-sample an existing cell at fresh seeds; `cell_seeds()`; the summary line now prints seeds-per-cell |
+| `instancegen/tests/test_cli.py` | 7 new tests: calib_b shape (22 cells / 110 instances), exploratory-vs-reinforcement split, reinforcement cells exist in calib_a and exploratory cells do not, shared generator conventions, filenames disjoint from calib_a, per-family seeds end-to-end, bad per-family seeds rejected |
+| `cluster_staging_maxsat/scripts/aggregate_rc2_profile.py` | per-task → `_all` / `_env`, the rule applied by hand at Checkpoint 2, now in the tree (new; Checkpoint 2 "Next" item 2) |
+| `src/bench/calib_tier2_select.py` | per-instance Tier-2 eligibility across batches, deduplicated on `instance_sha256`; emits `tier2_eligible.csv` + `tier2_cells.csv` (new) |
+| `cluster_staging_maxsat/data/generated/calib_b/` | 110 instances (gitignored) + `manifest.jsonl` (tracked) |
+| `cluster_staging_maxsat/scripts/manifest_calib_b_rc2.{txt,sha256}` | 110 lines, line N = array task N |
+
+### Validation performed on this workstation
+
+- `python -m pytest instancegen -q` → **79 passed**.
+- `generate-grid` → 110 files written; `--check` re-generates in memory and
+  passes; `sha256sum -c scripts/manifest_calib_b_rc2.sha256` → 110/110 OK.
+- `aggregate_rc2_profile.py --batch calib_a --check` reproduces the
+  Checkpoint 2 aggregates **byte-for-byte** (180 rows; 92 completed / 88
+  censored / 0 failed; PySAT 1.9.dev3 × 180; 29 hosts).
+- `calib_tier2_select.py --batches calib_a` reproduces the read-out
+  independently: 10 / 12 / 17 eligible under the three windows, 5 of 36 cells
+  pass the §5.3 cell rule.
+- Smoke through the real sbatch file (`LOCAL_SMOKE=1`, workstation PySAT
+  1.9.dev15), 6 calib_b tasks, caps 20 / 60 s: both classes exercised —
+  4 completed rows and 2 `subprocess_killed` rows with `cost_lower_bound`
+  recovered from the progress file. Outputs written to a scratch dir and
+  deleted; no calib_b result rows exist in the tree.
+- `DRY_RUN=1` submit → `sbatch --array=1-110%30`; `RESUME=1` against the
+  smoke rows correctly skipped the 4 completed tasks and re-listed the 2
+  censored-at-a-lower-cap ones (`array=1-30,35-110`).
+
+### Two findings from the smoke run
+
+1. **Negative `solve_s` is possible.** Task 34 returned
+   `status=optimal solve_s=-0.827`. The outer profiler times with
+   `time.monotonic()`, but the value reported for a *completed* run is the
+   child's `elapsed_s`, which `solve_rc2_anytime.py` computes from
+   `time.time()` — a wall clock, so a clock step (WSL2 here) yields a
+   nonsense duration. **A1 has 0 occurrences in 180 rows** (min completed
+   `solve_s` 0.003 s), so nothing measured is affected. Not repaired: the
+   measurement path is frozen for the calibration, and changing it between A1
+   and B1 would break the "same code" invariant. Instead
+   `aggregate_rc2_profile.py` detects and warns, and `calib_tier2_select.py`
+   classifies such a row as §4.4 class 3 (failed), never as a fast solve.
+   Note `rc2_row_state.py` would still treat it as `skip:completed`, so a
+   re-run needs the task id passed by hand. **Open, low priority.**
+2. **3-SAT n = 150 α = 4.6 may be the trivial edge.** The five seeds at
+   dev15 / cap 60 s gave c\* = 0, 1, 1, 1 in 0.1–0.6 s and one censored at
+   LB 3 — i.e. the same c\* = 1 vs c\* = 3 split the α = 5 cell shows, but
+   faster. One seed may still certify in the 60–600 s window at cap 900. The
+   cell stays: trivial and censored outcomes are what locate the edges
+   (§4.4), and re-placing a cell on five workstation rows under a different
+   PySAT build would be exactly the ad-hoc refinement this round avoids.
+
+### Jobs / commands — prepared, not submitted
+
+```bash
+# 1. workstation -> cluster (carries data/generated/calib_b/, 110 files, 1.2 MB)
+rsync -av --exclude '__pycache__' cluster_staging_maxsat/ <user>@<cluster>:~/maxsat-lab/
+
+# 2. login node: verify, dry-run, submit B1
+cd ~/maxsat-lab/scripts && mkdir -p logs
+cd .. && sha256sum -c scripts/manifest_calib_b_rc2.sha256 | tail -1 && cd scripts
+DRY_RUN=1 MANIFEST=manifest_calib_b_rc2.txt OUTDIR=results/profile_calib_b \
+    bash submit_rc2_profile.sh          # expect: 110 tasks, 1-110%30, cap 900
+MANIFEST=manifest_calib_b_rc2.txt OUTDIR=results/profile_calib_b \
+    bash submit_rc2_profile.sh          # submit; record the job id here
+
+# 3. monitor / resume (a task killed by --time leaves no row)
+squeue -u $USER
+RESUME=1 MANIFEST=manifest_calib_b_rc2.txt OUTDIR=results/profile_calib_b \
+    bash submit_rc2_profile.sh
+
+# 4. cluster -> workstation, then aggregate and select here
+rsync -av <user>@<cluster>:~/maxsat-lab/results/profile_calib_b/ \
+      cluster_staging_maxsat/results/profile_calib_b/
+cd cluster_staging_maxsat && python3 scripts/aggregate_rc2_profile.py --batch calib_b && cd ..
+python -m src.bench.calib_tier2_select --batches calib_a calib_b
+```
+
+`--time` note from Checkpoint 2: tasks 39/40 of A1 left no row under the
+20-minute wall. If `sacct` shows `TIMEOUT` for `21411927_39/40`, submit B1
+with `-- --time=00:25:00` appended to the submit command.
+
+### Budget
+
+| batch | tasks | per task | CPU-h (worst case) | elapsed at %30 |
+|---|---:|---|---:|---|
+| B1 RC2, calib_b | 110 | 1 CPU · 8 GB · ≤ 960 s | **29.3** | ⌈110/30⌉ = 4 waves ≈ 1.1 h |
+
+Queue delay excluded (record from `sacct`). No memetic tasks in this round.
+
+### Files touched in this checkpoint (uncommitted)
+
+```
+M  instancegen/cli.py
+M  instancegen/tests/test_cli.py
+M  docs/CORPUS_CALIBRATION_LOG.md
+A  docs/CALIB_B_PLAN.md
+A  instancegen/grids/calib_b.yaml
+A  src/bench/calib_tier2_select.py
+A  cluster_staging_maxsat/scripts/aggregate_rc2_profile.py
+A  cluster_staging_maxsat/scripts/manifest_calib_b_rc2.txt
+A  cluster_staging_maxsat/scripts/manifest_calib_b_rc2.sha256
+A  cluster_staging_maxsat/data/generated/calib_b/manifest.jsonl   (110 instances gitignored)
+A  results/calibration/tier2_{eligible,cells}.csv                 (calib_a only, regenerated per batch)
+```
+
+### Next (awaiting approval)
+
+1. **Submit B1** on the login node and record the job id and `sacct` stamps.
+2. **B1 read-out** when it returns: per-cell table for the 22 cells, then the
+   pooled calib_a ∪ calib_b eligibility counts under the three windows.
+3. **Then** decide, per plan §7: stop refining and run M2; or one further
+   round in the thin rows; or move the remaining effort to reinforcement
+   seeds. M2 stays unrun until that decision.
+4. Open items carried forward: the PySAT dev3/dev15 freeze (Checkpoint 2);
+   whether to lower the Tier-2 floor to 30 s; and whether the reported Tier-2
+   population is built from calibration batches at all — goals §5.4 says the
+   final corpus is regenerated at seeds 1001–1020 and that calibration rows
+   never enter a reported ρ. `calib_tier2_select.py` builds the manifest
+   either way; the default remains §5.4 until this log says otherwise. Any ρ
+   eventually reported describes the selected Tier-2 population under this
+   stack, this cap and these rules — not random Max-k-SAT.
