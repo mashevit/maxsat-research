@@ -1,5 +1,26 @@
 # calib_b — RC2 grid refinement, plan
 
+> **Status: executed and closed, 2026-09-22.** B1 returned 110/110 rows
+> (85 completed, 25 censored, 0 failed) for 10.0 CPU-h of the 29.3 CPU-h
+> budgeted below. **§7's first branch fired**: the pooled Tier-2-eligible
+> population went from 10 instances in 6 cells to **46 in 21 cells**, against
+> the stated stop condition of "≥ 40 across ≥ 8 cells, spread rather than
+> piled at one end". α refinement is closed; no calib_c. The §6 comparability
+> condition held (uniform PySAT 1.9.dev3, identical to A1), so calib_a and
+> calib_b are pooled. Results, the scoring of this plan's own placement
+> method, and the open items are in
+> [`CALIB_B_B1_READOUT.md`](CALIB_B_B1_READOUT.md) and
+> [`CORPUS_CALIBRATION_LOG.md`](CORPUS_CALIBRATION_LOG.md) Checkpoint 4.
+>
+> Where the plan was right and wrong, in one line each: the per-row `dc*/dm`
+> model predicted c\* inside the observed range in **16 of 17** exploratory
+> cells; the time model was within 3× in only **12 of 17**; placing **two** α
+> per row (§3, step 3) is what absorbed that error; all **5** reinforcement
+> cells (§4b) held and supplied 15 of the 46; and §4c's note that n
+> refinement, not α, is the lever for 3-SAT n = 150 was confirmed
+> quantitatively — that row yielded **0** eligible instances at four α values
+> because its c\* ladder steps over the whole 60–600 s window.
+
 **Date:** 2026-09-22. Written against commit `ccf2735` (calib_a A1 results
 committed), before any calib_b instance is generated. Companion to
 [`CORPUS_CALIBRATION_GOALS.md`](CORPUS_CALIBRATION_GOALS.md) (§3 reserves this

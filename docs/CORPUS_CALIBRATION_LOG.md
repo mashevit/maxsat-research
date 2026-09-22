@@ -734,3 +734,201 @@ A  results/calibration/tier2_{eligible,cells}.csv                 (calib_a only,
    either way; the default remains §5.4 until this log says otherwise. Any ρ
    eventually reported describes the selected Tier-2 population under this
    stack, this cap and these rules — not random Max-k-SAT.
+
+---
+
+## 2026-09-22 — Checkpoint 4: B1 returned; calib_b read out; α refinement closed
+
+Against commit `c9e62b9` (Checkpoint 3 committed). B1 ran on the cluster and
+the results were rsynced back. Aggregated and analysed on the workstation; no
+job was submitted from here. **M2 is still not run.**
+
+Read-out: **`docs/CALIB_B_B1_READOUT.md`** (new). The plan it is scored
+against is `docs/CALIB_B_PLAN.md`, written before any calib_b instance
+existed.
+
+### What came back
+
+| | |
+|---|---|
+| rows | 110 / 110 tasks, 0 missing, 0 superseded, **0 failed** |
+| §4.4 classes | 85 completed, 25 censored at cap |
+| env | `pysat 1.9.dev3` × 110, python 3.11.15 × 110 — **uniform and identical to A1** |
+| hosts | 18 distinct (A1: 29; 11 shared) |
+| negative `solve_s` | 0 (Checkpoint 3 finding 1 detector silent, as on A1) |
+| cost | **10.0 CPU-h** of the 29.3 CPU-h worst-case budget (34 %) |
+
+Plan §6 made pooling conditional on the env being *recorded* and uniform
+rather than assumed. It is both, so **calib_a ∪ calib_b is pooled** (290 rows,
+290 distinct `instance_sha256`, 0 collisions). This does not close the
+dev3/dev15 decision; it confirms the option stayed open.
+
+### The achievement: the eligible population went 10 → 46
+
+`python -m src.bench.calib_tier2_select --batches calib_a calib_b`
+
+| pooled | after A1 | after B1 |
+|---|---:|---:|
+| profiled | 180 | 290 |
+| certified | 92 | 177 |
+| **eligible (60 s < `solve_s` ≤ 600 s)** | **10** | **46** |
+| cells holding an eligible instance | 6 | 21 |
+| (n, k) rows holding one | 5 of 9 | 8 of 9 |
+| largest single-cell share | 3/10 (30 %) | 4/46 (9 %) |
+| 60 s–cap (`include_solved_t3`) | 12 | 54 |
+| ≥ 30 s (sensitivity, still not adopted) | 17 | 70 |
+
+Spread across the window: 10 / 19 / 8 / 9 / 0 in the 60–100 / 100–200 /
+200–300 / 300–450 / 450–600 s bands; median 159 s, Q1 111 s, Q3 240 s.
+
+**Plan §7's first branch fires — stop refining, proceed to M2.** The stated
+condition was "≥ 40 across ≥ 8 cells, spread rather than piled at one end";
+the result is 46 across 21 cells, centred, no cell over 9 %. The bottleneck
+identified at Checkpoint 3 — too few certified, RC2-nontrivial instances — is
+resolved. **Refining α further is closed as a line of work** (see the
+structural reason below).
+
+### Scoring the plan's own method
+
+- **17 exploratory cells: 8 hits, 6 partial, 3 misses; 14 of 17 produced at
+  least one eligible instance.**
+- **The c\* model is validated.** Predicted c\* landed inside the observed
+  completed range in **16 of 17** cells. Per-row linear `dc*/dm` is a good
+  instrument, used as plan §3 caveat (i) restricted it — within a row only.
+- **The time model is not.** Predicted `solve_s` was within 3× in only 12 of
+  17, median ratio 0.61×, errors in both directions up to 30×. Placing two α
+  per row rather than one is what carried the round; that hedge should be
+  kept in any future placement.
+- **The 5 reinforcement cells all held** (4 now 10/10, 1 at 9/10; all 5 still
+  pass the §5.3 cell rule at 10 seeds) and contributed **15 of the 46**
+  eligible instances from a quarter of the tasks — the low-variance half
+  performed as plan §4b predicted.
+- **Checkpoint 3's smoke-run finding 2 was correct.** It flagged 3-SAT n = 150
+  α = 4.6 as possibly the trivial edge from five workstation rows at cap 60,
+  and chose to keep the cell because trivial outcomes locate edges. The
+  cluster at cap 900 confirmed it, and that cell is now the evidence for the
+  finding below.
+
+### Structural finding: a row's yield is set by `d log10(solve_s)/dc*`
+
+Fitted per (n, k) row over all pooled completed instances. The 60–600 s window
+is one decade wide, so a row holds about `1/slope` consecutive integer c\*
+values:
+
+| k, n | slope (dec/c\*) | c\* values fitting the window | eligible |
+|---|---:|---:|---:|
+| 2, 100 / 150 / 250 / 400 | 0.13 / 0.19 / 0.25 / 0.24 | 7.9 / 5.2 / 4.0 / 4.2 | 4 / 4 / 1 / 9 |
+| 3, 50 / 70 / 100 | 0.43 / 0.69 / 0.94 | 2.3 / 1.5 / 1.1 | 6 / 11 / 6 |
+| 3, 150 | **1.39** | **0.7** | **0** |
+| 3, 250 | 2.32 | 0.4 | 5 |
+
+**Where that count falls below 1, no α can help — the c\* ladder steps over
+the window.** 3-SAT n = 150 proves c\* = 2 in ~15 s and c\* = 3 in 772 s; four
+α values across the two batches produced zero eligible instances there, and a
+fifth would not change it. The exception, 3-SAT n = 250, yields through a
+second mechanism: at fixed c\* = 1 its eight pooled instances span 33–388 s,
+so variance scatters them into the window without the ladder moving. A row
+needs one mechanism or the other; 3-SAT n = 150 has neither.
+
+This is why calib_c-as-α-refinement is closed and why **n refinement is the
+only remaining lever for that row** — plan §4c already named 3-SAT n ≈ 180–200
+as the strongest calib_c candidate, and this is the quantitative reason. Not
+proposed now: the population is sufficient without it.
+
+It is a result about the *selection procedure* under this stack and cap, not
+about Max-k-SAT, and it says nothing about memetic difficulty (H2 untested
+until M2).
+
+### Cell rule vs. instance eligibility — the separation earned its keep
+
+18 batch-cells now pass the §5.3 cell rule (5 calib_a + 13 calib_b = 13
+distinct (k, n, α) cells), up from 5. But **33 of the 46 eligible instances
+sit in passing cells and 13 do not** — including all 4 from 2-SAT n = 100 and
+3 from 3-SAT n = 100 α = 5.5, a cell that fails the certified fraction by one
+seed while producing three eligible instances. Selecting by cell and then
+filtering by instance would discard a quarter of what is available. Plan §2
+kept the two rules apart a priori; the pooled data now shows the cost of
+conflating them. **No threshold constant was edited** (`T1_MAX_S = 60`,
+`T2A_MAX_S = 300`, `T2B_MAX_S = 600` untouched).
+
+Also now quantified on the selected population: **2-SAT eligible instances
+span c\* 18–35, 3-SAT span c\* 1–11 — disjoint ranges.** A1 predicted the two
+families would occupy different c\* decades; they do not overlap at all. Any
+pooled statement over the corpus mixes two regimes.
+
+### Implemented / produced this checkpoint
+
+| file | what |
+|---|---|
+| `docs/CALIB_B_B1_READOUT.md` | the read-out (new) |
+| `docs/CALIB_B_SUMMARY.md` | one-page summary of the round, pointing at the plan, the read-out and this entry (new) |
+| `cluster_staging_maxsat/results/profile_calib_b/` | 110 `task_N.jsonl` + 110 `task_N.env.json` from the cluster |
+| `cluster_staging_maxsat/results/profile_calib_b_all.jsonl` | 110 aggregated rows |
+| `cluster_staging_maxsat/results/profile_calib_b_env.jsonl` | 110 env rows |
+| `results/calibration/tier2_eligible.csv` | regenerated over both batches — 46 rows |
+| `results/calibration/tier2_cells.csv` | regenerated over both batches — 58 batch-cells |
+| `docs/CALIB_B_PLAN.md` | status header added: §7 branch 1 fired |
+
+Commands run (workstation only):
+
+```bash
+cd cluster_staging_maxsat && python3 scripts/aggregate_rc2_profile.py --batch calib_b && cd ..
+python -m src.bench.calib_tier2_select --batches calib_a calib_b
+```
+
+### Decisions taken here
+
+1. **α refinement is closed.** No calib_c round of α placement. The two thin
+   rows are thin for the structural reason above, not for want of a grid line.
+2. **calib_a and calib_b are pooled**, on the uniform-env condition plan §6
+   set in advance.
+
+### Open items — three of them now decidable on evidence
+
+1. **The 30 s floor — recommend NOT adopting.** It would take the pool
+   46 → 70. At A1 the case was 10 → 17 and the population was unusably small;
+   at 46 the 60 s floor is no longer the binding constraint. Keep the
+   repository's established floor and carry ≥ 30 s as a labelled sensitivity
+   column. **Reverses nothing — it was never adopted. User decision.**
+2. **The 600–900 s rescue (`include_solved_t3`) — recommend ADOPTING**, with
+   the 8 rescued instances carried as a labelled subset so results can be
+   checked with and without them. It takes 46 → 54, it is existing behaviour
+   in `make_tier2_manifest.py` rather than a new threshold, it fills the empty
+   450–600 s shoulder (thinned by the cap, not by the instances), and it is
+   the only route to any 3-SAT n = 150 instance at all (its 772 s seed).
+   Three of the 8 are within 4 % of the 600 s edge. **User decision.**
+3. **What M2 runs on — recommend the ≥ 30 s certified set.** The certified
+   pool is now 177, so M2 as currently specified (3 seeds × all certified) is
+   531 tasks and ≤ 133 CPU-h, nearly double the estimate written when the
+   certified set was 92.
+
+   | M2 population | instances | tasks | worst-case CPU-h |
+   |---|---:|---:|---:|
+   | all certified (as specified) | 177 | 531 | 133 |
+   | **certified with `solve_s` ≥ 30 s** | **70** | **210** | **52** |
+   | eligible only (60–600 s) | 46 | 138 | 34 |
+
+   91 of the 177 solve in under 10 s and 59 in under 1 s; A1 §5 established
+   their RC2 ranking is cluster timing noise. The ≥ 30 s set covers every
+   eligible instance, keeps a 24-instance margin below the window for §5.2's
+   attenuation to be visible, and costs less than the original estimate.
+   Note this is a *sizing* use of 30 s, independent of open item 1, which is
+   about the Tier-2 floor. **User decision; it changes M2's manifest builder.**
+4. **PySAT dev3 vs dev15** (Checkpoint 2) — unchanged. B1 kept both options
+   open at no cost; the price of upgrading is now re-running 290 tasks
+   rather than 180.
+5. **Goals §5.4 vs. building Tier 2 from calibration batches** — unchanged
+   and now materially larger. §5.4 says the reported corpus is regenerated at
+   fresh seeds 1001–1020 and calibration rows never enter a reported ρ. If it
+   stands, this round's product is a **map of where to generate** — §5 of the
+   read-out is that map — not the corpus itself. Default remains §5.4 until
+   this log says otherwise. **Decision for M4.**
+
+### Next (awaiting approval)
+
+1. **Settle open items 2 and 3** — they are what M2's manifest is built from.
+2. **M2** (goals §6): `make_calib_memetic_manifest.py` over the chosen
+   population, 3 seeds, `STOP_AT_ORACLE=1`, budget 900; submit; record job id
+   and the not-run list. Then M3.
+3. Not proposed: any further α refinement; any cap change; any n-refinement
+   round.
