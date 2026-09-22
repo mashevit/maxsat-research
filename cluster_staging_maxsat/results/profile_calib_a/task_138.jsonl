@@ -1,0 +1,1 @@
+{"instance": "data/generated/calib_a/wksat_v150_k2_sr6.00_hr0.00_w1_uniform_s3.wcnf", "size_mb": 0.0104, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "timeout", "solve_s": 942.803, "final_cost": null, "cost_lower_bound": 59, "completed": false, "error": "timeout"}, "ratio": null, "lb_ratio": null, "tier": "T3", "tier_reason": "timeout"}

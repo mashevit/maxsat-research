@@ -370,3 +370,135 @@ then M2 (memetic manifest on the certified subset) — awaiting approval.
 To commit the M1 state first: `git add -A && git commit` picks up exactly
 the files listed under "Files touched in this checkpoint" (the 180 `.wcnf`
 files stay ignored).
+
+---
+
+## 2026-09-22 — Checkpoint 2: A1 returned, 180/180 rows, aggregated
+
+Against commit `42f953e` (M1 committed). Work tree at the end of this
+checkpoint is **uncommitted**: the rsynced `results/profile_calib_a/` tree,
+the two aggregate files, and this entry. No code changed.
+
+### What was verified
+
+- **Row accounting: 180 manifest lines, 180 rows, 0 gaps, 0 superseded.**
+  Every `results/profile_calib_a/task_N.jsonl` (N = 1..180) holds exactly
+  one row; its `instance` equals manifest line N. No task was re-run over
+  an existing row, so "last row per instance" and "only row" coincide.
+- **§4.4 classes (RC2, cap 900 s + 60 s grace):**
+
+  | class | count | rule |
+  |---|---|---|
+  | completed | **92** | `profile.completed == true` (all `status: optimal`) |
+  | censored at budget | **88** | `subprocess_killed` 82 + `timeout` 6, all at `cap_s = 900` |
+  | failed | **0** | no `error`/`unsat`, no empty output |
+
+  All 82 killed rows carry a recovered `cost_lower_bound` (progress-file
+  path exercised on every one). Slowest completion 772 s; 12 completions
+  above 60 s, 2 above 600 s. The `tier` field (T1 80 / T2a 9 / T2b 1 /
+  T3 90) counts those two 600–900 s completions as T3 — the known
+  `assign_tier()` artefact noted in `rc2_profile_array.sbatch`; the
+  calibration reads `completed`/`solve_s`, not `tier`.
+- **Cell picture, 36 cells × 5 seeds** (read-out proper is the next turn):
+  16 cells fully completed, 16 fully censored, 4 mixed (n = 100 2-SAT
+  α = 6: 1/5; n = 150 2-SAT α = 3: 4/5; n = 150 3-SAT α = 5: 3/5;
+  n = 250 3-SAT α = 4.26: 4/5). Every censored cell is at or above the
+  fully-completed cells of the same (n, k) in α, i.e. hardness is monotone
+  in α within each (n, k) row at this cap.
+- **PySAT version mismatch — reported per §4.1, not accepted silently.**
+  Every one of the 180 `task_N.env.json` records `pysat_version
+  "1.9.dev3"`, python 3.11.15 (the cluster `maxsat` env). The plan holds
+  1.9.dev15 fixed (goals §4.1; workstation smoke was dev15 / python
+  3.12.3). The version is uniform across all 180 tasks and all five
+  submissions, so A1 is internally consistent. Cross-check on the two
+  smoke instances: task 11 (3-SAT n = 50 α = 6 s1) c\* = 6 in 4.5 s on the
+  cluster vs 4.9 s here; task 111 (2-SAT n = 100 α = 4 s1) c\* = 25 in
+  8.1 s vs 9.7 s here — optima identical. **Decision needed:** either
+  freeze 1.9.dev3 as the calibration's RC2 version (amend goals §4.1 and
+  the sbatch comment; A2/M4/M5 then run against the same cluster env) or
+  upgrade the cluster env to dev15 and re-run A1. Recommendation: freeze
+  dev3 — the 92 optima are what the memetic arm certifies against, and
+  they do not depend on the dev-tag; only timings would move, and A1's
+  timings are already cross-node noise (29 distinct hosts, four node
+  families: `ise-cpu-intl` 78, `ise-cpu128` 69, `ise-cpu256` 28, `cs-cpu`
+  5).
+- **Aggregate files rebuilt from the per-task files**, not patched:
+  `results/profile_calib_a_all.jsonl` (180 rows) is
+  `{"task": N, **last row of task_N.jsonl, "env": last line of
+  task_N.env.json minus task/instance}`, sorted by task;
+  `results/profile_calib_a_env.jsonl` (180 rows) is the last env line per
+  task. Before rewriting, the rule was checked to reproduce all 178
+  previously aggregated rows byte-for-byte; the diff against the previous
+  files is exactly: tasks 39 and 40 inserted in `_all`, and their `_env`
+  lines replaced (the earlier `_env` carried the Sep 16 attempt's
+  provenance for a row that did not exist). The aggregation is a scratchpad
+  script — not yet in the tree; see "Next".
+
+### Jobs / commands
+
+A1 was submitted as **five arrays**, not the single `1-180%30` the plan
+assumed (task ranges and the UTC of each task's env stamp, which is written
+just before RC2 starts):
+
+| array job | tasks | env stamps (UTC) |
+|---|---|---|
+| 21411811 | 1–30 | 2026-09-16 14:10:00 → 14:15:25 |
+| 21411927 | 31–60 (28 rows) | 2026-09-16 14:16:30 → 14:22:35 |
+| 21543641 | 61–120 | 2026-09-22 07:12:33 → 07:29:19 |
+| 21545479 | 121–180 | 2026-09-22 07:38:50 → 07:55:59 |
+| 21547921 | 39, 40 (re-run) | 2026-09-22 08:36:50 → 08:36:52 |
+
+Tasks 39 and 40 (both n = 70 3-SAT α = 8) started under 21411927 (env
+lines from 14:22:20 / 14:22:28, hosts `ise-cpu128-05` / `-12`) but left no
+row — the §4.4 class-3 "Slurm killed the task" signature (the profiler
+writes the row only after the subprocess returns). Their `task_N.env.json`
+keeps both lines; the re-run (`resume_state: run:absent`, hosts
+`ise-cpu-intl-22` / `-19`) produced the two rows now aggregated, both
+`subprocess_killed` at 960 s with LB 9, matching the other three seeds of
+that cell. Cause of the first-attempt loss not established from here (no
+`logs/rc2-profile-21411927_39.{out,err}` in the rsynced tree); if the
+cluster `sacct` shows `TIMEOUT` for `21411927_39/40`, the 20-min `--time`
+was the cause and should be raised to 25 min before A2.
+
+`sacct` stamps **not recorded** — no cluster access from this workstation.
+To fill in, run on the login node and paste here:
+
+```bash
+sacct -j 21411811,21411927,21543641,21545479,21547921 \
+      --format=JobID,State,Elapsed,Submit,Start,End -X | head -20
+sacct -j 21411927_39,21411927_40 --format=JobID,State,Elapsed,MaxRSS,Timelimit
+```
+
+### Files touched in this checkpoint (uncommitted)
+
+```
+M  docs/CORPUS_CALIBRATION_LOG.md
+A  cluster_staging_maxsat/results/profile_calib_a/task_{1..180}.jsonl      (180 files)
+A  cluster_staging_maxsat/results/profile_calib_a/task_{1..180}.env.json   (180 files)
+A  cluster_staging_maxsat/results/profile_calib_a_all.jsonl                (180 rows)
+A  cluster_staging_maxsat/results/profile_calib_a_env.jsonl                (180 rows)
+```
+
+To commit: `git add docs/CORPUS_CALIBRATION_LOG.md cluster_staging_maxsat/results/profile_calib_a cluster_staging_maxsat/results/profile_calib_a_all.jsonl cluster_staging_maxsat/results/profile_calib_a_env.jsonl && git commit`.
+
+### Next (awaiting approval)
+
+1. **A1 read-out** — completed / censored per cell, `solve_s` spread of the
+   completed rows, and the certified-subset size that M2 will run on
+   (92 instances, 16 full cells + 4 partial). Short markdown, this session.
+2. **Aggregation into the tree** — `scripts/aggregate_rc2_profile.py`
+   (per-task → `_all` / `_env`, last row per task, superseded count), so
+   calib_b and M4 use the same rule as above.
+3. **M2** as recorded at Checkpoint 1, on the 92 certified instances
+   (3 seeds → 276 tasks at `%30`), after the PySAT decision above is taken.
+
+### Addendum (same day) — A1 read-out written
+
+`docs/CALIB_A_A1_READOUT.md`: per-cell table (36 cells), wall location per
+(n, k) row, cap placement, RC2-side pre-screen of the §5.3 rules, and the
+M2 subset. Headline: the strip exists and is diagonal (H3), but it is one
+grid step wide and falls between grid lines in 5 of 9 rows; 5 cells pass
+the RC2 half of the proposed rules, 3 miss narrowly; 70 of the 92 certified
+instances are sub-10 s for RC2. Points to a `calib_b` α-refinement round;
+whether it precedes M2 is the next decision. Item 1 of "Next" above is
+done; items 2–3 still await approval.

@@ -1,0 +1,1 @@
+{"instance": "data/generated/calib_a/wksat_v50_k3_sr8.00_hr0.00_w1_uniform_s3.wcnf", "size_mb": 0.0056, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 9.861, "final_cost": 8, "cost_lower_bound": 8, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T1", "tier_reason": "solve_s<=60.0"}
