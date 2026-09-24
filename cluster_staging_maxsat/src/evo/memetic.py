@@ -114,6 +114,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         time_to_target_s = time.time() - start_t
 
     ls_small = _ls_budget(cfg)
+    # --- opt-in deadline clipping (`ea.deadline_mode: clip`) -----------------
+    # Without it the run budget is tested only at the top of each generation, so
+    # a run overshoots `time_cap` by up to one whole generation of polish calls
+    # (38 x ls.time_limit_s for pop 40) and, with long calls, can outlive the
+    # runner's budget+grace watchdog. With it, each child's polish gets
+    # min(ls.time_limit_s, remaining budget), and the run ends with
+    # stop_reason "time_cap" as soon as no budget remains before a polish.
+    # Absent (every pre-M2 config), the code path and the rng stream are
+    # exactly the historical ones.
+    deadline_clip = str((cfg.get("ea") or {}).get("deadline_mode", "")).lower() == "clip"
     gen = 0
     total_children = 0
         # 1) derive hard_clauses once
@@ -159,7 +169,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             )
             child_bits = apply_advice(child_bits, advice)
             ''''''''
-            child_bits, flips_t1 = short_polish(child_bits, wcnf, ls_small, rng_seed=rng.randrange(1<<30))
+            if deadline_clip:
+                remaining = time_cap - (time.time() - start_t)
+                if remaining <= 0:
+                    # Budget spent mid-generation: drop the unpolished child.
+                    stop_reason = "time_cap"
+                    break
+                ls_call = dict(ls_small, time_limit_s=min(ls_small["time_limit_s"], remaining))
+            else:
+                ls_call = ls_small
+            child_bits, flips_t1 = short_polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
             flips_t += flips_t1
             child = Individual(assign01=child_bits, meta={"gen": gen})
             pop.evaluate(wcnf, child)
@@ -184,7 +203,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                     time_to_target_s = time.time() - start_t
                     break
 
-        if stop_reason == "target":
+        if stop_reason is not None:  # "target", or "time_cap" from deadline clipping
             break
 
         pop.members = new_members

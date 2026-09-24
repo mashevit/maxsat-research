@@ -234,3 +234,17 @@ Regenerate the manifest on the workstation, not here:
 
   python -m src.bench.make_tier2_manifest \
       --budgets 900 --out-dir cluster_staging_maxsat/scripts
+
+
+M2 modified deeppolish (prepared 2026-09-24 -- docs/M2_DEEPPOLISH_RUN_PREPARATION.md in the repo)
+------------------------------------------------------------------------------------
+  configs/tier2/memetic_deeppolish_{p40_ls2p5,p10_ls2p5,p10_ls3p5}.yaml  (ea.deadline_mode: clip)
+                                      + control memetic_deeppolish.yaml (unchanged, no clipping)
+  scripts/make_m2_manifests.py        writes/--check's the population CSV and three manifests
+  scripts/manifest_m2_pilot.tsv       96 tasks  -> OUTDIR results/m2_pilot/tasks
+  scripts/manifest_m2_full_*.tsv      210 tasks each (later, after the pilot read-out)
+  scripts/submit_m2_memetic.sh        MANIFEST/OUTDIR required; THROTTLE 30; DRY_RUN=1; RESUME=1
+  scripts/m2_results.py               pending | aggregate
+
+  cd ~/maxsat-lab/scripts && mkdir -p logs
+  DRY_RUN=1 MANIFEST=manifest_m2_pilot.tsv OUTDIR=results/m2_pilot/tasks bash submit_m2_memetic.sh

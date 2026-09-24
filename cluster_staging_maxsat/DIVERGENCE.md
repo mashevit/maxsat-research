@@ -339,3 +339,50 @@ very comparison the arm exists to make.
 No SLURM job was submitted. Both submitters were exercised with `DRY_RUN=1`
 only, plus a 20 s single-task smoke of each arm on `uuf250-0100.cnf` (not a
 measurement): cost 3 uniform / 2 jw / 1 memetic, 40 restarts per multistart arm.
+
+---
+
+## M2 modified-deeppolish preparation (2026-09-24), staging only
+
+Record: [`docs/M2_DEEPPOLISH_RUN_PREPARATION.md`](../docs/M2_DEEPPOLISH_RUN_PREPARATION.md).
+
+### `src/evo/memetic.py` (already diverged): opt-in deadline clipping
+
+A new config key `ea.deadline_mode: clip`. When set, before each child's
+polish `run_memetic` computes `remaining = time_cap - elapsed`; if
+`remaining <= 0` the run stops with `stop_reason = "time_cap"` (the unpolished
+child is dropped), otherwise the call runs with
+`time_limit_s = min(ls.time_limit_s, remaining)`. The generation-level
+`if stop_reason == "target": break` became `if stop_reason is not None:
+break`, which is equivalent when the key is absent ("target" was the only value
+it could hold there).
+
+When the key is absent -- every pre-M2 config, including the M2 control
+`memetic_deeppolish.yaml` -- the code path and the rng stream are the
+historical ones. Verified: on a deterministic, flip-limited setting
+(pilot instance #7, max_gens 2, seeds 1 and 2) the best-assignment hash,
+`total_flips` and `children` are identical before and after the edit; pinned in
+`tests/test_m2_prep.py`. The watchdog and its 60 s grace in
+`run_memetic_shard.py` are unchanged. No other file under `src/` was edited:
+the eight-file identity loop above still prints `IDENTICAL` for all eight
+(re-run 2026-09-24), and the diverged set is still the same three files.
+
+### New files, staging tree only
+
+```
+configs/tier2/memetic_deeppolish_p40_ls2p5.yaml   pop 40, ls.time_limit_s 2.5, deadline_mode clip
+configs/tier2/memetic_deeppolish_p10_ls2p5.yaml   pop 10, ls.time_limit_s 2.5, deadline_mode clip
+configs/tier2/memetic_deeppolish_p10_ls3p5.yaml   pop 10, ls.time_limit_s 3.5, deadline_mode clip
+scripts/make_m2_manifests.py                      population + pilot + full-pool manifests
+scripts/m2_population.csv                         70 instances (16 / 46 / 8)
+scripts/manifest_m2_pilot.{tsv,sha256,tasks.csv}  96 tasks
+scripts/manifest_m2_full_p40_ls2p5.{...}          210 tasks
+scripts/manifest_m2_full_p10_ls2p5.{...}          210 tasks
+scripts/submit_m2_memetic.sh                      wrapper: sha check, DRY_RUN, RESUME
+scripts/m2_results.py                             classify / resume / aggregate shards
+tests/test_m2_prep.py
+```
+
+The control arm is the unchanged `configs/tier2/memetic_deeppolish.yaml`
+(sha256 pinned in the test). `scripts/tier2_memetic_array.sbatch` is reused
+unchanged.
