@@ -16,12 +16,14 @@
 # Env:
 #   MANIFEST   manifest in scripts/ (required)
 #   OUTDIR     root-relative shard dir (required; one per stage/manifest)
-#   THROTTLE   max concurrent tasks (default 30). The limit is per array: when
-#              ARRAY splits a manifest into two arrays submitted together, give
-#              each THROTTLE=15 so the total stays at 30.
-#   ARRAY      submit only this index range of the manifest, e.g. 1-210 (for a
-#              cluster whose MaxArraySize is too small for the whole manifest).
-#              Task N still runs manifest line N. Not combinable with RESUME.
+#   THROTTLE   max concurrent tasks (default 30). The limit is per array: N part
+#              manifests submitted together get THROTTLE=30/N each (split tool).
+#
+# Split manifests: if one array cannot hold the manifest (MaxArraySize /
+# max_array_tasks), scripts/split_m2_manifest.py writes part manifests under
+# scripts/parts/ with LOCAL line numbers; pass one as MANIFEST=parts/<file>.tsv
+# with the full manifest's OUTDIR. Do not narrow --array instead: MaxArraySize
+# bounds the index itself, so --array=211-420 fails like --array=1-420.
 #   RESUME     1 => submit only ids m2_results.py reports pending: missing
 #              shards, infra errors, invalid submissions. Budget exhaustion and
 #              late target hits are final; watchdog rows are not expected and
@@ -92,18 +94,6 @@ fi
 mkdir -p logs
 
 ARRAY_SPEC="1-${TASK_COUNT}"
-if [[ -n "${ARRAY:-}" ]]; then
-    if [[ "$RESUME" == "1" ]]; then
-        echo "FATAL: ARRAY and RESUME=1 are exclusive (resume picks its own ids)." >&2
-        exit 2
-    fi
-    if ! [[ "$ARRAY" =~ ^([0-9]+)-([0-9]+)$ ]] || (( BASH_REMATCH[1] < 1 || BASH_REMATCH[1] > BASH_REMATCH[2] \
-            || BASH_REMATCH[2] > TASK_COUNT )); then
-        echo "FATAL: ARRAY=$ARRAY must be a range lo-hi within 1-${TASK_COUNT}." >&2
-        exit 2
-    fi
-    ARRAY_SPEC="$ARRAY"
-fi
 if [[ "$RESUME" == "1" ]]; then
     PENDING=$(cd .. && "${PYTHON:-python3}" scripts/m2_results.py pending \
                   --manifest "scripts/${MANIFEST}" --outdir "$OUTDIR" --summary)
@@ -158,6 +148,9 @@ PROV="${PROV_DIR}/submit_$(date -u +%Y%m%dT%H%M%SZ).txt"
     echo "--- sha256 (paths relative to the staging root)"
     (cd .. && sha256sum "scripts/${MANIFEST}" "scripts/${MANIFEST%.tsv}.tasks.csv" \
         "scripts/${ARRAY_SCRIPT}" scripts/m2_results.py $(cut -f3 "scripts/${MANIFEST}" | sort -u))
+    if [[ "$MANIFEST" == parts/* ]]; then   # a split part: record the split and the mapping
+        (cd .. && sha256sum scripts/split_m2_manifest.py scripts/parts/*.map.csv)
+    fi
     (cd .. && find src -name '*.py' | LC_ALL=C sort | xargs sha256sum)
 } > "$PROV"
 echo "provenance : ${PROV#../}"

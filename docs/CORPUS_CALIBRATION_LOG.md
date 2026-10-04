@@ -997,3 +997,35 @@ Submit `m2_full_p40` (user, on the cluster). Retrieve, verify provenance
 and aggregate. Then read out: integrity, the non-trivial-instance count,
 paired success and TTT on the non-trivial instances. That read-out feeds
 M3.
+
+### Revision (user, 2026-10-04, after commit `0b1eddf`, before any submission)
+
+The two items marked superseded below were committed in `0b1eddf`. That
+commit's full-pool manifest must not be submitted.
+
+- **Control is now a new clipped 0.5 s / pop-40 arm**
+  (`memetic_deeppolish_p40_ls0p5_clip.yaml`). The two full-pool arms now
+  differ **only** in `ls.time_limit_s` (0.5 vs 3.5), and a test pins this.
+  This supersedes the "two config keys" note above.
+  - **Unchanged:** the historical unclipped `memetic_deeppolish.yaml` and
+    all historical and pilot results. That config is no longer in the
+    full-pool manifest.
+  - **Comparability:** clipping does not change the trajectory until the
+    budget binds, so results up to 900 s remain comparable with the
+    historical rows.
+- **Split fallback corrected; this supersedes `ARRAY=lo-hi` above.**
+  `--array=211-420` cannot get around `MaxArraySize`, which bounds the index
+  itself. The fix:
+  - Preflight now computes K = min(MaxArraySize − 1, max_array_tasks) and
+    checks the per-user submit limits.
+  - If K < 420, `scripts/split_m2_manifest.py` writes part manifests with
+    local indices 1..n and a `splitN.map.csv` mapping each local index to
+    its global line and job_id. Parts are cut between pairs.
+  - Every part line is byte-identical to its global line, so job ids and
+    shard names are unchanged and all parts share one OUTDIR.
+  - N parts are submitted with THROTTLE = 30 // N, so total concurrency
+    stays ≤ 30. `ARRAY` has been removed from the wrapper.
+- **Wording.** The "same wave" claims are corrected throughout: adjacent
+  indices usually start close together, but this is not guaranteed.
+- **Tests:** 125 passed. Commands: `docs/M2_FULL_POOL_RUN.md` §3 (rewritten).
+

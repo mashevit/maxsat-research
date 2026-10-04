@@ -243,10 +243,12 @@ M2 modified deeppolish (prepared 2026-09-24 -- docs/M2_DEEPPOLISH_RUN_PREPARATIO
   scripts/make_m2_manifests.py        writes/--check's the population CSV and three manifests
   scripts/manifest_m2_pilot.tsv       96 tasks  -> OUTDIR results/m2_pilot/tasks
   scripts/manifest_m2_full_*_ls2p5.tsv  210 tasks each -- superseded, not run
-  scripts/manifest_m2_full_p40.tsv    420 tasks: control + pop 40 / 3.5 s, paired (chosen after the pilot;
+  scripts/manifest_m2_full_p40.tsv    420 tasks: clipped pop-40 0.5 s control + pop-40 3.5 s, paired (chosen after the pilot;
                                       docs/M2_FULL_POOL_RUN.md) -> OUTDIR results/m2_full_p40/tasks
   scripts/submit_m2_memetic.sh        MANIFEST/OUTDIR/MAXSAT_GIT_SHA required; THROTTLE 30; DRY_RUN=1; RESUME=1;
-                                      ARRAY=lo-hi (split halves: THROTTLE=15 each, total stays 30);
+                                      a split part is MANIFEST=parts/<stem>.partIofN.tsv, THROTTLE=30/N each
+  scripts/split_m2_manifest.py        only if K = min(MaxArraySize-1, max_array_tasks) < rows: part manifests
+                                      with LOCAL indices + an explicit local->global map (scripts/parts/)
                                       writes results/<stage>/provenance/submit_<UTC>.txt
   scripts/m2_results.py               pending | aggregate
 

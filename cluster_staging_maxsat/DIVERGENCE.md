@@ -393,10 +393,16 @@ Record: [`docs/M2_FULL_POOL_RUN.md`](../docs/M2_FULL_POOL_RUN.md). There are
 no `src/` changes.
 
 ```
-configs/tier2/memetic_deeppolish_p40_ls3p5.yaml   pop 40, ls.time_limit_s 3.5, deadline_mode clip
-scripts/manifest_m2_full_p40.{tsv,sha256,tasks.csv}  420 tasks: control p40_ls0p5 + p40_ls3p5, paired lines
-scripts/make_m2_manifests.py                      + arm p40_ls3p5, + the paired manifest
+configs/tier2/memetic_deeppolish_p40_ls3p5.yaml       pop 40, ls.time_limit_s 3.5, deadline_mode clip
+configs/tier2/memetic_deeppolish_p40_ls0p5_clip.yaml  pop 40, ls.time_limit_s 0.5, deadline_mode clip (full-pool control)
+scripts/manifest_m2_full_p40.{tsv,sha256,tasks.csv}  420 tasks: p40_ls0p5_clip + p40_ls3p5, paired lines
+scripts/make_m2_manifests.py                      + arms p40_ls3p5, p40_ls0p5_clip, + the paired manifest
+scripts/split_m2_manifest.py                      part manifests with local indices + local->global map
 scripts/submit_m2_memetic.sh                      MAXSAT_GIT_SHA required (ALLOW_NO_GIT_SHA=1 to override);
-                                                  writes results/<stage>/provenance/submit_<UTC>.txt
+                                                  writes results/<stage>/provenance/submit_<UTC>.txt;
+                                                  accepts MANIFEST=parts/<part>.tsv
 ```
+
+The historical control `memetic_deeppolish.yaml` (unclipped) is unchanged and
+is not in the full-pool manifest.
 

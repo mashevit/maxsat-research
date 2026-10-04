@@ -23,7 +23,7 @@ TWO SEEDS, KEPT APART. `gen_seed` is the generator seed of the instance (the
 the task manifest is the SOLVER seed passed to run_memetic_shard --seed. The
 sidecar CSVs carry both in separately named columns.
 
-ARMS. The watchdog is unchanged. The four new arms opt into deadline
+ARMS. The watchdog is unchanged. The five new arms opt into deadline
 clipping (`ea.deadline_mode: clip`, src/evo/memetic.py); the control is the
 historical config and keeps the generation-boundary deadline check:
 
@@ -33,6 +33,7 @@ historical config and keeps the generation-boundary deadline check:
     p10_ls2p5  memetic_deeppolish_p10_ls2p5      10  2.5              clip
     p10_ls3p5  memetic_deeppolish_p10_ls3p5      10  3.5              clip
     p40_ls3p5  memetic_deeppolish_p40_ls3p5      40  3.5              clip
+    p40_ls0p5_clip  memetic_deeppolish_p40_ls0p5_clip  40  0.5         clip
 
 All keep ls_polish_flips = flip_budget = 12500, tournament_k 3, pmutate 0.02,
 elitism, max_gens 1e6; every config is loaded and checked against this table.
@@ -44,10 +45,11 @@ OUTPUTS (scripts/, paths in the TSVs are relative to the staging root):
                                        seeds 1-3, + p10_ls3p5 on pilot #5, #8
     manifest_m2_full_p40_ls2p5.tsv     210 tasks (70 x seeds 1-3)
     manifest_m2_full_p10_ls2p5.tsv     210 tasks
-    manifest_m2_full_p40.tsv           420 tasks: p40_ls3p5 + the control
-                                       p40_ls0p5, paired (docs/
-                                       M2_PILOT_READOUT.md §6; the run that
-                                       follows the pilot)
+    manifest_m2_full_p40.tsv           420 tasks: the clipped control
+                                       p40_ls0p5_clip + p40_ls3p5, paired;
+                                       the two configs differ in
+                                       ls.time_limit_s only (docs/
+                                       M2_FULL_POOL_RUN.md)
     <manifest>.sha256                  `sha256sum -c` list of its instances
     <manifest>.tasks.csv               per-task sidecar (both seeds, group, ...)
 
@@ -88,6 +90,8 @@ ARMS: Dict[str, Tuple[str, str, int, float, str]] = {
     "p10_ls2p5": ("configs/tier2/memetic_deeppolish_p10_ls2p5.yaml", "memetic_deeppolish_p10_ls2p5", 10, 2.5, "clip"),
     "p10_ls3p5": ("configs/tier2/memetic_deeppolish_p10_ls3p5.yaml", "memetic_deeppolish_p10_ls3p5", 10, 3.5, "clip"),
     "p40_ls3p5": ("configs/tier2/memetic_deeppolish_p40_ls3p5.yaml", "memetic_deeppolish_p40_ls3p5", 40, 3.5, "clip"),
+    "p40_ls0p5_clip": ("configs/tier2/memetic_deeppolish_p40_ls0p5_clip.yaml",
+                       "memetic_deeppolish_p40_ls0p5_clip", 40, 0.5, "clip"),
 }
 # Everything but pop_size and ls.time_limit_s must equal the control's values.
 SHARED = {
@@ -112,9 +116,10 @@ PILOT = [
 PILOT_MAIN_ARMS = ("p40_ls0p5", "p40_ls2p5", "p10_ls2p5")
 PILOT_EXTRA_ARM, PILOT_EXTRA_IDX = "p10_ls3p5", (5, 8)  # the two high-m instances
 FULL_ARMS = ("p40_ls2p5", "p10_ls2p5")  # single-arm manifests, superseded (not run)
-# The full-pool run chosen after the pilot: the 3.5 s arm and the unchanged
-# control on the same 70 instances x seeds 1-3, paired line by line.
-FULL_PAIRED_STEM, FULL_PAIRED_ARMS = "manifest_m2_full_p40", ("p40_ls0p5", "p40_ls3p5")
+# The full-pool run chosen after the pilot: a clipped 0.5 s control and the
+# 3.5 s arm, both pop 40 and clipped, on the same 70 instances x seeds 1-3,
+# paired line by line. The historical unclipped control (p40_ls0p5) is not in it.
+FULL_PAIRED_STEM, FULL_PAIRED_ARMS = "manifest_m2_full_p40", ("p40_ls0p5_clip", "p40_ls3p5")
 
 POP_COLS = ["pop_idx", "instance", "instance_sha256", "batch", "cell_id", "family",
             "k", "n", "alpha", "m", "gen_seed", "oracle_cost", "rc2_solve_s",

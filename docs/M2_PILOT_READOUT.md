@@ -141,7 +141,10 @@ instances**. The allowance choice therefore comes to you. Recommendation:
    change itself. A full-pool control arm (not prepared) would be needed
    for any paired comparison at that scale.
 
-**Decided 2026-10-04:** pop 40 at 3.5 s plus the pop-40 / 0.5 s control on
-the same 70 instances × seeds 1–3 (420 tasks), with pop 10 set aside.
+**Decided 2026-10-04:** pop 40 at 3.5 s plus a pop-40 / 0.5 s control on
+the same 70 instances × seeds 1–3 (420 tasks), with pop 10 set aside. The
+control is a new **clipped** 0.5 s config, so the two arms differ only in
+`ls.time_limit_s`. The historical unclipped control stays unchanged and is
+not re-run.
 Prepared in `M2_FULL_POOL_RUN.md` and logged as Checkpoint 5 in
 `CORPUS_CALIBRATION_LOG.md`.

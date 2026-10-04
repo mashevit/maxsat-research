@@ -2,7 +2,7 @@
 M2 modified-deeppolish run preparation (docs/M2_DEEPPOLISH_RUN_PREPARATION.md
 in the repo).
 
-These tests pin the five arms' resolved settings, the manifests' counts and
+These tests pin the six arms' resolved settings, the manifests' counts and
 identities, population-10 compatibility of the EA, the opt-in deadline
 clipping in src/evo/memetic.py (and that the control path without it is
 byte-for-byte the pre-clipping behaviour), and the result classifier's
@@ -61,7 +61,7 @@ def test_control_config_is_the_historical_file():
 @pytest.mark.parametrize("arm,pop,ls_t,children,clip", [
     ("p40_ls0p5", 40, 0.5, 38, False), ("p40_ls2p5", 40, 2.5, 38, True),
     ("p10_ls2p5", 10, 2.5, 9, True), ("p10_ls3p5", 10, 3.5, 9, True),
-    ("p40_ls3p5", 40, 3.5, 38, True)])
+    ("p40_ls3p5", 40, 3.5, 38, True), ("p40_ls0p5_clip", 40, 0.5, 38, True)])
 def test_arm_resolved_settings(arm, pop, ls_t, children, clip):
     cfg = _cfg(arm)
     assert "time_limit_s" not in cfg  # run budget comes only from --budget-s
@@ -77,7 +77,7 @@ def test_arm_resolved_settings(arm, pop, ls_t, children, clip):
 
 def test_config_ids_distinct():
     ids = [v[1] for v in mk.ARMS.values()]
-    assert len(set(ids)) == len(ids) == 5
+    assert len(set(ids)) == len(ids) == 6
 
 
 # ---------------------------------------------------------------- manifests
@@ -150,18 +150,27 @@ def test_full_pool_manifests_cover_population_once_per_seed():
         assert len({t["arm"] for t in tasks}) == 1
 
 
+def test_full_pool_arms_differ_only_in_ls_time_limit():
+    a, b = _cfg("p40_ls0p5_clip"), _cfg("p40_ls3p5")
+    assert (a["ls"]["time_limit_s"], b["ls"]["time_limit_s"]) == (0.5, 3.5)
+    a["ls"].pop("time_limit_s"), b["ls"].pop("time_limit_s")
+    assert a == b and a["ea"]["pop_size"] == 40 and a["ea"]["deadline_mode"] == "clip"
+
+
 def test_full_pool_paired_manifest():
-    # The run chosen after the pilot: the 3.5 s arm and the unchanged control,
-    # every (instance, solver seed) once per arm, the pair on adjacent lines.
+    # The run chosen after the pilot: the clipped 0.5 s control and the 3.5 s
+    # arm, every (instance, solver seed) once per arm, the pair on adjacent lines.
+    # The historical unclipped control is not part of it.
     tasks = _tasks("manifest_m2_full_p40")
-    assert [t["arm"] for t in tasks] == ["p40_ls0p5", "p40_ls3p5"] * 210
-    assert {t["config"] for t in tasks} == {"configs/tier2/memetic_deeppolish.yaml",
+    assert [t["arm"] for t in tasks] == ["p40_ls0p5_clip", "p40_ls3p5"] * 210
+    assert {t["config"] for t in tasks} == {"configs/tier2/memetic_deeppolish_p40_ls0p5_clip.yaml",
                                             "configs/tier2/memetic_deeppolish_p40_ls3p5.yaml"}
     with open(os.path.join(SCRIPTS, "m2_population.csv"), encoding="utf-8") as f:
         pop = {r["instance_sha256"] for r in csv.DictReader(f)}
     for a, b in zip(tasks[0::2], tasks[1::2]):
         assert (a["instance_sha256"], a["solver_seed"]) == (b["instance_sha256"], b["solver_seed"])
-        assert a["deadline_mode"] == "" and b["deadline_mode"] == "clip"
+        assert a["deadline_mode"] == b["deadline_mode"] == "clip"
+        assert a["pop_size"] == b["pop_size"] == "40"
     keys = {(t["instance_sha256"], t["solver_seed"]) for t in tasks}
     assert len(keys) == 210 and {k[0] for k in keys} == pop
 
@@ -346,7 +355,7 @@ def test_clip_is_inert_when_the_budget_never_binds():
             r["total_flips"], r["meta"]["children"]) == CONTROL_REF[1]
 
 
-@pytest.mark.parametrize("arm", ["p40_ls2p5", "p10_ls2p5", "p10_ls3p5", "p40_ls3p5"])
+@pytest.mark.parametrize("arm", ["p40_ls2p5", "p10_ls2p5", "p10_ls3p5", "p40_ls3p5", "p40_ls0p5_clip"])
 def test_clipped_run_ends_at_the_budget(tmp_path, arm):
     p = tmp_path / "unsat.cnf"
     p.write_text(UNSAT)
@@ -370,3 +379,56 @@ def test_classifier_checks_deadline_mode():
     ok = _rec(config={"ea": {"pop_size": 10, "deadline_mode": "clip"},
                       "ls": {"time_limit_s": 2.5, "ls_polish_flips": 12500}})
     assert res.classify(t, ok)[0] == "success"
+
+
+# ---------------------------------------------------------------- split parts
+def _split(tmp_path, k):
+    import shutil
+    import split_m2_manifest as sp
+    (tmp_path / "src").mkdir(exist_ok=True)
+    (tmp_path / "scripts").mkdir(exist_ok=True)
+    for suf in (".tsv", ".tasks.csv", ".sha256"):
+        shutil.copy(os.path.join(SCRIPTS, "manifest_m2_full_p40" + suf), tmp_path / "scripts")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        return sp.main(["--manifest", "scripts/manifest_m2_full_p40.tsv", "--max-tasks", str(k)])
+    finally:
+        os.chdir(cwd)
+
+
+def test_split_not_needed_writes_nothing(tmp_path):
+    assert _split(tmp_path, 420) == 0
+    assert not (tmp_path / "scripts" / "parts").exists()
+
+
+@pytest.mark.parametrize("k,sizes", [(419, [210, 210]), (210, [210, 210]),
+                                     (209, [140, 140, 140]), (100, [84] * 5)])
+def test_split_parts_map_local_to_global(tmp_path, k, sizes):
+    assert _split(tmp_path, k) == 0
+    n = len(sizes)
+    full = [l for l in (tmp_path / "scripts/manifest_m2_full_p40.tsv").read_text().splitlines() if l]
+    parts = tmp_path / "scripts" / "parts"
+    with open(parts / f"manifest_m2_full_p40.split{n}.map.csv", encoding="utf-8") as f:
+        mp = list(csv.DictReader(f))
+    assert [int(r["global_task_id"]) for r in mp] == list(range(1, 421))
+    pairs_seen = {}
+    for p, size in enumerate(sizes, 1):
+        lines = (parts / f"manifest_m2_full_p40.part{p}of{n}.tsv").read_text().splitlines()
+        assert len(lines) == size <= k
+        with open(parts / f"manifest_m2_full_p40.part{p}of{n}.tasks.csv", encoding="utf-8") as f:
+            side = list(csv.DictReader(f))
+        for local, (line, t, r) in enumerate(zip(lines, side, [r for r in mp if r["part"] == str(p)]), 1):
+            # what the driver reads at local index L is the full manifest's global line
+            assert int(t["task_id"]) == int(r["local_task_id"]) == local
+            assert line == full[int(r["global_task_id"]) - 1]
+            assert line.split("\t")[0] == t["job_id"] == r["job_id"]
+            key = (t["instance_sha256"], t["solver_seed"])
+            assert pairs_seen.setdefault(key, p) == p   # a pair never straddles parts
+    assert len({r["job_id"] for r in mp}) == 420
+
+
+def test_split_refuses_more_parts_than_slots(tmp_path):
+    with pytest.raises(SystemExit):
+        _split(tmp_path, 7)
+
