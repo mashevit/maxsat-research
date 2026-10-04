@@ -1,0 +1,38 @@
+submitted_at_utc : 2026-10-04T11:42:33Z
+host             : slurm-login-04.auth.ad.bgu.ac.il
+user             : mashevit
+maxsat_git_sha   : 69c9b97dcb2402e6b8d6f01f1724cb1806fbfad7
+resume           : 0
+array            : 1-420%30
+command          : sbatch --array=1-420%30 --job-name=m2_full_p40 --export=ALL,MANIFEST=scripts/manifest_m2_full_p40.tsv,OUTDIR=results/m2_full_p40/tasks,STOP_AT_ORACLE=1,GRACE=60,MAXSAT_GIT_SHA=69c9b97dcb2402e6b8d6f01f1724cb1806fbfad7 tier2_memetic_array.sbatch
+src_tree_sha256  : 8989fb8f34ca8d8f55d4fd26b0e491687e9fad26de8d4882effc7ef317410a3f
+--- sha256 (paths relative to the staging root)
+9f425e51e1e7cd94d171ff592f3710d302d67bae105a008110511dd8a67c5daf  scripts/manifest_m2_full_p40.tsv
+2de3d35d78c8203bdf38d1b7d998e1d21943930c2b295cd186c4e4d150e6fee2  scripts/manifest_m2_full_p40.tasks.csv
+770a8059683512239244c74b26dc17c5589aaa5585871f250f6f90f03171a4e8  scripts/tier2_memetic_array.sbatch
+2a984704869bed758dfedd12c66ee2f57da238dec519512a8cef597817452a4a  scripts/m2_results.py
+07771a4659a8a7c75145d3ad40cd82748e3a789ab47a4fc004f0b3fd6ad18657  configs/tier2/memetic_deeppolish_p40_ls0p5_clip.yaml
+27c7cceea5a36aeea6d510b720034dc8f65739c96d9234aa0da7aa359a70a702  configs/tier2/memetic_deeppolish_p40_ls3p5.yaml
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/__init__.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/cli/__init__.py
+1e5971af137ac6e15fc7c4cb9c89f6ba02bbde053e9b92c896f1bc970af531ee  src/cli/oracle_evalmaxsat.py
+e553897ead46850ad451b42977455630fdd838cf828f52095c09b942ce49e894  src/cli/profile_hardness.py
+33a9c134c9dd15dc51aab6f5cfc160abe933bfb614f7f560bbaa86325fb42953  src/cli/run_memetic_shard.py
+8befed8df0a0871229a48c09b1f630e25485868ac3347dc0d9309b42d2016885  src/cli/run_opt_rc2.py
+4a2db95d3a15bca676a9892bf3c0107ba5a82a09dd22380d25b590c065442e4c  src/cli/solve_rc2_anytime.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/evo/__init__.py
+ee8a6a5def54e28466a24c1027ecce0913d674224119f458313b6eeab6f5ffd6  src/evo/memetic.py
+bf1f7521781461a8cbb1cd96f55e541670f1083fa3fc1ff1c322c6bcd1c7fb90  src/evo/multistart.py
+ae18473a95ef8edf4ca7661a5319169b30759776b14e39e4f965be29e4af5623  src/evo/operators.py
+c066028d3b9477af5210edd23db8d4a9709682f4d16cd9a156266413412cf043  src/evo/population.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/llm/__init__.py
+257d20a9f89a012a0a7a2432ed1bd0cb03c29ca3d12308e53a4ec6e2a7a7b6fc  src/llm/advisor.py
+13080195be63e97f4310957874261d20992f75ce7e41f1d85cfe717afdc03efb  src/llm/prompt.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/llm/providers/__init__.py
+ff9ef635d4e00b71015fee78133fe597727623b4b33fc7e12609545751d0716a  src/llm/providers/noop.py
+d5a1c12f02c95a005edc0581dd50d41c0cd54583d998546f006d7f87de191ad9  src/llm/providers/ollama.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/sat/__init__.py
+9d81d9bfd3ae3e2a344a1327717b359a33d7e8d0d29ccf500285742d49d3d821  src/sat/cnf.py
+25114c7df1b605cd98c21ae30b9b90a306cf16b158d49fe2a73440cca18d9149  src/sat/state.py
+5e2635699a93bcd6491f1f2b21dc1e93953befb142b0dfd84782790b61b70958  src/sat/walksat.py
+sbatch           : Submitted batch job 22131008

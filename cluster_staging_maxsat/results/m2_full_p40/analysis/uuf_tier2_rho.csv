@@ -1,0 +1,9 @@
+config_id,version,N,excluded_zero_succ,rho,ci_pct_strat_lo,ci_pct_strat_hi,ci_bonett_wright_lo,ci_bonett_wright_hi
+memetic_deeppolish,primary,26,0,0.187,-0.215,0.539,-0.219,0.538
+memetic_deeppolish,zero_succ_top_tied,26,0,0.187,-0.216,0.538,-0.219,0.538
+local_multistart_deeppolish,primary,26,0,0.139,-0.308,0.525,-0.264,0.501
+local_multistart_deeppolish,zero_succ_top_tied,26,0,0.139,-0.314,0.513,-0.264,0.501
+memetic_base,primary,20,6,-0.256,-0.564,0.13,-0.632,0.218
+memetic_base,zero_succ_top_tied,26,0,-0.021,-0.36,0.326,-0.405,0.369
+memetic_pop150,primary,24,2,-0.16,-0.523,0.206,-0.531,0.263
+memetic_pop150,zero_succ_top_tied,26,0,-0.003,-0.387,0.372,-0.39,0.385

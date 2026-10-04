@@ -1,0 +1,209 @@
+{
+  "generated_by": "cluster_staging_maxsat/scripts/m2_rho_analysis.py",
+  "bootstrap": {
+    "B": 10000,
+    "rng_seed": 20261004,
+    "strata": "cell_id"
+  },
+  "instances": 70,
+  "tasks": 420,
+  "by_family": {
+    "k2": 26,
+    "k3": 44
+  },
+  "by_group": {
+    "lower_ext": 16,
+    "tier2": 46,
+    "upper_ext": 8
+  },
+  "instances_with_any_failure": 4,
+  "instances_with_zero_success_any_arm": {
+    "a05": 0,
+    "a35": 0
+  },
+  "instances_all6_runs_solved_by_first_child": 28,
+  "instances_any_run_beyond_generation1": 15,
+  "nontrivial_q2_rule": {
+    "a05": 5,
+    "a35": 9
+  },
+  "reproducibility_flip_bound": {
+    "pairs": 30,
+    "identical_children_flips_assignment": 26
+  },
+  "reproducibility_time_bound_0p5": {
+    "pairs": 30,
+    "identical_children_flips": 0,
+    "same_outcome_class": 29,
+    "same_best_assignment": 24
+  },
+  "reliability": {
+    "rho_between_arms_ert_s": 0.888,
+    "rho_between_arms_ert_children": 0.889,
+    "rho_between_arms_ert_s_k2": 0.869,
+    "rho_between_arms_ert_s_k3": 0.847,
+    "a05_seed_pair_rho_children_mean": 0.858,
+    "a05_seed_pair_rho_children": [
+      0.848,
+      0.864,
+      0.862
+    ],
+    "a05_icc1_log_children": 0.878,
+    "a35_seed_pair_rho_children_mean": 0.802,
+    "a35_seed_pair_rho_children": [
+      0.786,
+      0.778,
+      0.84
+    ],
+    "a35_icc1_log_children": 0.86
+  },
+  "arm_comparison_nontrivial": {
+    "instances": 15,
+    "geomean_ert_s_ratio": 0.7,
+    "wilcoxon_p_ert_s": 0.5995,
+    "geomean_ert_flips_ratio": 0.722,
+    "wilcoxon_p_ert_flips": 0.6387,
+    "a35_better_ert_s": 8,
+    "a05_better_ert_s": 7
+  },
+  "headline_rho_rc2_vs_ert_s_pooled": [
+    {
+      "subset": "pooled",
+      "x": "rc2_solve_s",
+      "y": "a05_ert_s",
+      "version": "primary",
+      "N": 70,
+      "excluded_zero_succ": 0,
+      "n_distinct_y": 47,
+      "rho": 0.087,
+      "ci_bca_strat_lo": -0.123,
+      "ci_bca_strat_hi": 0.291,
+      "ci_pct_strat_lo": -0.128,
+      "ci_pct_strat_hi": 0.288,
+      "ci_pct_plain_lo": -0.159,
+      "ci_pct_plain_hi": 0.333,
+      "ci_bonett_wright_lo": -0.151,
+      "ci_bonett_wright_hi": 0.316,
+      "p_value_spearman": 0.4725,
+      "partial_rho_logn_alpha_logc": 0.235,
+      "partial_rho_pct_strat_lo": 0.052,
+      "partial_rho_pct_strat_hi": 0.382,
+      "partial_rho_plus_k": 0.337,
+      "bootstrap_nan_reps": 0
+    },
+    {
+      "subset": "pooled",
+      "x": "rc2_solve_s",
+      "y": "a35_ert_s",
+      "version": "primary",
+      "N": 70,
+      "excluded_zero_succ": 0,
+      "n_distinct_y": 69,
+      "rho": 0.07,
+      "ci_bca_strat_lo": -0.15,
+      "ci_bca_strat_hi": 0.277,
+      "ci_pct_strat_lo": -0.154,
+      "ci_pct_strat_hi": 0.274,
+      "ci_pct_plain_lo": -0.177,
+      "ci_pct_plain_hi": 0.304,
+      "ci_bonett_wright_lo": -0.168,
+      "ci_bonett_wright_hi": 0.301,
+      "p_value_spearman": 0.5632,
+      "partial_rho_logn_alpha_logc": 0.193,
+      "partial_rho_pct_strat_lo": 0.011,
+      "partial_rho_pct_strat_hi": 0.351,
+      "partial_rho_plus_k": 0.294,
+      "bootstrap_nan_reps": 0
+    }
+  ],
+  "uuf_tier2_rho": [
+    {
+      "config_id": "memetic_deeppolish",
+      "version": "primary",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": 0.187,
+      "ci_pct_strat_lo": -0.215,
+      "ci_pct_strat_hi": 0.539,
+      "ci_bonett_wright_lo": -0.219,
+      "ci_bonett_wright_hi": 0.538
+    },
+    {
+      "config_id": "memetic_deeppolish",
+      "version": "zero_succ_top_tied",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": 0.187,
+      "ci_pct_strat_lo": -0.216,
+      "ci_pct_strat_hi": 0.538,
+      "ci_bonett_wright_lo": -0.219,
+      "ci_bonett_wright_hi": 0.538
+    },
+    {
+      "config_id": "local_multistart_deeppolish",
+      "version": "primary",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": 0.139,
+      "ci_pct_strat_lo": -0.308,
+      "ci_pct_strat_hi": 0.525,
+      "ci_bonett_wright_lo": -0.264,
+      "ci_bonett_wright_hi": 0.501
+    },
+    {
+      "config_id": "local_multistart_deeppolish",
+      "version": "zero_succ_top_tied",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": 0.139,
+      "ci_pct_strat_lo": -0.314,
+      "ci_pct_strat_hi": 0.513,
+      "ci_bonett_wright_lo": -0.264,
+      "ci_bonett_wright_hi": 0.501
+    },
+    {
+      "config_id": "memetic_base",
+      "version": "primary",
+      "N": 20,
+      "excluded_zero_succ": 6,
+      "rho": -0.256,
+      "ci_pct_strat_lo": -0.564,
+      "ci_pct_strat_hi": 0.13,
+      "ci_bonett_wright_lo": -0.632,
+      "ci_bonett_wright_hi": 0.218
+    },
+    {
+      "config_id": "memetic_base",
+      "version": "zero_succ_top_tied",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": -0.021,
+      "ci_pct_strat_lo": -0.36,
+      "ci_pct_strat_hi": 0.326,
+      "ci_bonett_wright_lo": -0.405,
+      "ci_bonett_wright_hi": 0.369
+    },
+    {
+      "config_id": "memetic_pop150",
+      "version": "primary",
+      "N": 24,
+      "excluded_zero_succ": 2,
+      "rho": -0.16,
+      "ci_pct_strat_lo": -0.523,
+      "ci_pct_strat_hi": 0.206,
+      "ci_bonett_wright_lo": -0.531,
+      "ci_bonett_wright_hi": 0.263
+    },
+    {
+      "config_id": "memetic_pop150",
+      "version": "zero_succ_top_tied",
+      "N": 26,
+      "excluded_zero_succ": 0,
+      "rho": -0.003,
+      "ci_pct_strat_lo": -0.387,
+      "ci_pct_strat_hi": 0.372,
+      "ci_bonett_wright_lo": -0.39,
+      "ci_bonett_wright_hi": 0.385
+    }
+  ]
+}
