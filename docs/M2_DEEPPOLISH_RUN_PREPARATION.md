@@ -195,8 +195,13 @@ grace column is really a ceiling for the control only.
     from the solver seed), `m`, `analysis_group` and others.
   - `.sha256`: a `sha256sum -c` list of the manifest's instances.
 - **Pilot order.** Lines are ordered by instance, then solver seed, then
-  arm, so the runs being compared for one (instance, seed) run in the same
-  wave.
+  arm, so the runs being compared for one (instance, seed) have adjacent
+  array indices. Under a `%30` throttle, Slurm normally starts array tasks
+  in index order as slots free up, so the runs usually start close together
+  in time. This is not guaranteed. There are no discrete waves (the "waves"
+  in the compute estimates are worst-case arithmetic), and the runs can land
+  on different hosts. *(Corrected 2026-10-04; this originally said they
+  "run in the same wave".)*
 - **Unique identities.** Job ids have the form
   `m2p_<arm>_i<pilot#>_s<seed>` or `m2f_<arm>_<pop_idx>_s<seed>`. All 516
   are distinct. Shards go to `OUTDIR/<job_id>.jsonl`, and each stage has its

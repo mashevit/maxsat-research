@@ -23,7 +23,7 @@ TWO SEEDS, KEPT APART. `gen_seed` is the generator seed of the instance (the
 the task manifest is the SOLVER seed passed to run_memetic_shard --seed. The
 sidecar CSVs carry both in separately named columns.
 
-ARMS. The watchdog is unchanged. The three new arms opt into deadline
+ARMS. The watchdog is unchanged. The four new arms opt into deadline
 clipping (`ea.deadline_mode: clip`, src/evo/memetic.py); the control is the
 historical config and keeps the generation-boundary deadline check:
 
@@ -32,6 +32,7 @@ historical config and keeps the generation-boundary deadline check:
     p40_ls2p5  memetic_deeppolish_p40_ls2p5      40  2.5              clip
     p10_ls2p5  memetic_deeppolish_p10_ls2p5      10  2.5              clip
     p10_ls3p5  memetic_deeppolish_p10_ls3p5      10  3.5              clip
+    p40_ls3p5  memetic_deeppolish_p40_ls3p5      40  3.5              clip
 
 All keep ls_polish_flips = flip_budget = 12500, tournament_k 3, pmutate 0.02,
 elitism, max_gens 1e6; every config is loaded and checked against this table.
@@ -43,6 +44,10 @@ OUTPUTS (scripts/, paths in the TSVs are relative to the staging root):
                                        seeds 1-3, + p10_ls3p5 on pilot #5, #8
     manifest_m2_full_p40_ls2p5.tsv     210 tasks (70 x seeds 1-3)
     manifest_m2_full_p10_ls2p5.tsv     210 tasks
+    manifest_m2_full_p40.tsv           420 tasks: p40_ls3p5 + the control
+                                       p40_ls0p5, paired (docs/
+                                       M2_PILOT_READOUT.md §6; the run that
+                                       follows the pilot)
     <manifest>.sha256                  `sha256sum -c` list of its instances
     <manifest>.tasks.csv               per-task sidecar (both seeds, group, ...)
 
@@ -82,6 +87,7 @@ ARMS: Dict[str, Tuple[str, str, int, float, str]] = {
     "p40_ls2p5": ("configs/tier2/memetic_deeppolish_p40_ls2p5.yaml", "memetic_deeppolish_p40_ls2p5", 40, 2.5, "clip"),
     "p10_ls2p5": ("configs/tier2/memetic_deeppolish_p10_ls2p5.yaml", "memetic_deeppolish_p10_ls2p5", 10, 2.5, "clip"),
     "p10_ls3p5": ("configs/tier2/memetic_deeppolish_p10_ls3p5.yaml", "memetic_deeppolish_p10_ls3p5", 10, 3.5, "clip"),
+    "p40_ls3p5": ("configs/tier2/memetic_deeppolish_p40_ls3p5.yaml", "memetic_deeppolish_p40_ls3p5", 40, 3.5, "clip"),
 }
 # Everything but pop_size and ls.time_limit_s must equal the control's values.
 SHARED = {
@@ -105,7 +111,10 @@ PILOT = [
 ]
 PILOT_MAIN_ARMS = ("p40_ls0p5", "p40_ls2p5", "p10_ls2p5")
 PILOT_EXTRA_ARM, PILOT_EXTRA_IDX = "p10_ls3p5", (5, 8)  # the two high-m instances
-FULL_ARMS = ("p40_ls2p5", "p10_ls2p5")
+FULL_ARMS = ("p40_ls2p5", "p10_ls2p5")  # single-arm manifests, superseded (not run)
+# The full-pool run chosen after the pilot: the 3.5 s arm and the unchanged
+# control on the same 70 instances x seeds 1-3, paired line by line.
+FULL_PAIRED_STEM, FULL_PAIRED_ARMS = "manifest_m2_full_p40", ("p40_ls0p5", "p40_ls3p5")
 
 POP_COLS = ["pop_idx", "instance", "instance_sha256", "batch", "cell_id", "family",
             "k", "n", "alpha", "m", "gen_seed", "oracle_cost", "rc2_solve_s",
@@ -247,8 +256,10 @@ def task(stage: str, arm: str, inst: Dict[str, Any], seed: int, pilot_idx: Any) 
 
 def pilot_tasks(pilot: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     # Instance-major, seed, then arm: the paired runs of one (instance, seed)
-    # sit on adjacent lines, so at %30 they run in the same wave on the same
-    # cluster load rather than hours apart.
+    # sit on adjacent lines. Slurm normally dispatches array tasks in index
+    # order as throttle slots free up, so a pair usually starts close together
+    # in time rather than hours apart -- not guaranteed, and not necessarily
+    # on the same host.
     out = []
     for inst in pilot:
         for seed in SOLVER_SEEDS:
@@ -260,8 +271,11 @@ def pilot_tasks(pilot: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def full_tasks(pop: List[Dict[str, Any]], arm: str) -> List[Dict[str, Any]]:
-    return [task("full", arm, inst, seed, "") for inst in pop for seed in SOLVER_SEEDS]
+def full_tasks(pop: List[Dict[str, Any]], *arms: str) -> List[Dict[str, Any]]:
+    # Instance-major, seed, then arm, as in the pilot: with several arms the
+    # paired runs of one (instance, seed) sit on adjacent lines.
+    return [task("full", arm, inst, seed, "") for inst in pop for seed in SOLVER_SEEDS
+            for arm in arms]
 
 
 def render(tasks: List[Dict[str, Any]], pop_rows=None) -> Dict[str, str]:
@@ -303,9 +317,11 @@ def build_all() -> Dict[str, str]:
     sets = {"scripts/manifest_m2_pilot": pilot_tasks(pilot)}
     for arm in FULL_ARMS:
         sets[f"scripts/manifest_m2_full_{arm}"] = full_tasks(pop, arm)
+    sets[f"scripts/{FULL_PAIRED_STEM}"] = full_tasks(pop, *FULL_PAIRED_ARMS)
     expected = {"scripts/manifest_m2_pilot": 96,
                 "scripts/manifest_m2_full_p40_ls2p5": 210,
-                "scripts/manifest_m2_full_p10_ls2p5": 210}
+                "scripts/manifest_m2_full_p10_ls2p5": 210,
+                f"scripts/{FULL_PAIRED_STEM}": 420}
     all_ids: List[str] = []
     for stem, tasks in sets.items():
         if len(tasks) != expected[stem]:

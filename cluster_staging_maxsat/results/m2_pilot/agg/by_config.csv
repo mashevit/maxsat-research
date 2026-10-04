@@ -1,0 +1,5 @@
+config_id,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+memetic_deeppolish,30,29,0.967,1.8,29,0,1,0,0,0,0,0,0,1.0,3.5,3604.65,0.506,18.374,0.994
+memetic_deeppolish_p10_ls2p5,30,28,0.933,3.0,28,0,2,0,0,0,0,0,0,1.0,2.0,12500.0,1.613,0.009,0.95
+memetic_deeppolish_p10_ls3p5,6,4,0.667,15.2,4,0,2,0,0,0,0,0,0,1.0,6.0,12500.0,2.636,0.008,0.995
+memetic_deeppolish_p40_ls2p5,30,29,0.967,1.9,29,0,1,0,0,0,0,0,0,1.0,1.0,12500.0,1.719,0.018,0.98

@@ -242,8 +242,12 @@ M2 modified deeppolish (prepared 2026-09-24 -- docs/M2_DEEPPOLISH_RUN_PREPARATIO
                                       + control memetic_deeppolish.yaml (unchanged, no clipping)
   scripts/make_m2_manifests.py        writes/--check's the population CSV and three manifests
   scripts/manifest_m2_pilot.tsv       96 tasks  -> OUTDIR results/m2_pilot/tasks
-  scripts/manifest_m2_full_*.tsv      210 tasks each (later, after the pilot read-out)
-  scripts/submit_m2_memetic.sh        MANIFEST/OUTDIR required; THROTTLE 30; DRY_RUN=1; RESUME=1
+  scripts/manifest_m2_full_*_ls2p5.tsv  210 tasks each -- superseded, not run
+  scripts/manifest_m2_full_p40.tsv    420 tasks: control + pop 40 / 3.5 s, paired (chosen after the pilot;
+                                      docs/M2_FULL_POOL_RUN.md) -> OUTDIR results/m2_full_p40/tasks
+  scripts/submit_m2_memetic.sh        MANIFEST/OUTDIR/MAXSAT_GIT_SHA required; THROTTLE 30; DRY_RUN=1; RESUME=1;
+                                      ARRAY=lo-hi (split halves: THROTTLE=15 each, total stays 30);
+                                      writes results/<stage>/provenance/submit_<UTC>.txt
   scripts/m2_results.py               pending | aggregate
 
   cd ~/maxsat-lab/scripts && mkdir -p logs

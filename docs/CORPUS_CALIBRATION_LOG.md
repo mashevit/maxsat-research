@@ -932,3 +932,68 @@ python -m src.bench.calib_tier2_select --batches calib_a calib_b
    and the not-run list. Then M3.
 3. Not proposed: any further α refinement; any cap change; any n-refinement
    round.
+
+## 2026-10-04 — Checkpoint 5: M2 pilot read out; full-pool run prepared
+
+Between Checkpoint 4 and this entry, `6d74189` (the M2 handout) and
+`81210fc` (M2 run preparation: deadline clipping, 4 arms, manifests) were
+committed. The 96-task pilot then ran on the cluster.
+
+**Read-out:** `docs/M2_PILOT_READOUT.md`. **Provenance:** the pilot shards
+carry `git_sha = null` and no source hash, so the code commit is
+**unverified**. The likely source is `81210fc`, but that is not confirmed.
+The configs (ea/ls blocks) and instance hashes are verified.
+
+### Pilot outcome (10 instances × 3 seeds; descriptive)
+
+- **Integrity:** 96/96 shards, 0 watchdog, 0 invalid or infrastructure
+  failures. Clipped-arm overshoot was 8–18 ms; the control's was 18.4 s.
+- **Successes:** control 0.5 s 29/30, p40 2.5 s 29/30, p10 2.5 s 28/30.
+  The handout's guard C passes.
+- **Mechanism:** 0.5 s ends every call on time (B1 holds). At 2.5 s the
+  flip limit binds everywhere except the m = 1088 instance (B2 fails there
+  only). 3.5 s reaches 12,500 flips there, and on m = 920 it gives the same
+  search path as 2.5 s.
+- **8 of 70 population instances** (3-SAT n = 250, m 1065/1088) are the
+  size where 2.5 s is too short.
+- **8 of 10 pilot instances are trivial for every arm.** That includes all
+  4 upper_ext instances (RC2 needed 610–850 s). Only #8 and #9 separate
+  the arms, and the seed decides more than the arm. **RC2 certification
+  time does not predict memetic difficulty in the pilot.** This is relevant
+  to M3.
+
+### Decision (user, 2026-10-04)
+
+- Full pool at **pop 40, 3.5 s per call** (`memetic_deeppolish_p40_ls3p5`,
+  clip), **plus the unchanged pop-40 / 0.5 s control**. Both run on the
+  same 70 instances × solver seeds 1–3: 420 tasks, ceiling 105 CPU-h.
+- **Pop 10 is set aside.**
+- The pilot's missing commit is recorded as unverified.
+- **The arms differ in two config keys, not one:** `ls.time_limit_s`
+  (0.5 → 3.5) and `ea.deadline_mode` (absent → `clip`). Everything else is
+  identical, including pop 40. The control keeps its historical
+  generation-boundary deadline, which lets runs go on to about 919 s (hits
+  after 900 s count as `target_after_budget`). The 3.5 s arm stops at
+  900 s. Clipping is required at 3.5 s to avoid watchdog kills.
+
+### Prepared (not submitted)
+
+- **Paired manifest.** `scripts/manifest_m2_full_p40.tsv` (420 tasks; each
+  pair of lines is one (instance, seed), control first), OUTDIR
+  `results/m2_full_p40/tasks`.
+- **New config.** `configs/tier2/memetic_deeppolish_p40_ls3p5.yaml`.
+- **Submit wrapper** (`scripts/submit_m2_memetic.sh`):
+  - refuses a real submission without `MAXSAT_GIT_SHA`;
+  - writes `results/<stage>/provenance/submit_<UTC>.txt`, with file hashes
+    and a `src_tree_sha256` that can be reproduced from the commit;
+  - takes `ARRAY=lo-hi` to split a manifest when `MaxArraySize` is too
+    small. Each half then uses `THROTTLE=15`, so the total stays at 30.
+- **Tests:** 116 passed.
+- **Commands:** `docs/M2_FULL_POOL_RUN.md` §3.
+
+### Next
+
+Submit `m2_full_p40` (user, on the cluster). Retrieve, verify provenance
+and aggregate. Then read out: integrity, the non-trivial-instance count,
+paired success and TTT on the non-trivial instances. That read-out feeds
+M3.

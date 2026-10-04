@@ -16,14 +16,32 @@
 # Env:
 #   MANIFEST   manifest in scripts/ (required)
 #   OUTDIR     root-relative shard dir (required; one per stage/manifest)
-#   THROTTLE   max concurrent tasks (default 30)
+#   THROTTLE   max concurrent tasks (default 30). The limit is per array: when
+#              ARRAY splits a manifest into two arrays submitted together, give
+#              each THROTTLE=15 so the total stays at 30.
+#   ARRAY      submit only this index range of the manifest, e.g. 1-210 (for a
+#              cluster whose MaxArraySize is too small for the whole manifest).
+#              Task N still runs manifest line N. Not combinable with RESUME.
 #   RESUME     1 => submit only ids m2_results.py reports pending: missing
 #              shards, infra errors, invalid submissions. Budget exhaustion and
 #              late target hits are final; watchdog rows are not expected and
 #              are investigated, not resubmitted automatically.
 #   DRY_RUN    1 => print the command, submit nothing
-#   MAXSAT_GIT_SHA  recorded in each shard's git_sha when set (the cluster tree
-#              is not a git repo)
+#   MAXSAT_GIT_SHA  recorded in each shard's git_sha (the cluster tree is not a
+#              git repo). REQUIRED for a real submission: the pilot ran without
+#              it and its code version cannot be verified. The label alone is
+#              a claim; the provenance file below is what lets it be checked.
+#   ALLOW_NO_GIT_SHA  1 => submit without MAXSAT_GIT_SHA anyway (shards record
+#              git_sha null; the provenance file is still written)
+#
+# Provenance: every real submission (including RESUME) first writes
+# <OUTDIR minus /tasks>/provenance/submit_<UTC stamp>.txt: MAXSAT_GIT_SHA, host,
+# user, sha256 of the manifest, its sidecar, the driver, every config the
+# manifest names and every src/**/*.py, plus src_tree_sha256 -- one digest of
+# the src/ list, reproducible on the workstation from the committed staging
+# tree with
+#   cd cluster_staging_maxsat && find src -name '*.py' | LC_ALL=C sort | xargs sha256sum | sha256sum
+# The sbatch output (job id) is appended after submission.
 #
 # Task ids are 1-based: task N runs manifest line N (the driver uses sed -n Np).
 
@@ -74,6 +92,18 @@ fi
 mkdir -p logs
 
 ARRAY_SPEC="1-${TASK_COUNT}"
+if [[ -n "${ARRAY:-}" ]]; then
+    if [[ "$RESUME" == "1" ]]; then
+        echo "FATAL: ARRAY and RESUME=1 are exclusive (resume picks its own ids)." >&2
+        exit 2
+    fi
+    if ! [[ "$ARRAY" =~ ^([0-9]+)-([0-9]+)$ ]] || (( BASH_REMATCH[1] < 1 || BASH_REMATCH[1] > BASH_REMATCH[2] \
+            || BASH_REMATCH[2] > TASK_COUNT )); then
+        echo "FATAL: ARRAY=$ARRAY must be a range lo-hi within 1-${TASK_COUNT}." >&2
+        exit 2
+    fi
+    ARRAY_SPEC="$ARRAY"
+fi
 if [[ "$RESUME" == "1" ]]; then
     PENDING=$(cd .. && "${PYTHON:-python3}" scripts/m2_results.py pending \
                   --manifest "scripts/${MANIFEST}" --outdir "$OUTDIR" --summary)
@@ -87,7 +117,14 @@ fi
 EXPORTS="ALL,MANIFEST=scripts/${MANIFEST},OUTDIR=${OUTDIR},STOP_AT_ORACLE=1,GRACE=60"
 if [[ -n "${MAXSAT_GIT_SHA:-}" ]]; then
     EXPORTS+=",MAXSAT_GIT_SHA=${MAXSAT_GIT_SHA}"
+elif [[ "$DRY_RUN" != "1" && "${ALLOW_NO_GIT_SHA:-0}" != "1" ]]; then
+    echo "FATAL: MAXSAT_GIT_SHA is not set. Pass the workstation commit the tree was rsynced from" >&2
+    echo "       (git rev-parse HEAD), or ALLOW_NO_GIT_SHA=1 to submit with git_sha null." >&2
+    exit 2
 fi
+
+# Source digest, computed root-relative so the workstation can reproduce it.
+SRC_TREE_SHA=$(cd .. && find src -name '*.py' | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
 
 CMD=(sbatch "--array=${ARRAY_SPEC}%${THROTTLE}" "--job-name=${JOB_NAME}"
      "--export=${EXPORTS}" ${PASSTHRU[@]+"${PASSTHRU[@]}"} "$ARRAY_SCRIPT")
@@ -97,6 +134,8 @@ echo "manifest   : $MANIFEST  (${TASK_COUNT} rows; task N == line N)"
 echo "configs    : $(cut -f4 "$MANIFEST" | sort | uniq -c | awk '{printf "%s x%s  ", $2, $1}')"
 echo "outdir     : $OUTDIR  (root-relative)"
 echo "array      : ${ARRAY_SPEC}  throttle %${THROTTLE}"
+echo "git sha    : ${MAXSAT_GIT_SHA:-<unset>}"
+echo "src tree   : ${SRC_TREE_SHA}  (sha256 of the sorted src/**/*.py sha256sum list)"
 echo "command    : ${CMD[*]}"
 
 if [[ "$DRY_RUN" == "1" ]]; then
@@ -104,4 +143,25 @@ if [[ "$DRY_RUN" == "1" ]]; then
     exit 0
 fi
 
-exec "${CMD[@]}"
+PROV_DIR="../${OUTDIR%/tasks}/provenance"
+mkdir -p "$PROV_DIR"
+PROV="${PROV_DIR}/submit_$(date -u +%Y%m%dT%H%M%SZ).txt"
+{
+    echo "submitted_at_utc : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "host             : $(hostname)"
+    echo "user             : ${USER:-}"
+    echo "maxsat_git_sha   : ${MAXSAT_GIT_SHA:-<unset; unverified>}"
+    echo "resume           : ${RESUME}"
+    echo "array            : ${ARRAY_SPEC}%${THROTTLE}"
+    echo "command          : ${CMD[*]}"
+    echo "src_tree_sha256  : ${SRC_TREE_SHA}"
+    echo "--- sha256 (paths relative to the staging root)"
+    (cd .. && sha256sum "scripts/${MANIFEST}" "scripts/${MANIFEST%.tsv}.tasks.csv" \
+        "scripts/${ARRAY_SCRIPT}" scripts/m2_results.py $(cut -f3 "scripts/${MANIFEST}" | sort -u))
+    (cd .. && find src -name '*.py' | LC_ALL=C sort | xargs sha256sum)
+} > "$PROV"
+echo "provenance : ${PROV#../}"
+
+OUT=$("${CMD[@]}")
+echo "$OUT"
+echo "sbatch           : $OUT" >> "$PROV"

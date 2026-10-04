@@ -2,7 +2,7 @@
 M2 modified-deeppolish run preparation (docs/M2_DEEPPOLISH_RUN_PREPARATION.md
 in the repo).
 
-These tests pin the four arms' resolved settings, the manifests' counts and
+These tests pin the five arms' resolved settings, the manifests' counts and
 identities, population-10 compatibility of the EA, the opt-in deadline
 clipping in src/evo/memetic.py (and that the control path without it is
 byte-for-byte the pre-clipping behaviour), and the result classifier's
@@ -39,7 +39,7 @@ yaml = pytest.importorskip("yaml")
 # control arm must be the historical config, byte for byte.
 CONTROL_SHA = "cf6c3ad9665a9d64571d009e71f95df6f3ee530d25b7991a5f3c3e169c034990"
 MANIFESTS = {"manifest_m2_pilot": 96, "manifest_m2_full_p40_ls2p5": 210,
-             "manifest_m2_full_p10_ls2p5": 210}
+             "manifest_m2_full_p10_ls2p5": 210, "manifest_m2_full_p40": 420}
 
 
 def _cfg(arm):
@@ -60,7 +60,8 @@ def test_control_config_is_the_historical_file():
 
 @pytest.mark.parametrize("arm,pop,ls_t,children,clip", [
     ("p40_ls0p5", 40, 0.5, 38, False), ("p40_ls2p5", 40, 2.5, 38, True),
-    ("p10_ls2p5", 10, 2.5, 9, True), ("p10_ls3p5", 10, 3.5, 9, True)])
+    ("p10_ls2p5", 10, 2.5, 9, True), ("p10_ls3p5", 10, 3.5, 9, True),
+    ("p40_ls3p5", 40, 3.5, 38, True)])
 def test_arm_resolved_settings(arm, pop, ls_t, children, clip):
     cfg = _cfg(arm)
     assert "time_limit_s" not in cfg  # run budget comes only from --budget-s
@@ -76,7 +77,7 @@ def test_arm_resolved_settings(arm, pop, ls_t, children, clip):
 
 def test_config_ids_distinct():
     ids = [v[1] for v in mk.ARMS.values()]
-    assert len(set(ids)) == len(ids) == 4
+    assert len(set(ids)) == len(ids) == 5
 
 
 # ---------------------------------------------------------------- manifests
@@ -123,7 +124,7 @@ def test_manifest_rows(stem, n):
 
 def test_job_ids_unique_across_all_manifests():
     ids = [t["job_id"] for s in MANIFESTS for t in _tasks(s)]
-    assert len(ids) == len(set(ids)) == 516
+    assert len(ids) == len(set(ids)) == 936
 
 
 def test_pilot_composition():
@@ -147,6 +148,22 @@ def test_full_pool_manifests_cover_population_once_per_seed():
         tasks = _tasks(stem)
         assert len({(t["instance_sha256"], t["solver_seed"]) for t in tasks}) == 210
         assert len({t["arm"] for t in tasks}) == 1
+
+
+def test_full_pool_paired_manifest():
+    # The run chosen after the pilot: the 3.5 s arm and the unchanged control,
+    # every (instance, solver seed) once per arm, the pair on adjacent lines.
+    tasks = _tasks("manifest_m2_full_p40")
+    assert [t["arm"] for t in tasks] == ["p40_ls0p5", "p40_ls3p5"] * 210
+    assert {t["config"] for t in tasks} == {"configs/tier2/memetic_deeppolish.yaml",
+                                            "configs/tier2/memetic_deeppolish_p40_ls3p5.yaml"}
+    with open(os.path.join(SCRIPTS, "m2_population.csv"), encoding="utf-8") as f:
+        pop = {r["instance_sha256"] for r in csv.DictReader(f)}
+    for a, b in zip(tasks[0::2], tasks[1::2]):
+        assert (a["instance_sha256"], a["solver_seed"]) == (b["instance_sha256"], b["solver_seed"])
+        assert a["deadline_mode"] == "" and b["deadline_mode"] == "clip"
+    keys = {(t["instance_sha256"], t["solver_seed"]) for t in tasks}
+    assert len(keys) == 210 and {k[0] for k in keys} == pop
 
 
 # ---------------------------------------------------------------- population 10
@@ -329,7 +346,7 @@ def test_clip_is_inert_when_the_budget_never_binds():
             r["total_flips"], r["meta"]["children"]) == CONTROL_REF[1]
 
 
-@pytest.mark.parametrize("arm", ["p40_ls2p5", "p10_ls2p5", "p10_ls3p5"])
+@pytest.mark.parametrize("arm", ["p40_ls2p5", "p10_ls2p5", "p10_ls3p5", "p40_ls3p5"])
 def test_clipped_run_ends_at_the_budget(tmp_path, arm):
     p = tmp_path / "unsat.cnf"
     p.write_text(UNSAT)

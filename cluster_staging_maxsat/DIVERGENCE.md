@@ -386,3 +386,17 @@ tests/test_m2_prep.py
 The control arm is the unchanged `configs/tier2/memetic_deeppolish.yaml`
 (sha256 pinned in the test). `scripts/tier2_memetic_array.sbatch` is reused
 unchanged.
+
+### M2 full pool (2026-10-04), staging only
+
+Record: [`docs/M2_FULL_POOL_RUN.md`](../docs/M2_FULL_POOL_RUN.md). There are
+no `src/` changes.
+
+```
+configs/tier2/memetic_deeppolish_p40_ls3p5.yaml   pop 40, ls.time_limit_s 3.5, deadline_mode clip
+scripts/manifest_m2_full_p40.{tsv,sha256,tasks.csv}  420 tasks: control p40_ls0p5 + p40_ls3p5, paired lines
+scripts/make_m2_manifests.py                      + arm p40_ls3p5, + the paired manifest
+scripts/submit_m2_memetic.sh                      MAXSAT_GIT_SHA required (ALLOW_NO_GIT_SHA=1 to override);
+                                                  writes results/<stage>/provenance/submit_<UTC>.txt
+```
+
