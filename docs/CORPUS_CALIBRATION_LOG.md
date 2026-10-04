@@ -1029,3 +1029,87 @@ commit's full-pool manifest must not be submitted.
   indices usually start close together, but this is not guaranteed.
 - **Tests:** 125 passed. Commands: `docs/M2_FULL_POOL_RUN.md` §3 (rewritten).
 
+
+---
+
+## 2026-10-04 — Checkpoint 6: M2 full pool returned; ρ(RC2, memetic) read out
+
+The run was committed in `93d9d28`. The full read-out, written for an
+external analyst, is `docs/M2_FULL_POOL_READOUT_AND_STATE.md`. The analysis
+is `scripts/m2_rho_analysis.py`, and its outputs are in
+`results/m2_full_p40/analysis/`. All ρ here are exploratory calibration
+numbers (§5.2): none of them enters a reported ρ.
+
+### What came back
+
+- **Submission.** One array: `sbatch --array=1-420%30`, Slurm job
+  22131008. `MAXSAT_GIT_SHA` = `69c9b97`.
+- **Provenance.** `src_tree_sha256` equals the digest recomputed from
+  `git archive 69c9b97`, so it is **verified**.
+- **Integrity:**
+  - 420/420 shards; 410 `success`, 10 `budget_exhausted`;
+  - 0 watchdog, 0 invalid, 0 infrastructure errors;
+  - overshoot 15–21 ms on every budget-exhausted run, on both arms;
+  - cpu/wall ≥ 0.92 on every task but one trivial run (0.856);
+  - 4.07 CPU-h used, against a ceiling of 105.
+
+### Results (descriptive)
+
+- **Successes:** `a05` (0.5 s per call) 202/210, `a35` (3.5 s per call)
+  208/210. No instance has 0 successes on either arm. All failures end at
+  cost c\* + 1.
+- **Most of the pool is trivial for the memetic solver:**
+  - on 28/70 instances, all 6 runs succeed with the first LS call;
+  - on 55/70, no run goes beyond generation 1;
+  - pre-registered Q2 non-trivial count: 5 instances (`a05`) and 9
+    (`a35`).
+  - Only the 3-SAT n = 250 cells pass the §5.3 memetic rule.
+- **The memetic difficulty ranking is reliable:**
+  - between-arm ρ = 0.89;
+  - ICC of log calls to target across seeds = 0.86–0.88.
+- **`a35` is deterministic given the seed:** 26/30 pilot pairs are
+  bit-identical, and the 4 exceptions are explained. `a05` is not
+  deterministic, because time-bound calls depend on host speed.
+
+### ρ(RC2 solve_s, memetic ERT), N = instances
+
+| subset | N | ρ | partial ρ |
+|---|---:|---|---|
+| pooled | 70 | 0.05–0.10 (CI ≈ −0.2 to 0.33) | 0.15–0.24 |
+| 2-SAT | 26 | **0.49–0.68** (lower CI bound 0.14–0.41) | 0.40–0.50 |
+| 3-SAT | 44 | −0.05 to −0.15 | ≈ 0 |
+
+**Within (k, n) rows**, ρ ≈ 0.29–0.35 (N = 66, CI ≈ 0.05–0.55).
+
+**Why 3-SAT sits near zero.** Within the window, c\* and n have
+ρ = −0.97. The two factors of RC2 time then pull in opposite directions
+against memetic effort:
+
+| RC2 factor | ρ with memetic effort |
+|---|---|
+| core count (c\*) | ≈ −0.8 |
+| time per oracle call | ≈ +0.35 |
+
+**Historical uuf250 (N = 26):** ρ = +0.19, CI −0.22 to 0.54. The no-EA
+multistart baseline solved 124/130 runs; `memetic_deeppolish` solved
+118/130.
+
+**The cell-stratified bootstrap is too narrow on this pool:** 6 cells are
+singletons. Read the plain-bootstrap and Bonett–Wright intervals instead.
+
+### Missing (see the read-out §10)
+
+1. **Within-call first-hit flip index**, to remove the one-call floor.
+2. **Memetic runs on the 107 certified instances with RC2 < 30 s**, to
+   remove the range restriction.
+3. **The no-EA baseline** on the calibration pool.
+4. **RC2 repeatability runs.**
+5. **A second exact solver.**
+6. **M3 tooling** (`calib_summary.py`, yield table).
+7. **Reconsidering the M4 cell rules and families.** As things stand, the
+   rule selects only 3-SAT n = 250.
+
+### Next (awaiting approval)
+
+Choose among the §10 items before M3/M4. Items 1–3 are cheap and change
+what M4 can select.
