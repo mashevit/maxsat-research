@@ -1,0 +1,47 @@
+archive/                              manifest_m2_full_p10_ls2p5.tsv        manifest_m2_pilot.sha256
+logs/                                 manifest_m2_full_p40_ls2p5.sha256     manifest_m2_pilot.tasks.csv
+m2_population.csv                     manifest_m2_full_p40_ls2p5.tasks.csv  manifest_m2_pilot.tsv
+m2_results.py                         manifest_m2_full_p40_ls2p5.tsv        split_m2_manifest.py
+make_m2_manifests.py                  manifest_m2_full_p40.sha256           submit_m2_memetic.sh
+manifest_m2_full_p10_ls2p5.sha256     manifest_m2_full_p40.tasks.csv        tier2_memetic_array.sbatch
+manifest_m2_full_p10_ls2p5.tasks.csv  manifest_m2_full_p40.tsv              tree.txt
+archive/evalmaxsat/manifest_evalmaxsat_more_data.txt
+archive/evalmaxsat/oracle_evalmaxsat_array.sbatch
+archive/evalmaxsat/oracle_evalmaxsat_array.sbatch.old
+archive/local_multistart/make_local_multistart_manifest.py
+archive/local_multistart/manifest_tier2_local_multistart_jw.tsv
+archive/local_multistart/manifest_tier2_local_multistart.tsv
+archive/local_multistart/submit_tier2_local_multistart_jw.sh
+archive/local_multistart/submit_tier2_local_multistart.sh
+archive/local_multistart/tier2_local_multistart_array.sbatch
+archive/mse16/manifest_mse16_screen.txt
+archive/mse16/manifest_mse16_smoke.txt
+archive/mse16/sample_mse16_screen.csv
+archive/mse16/screen_mse16_array.sbatch
+archive/mse16/screen_mse16_array.sbatch.old
+archive/mse16/smoke_mse16_array.sbatch
+archive/mse16/submit_mse16_screen.sh
+archive/mse23/full_mse23_array_cap1800.sbatch
+archive/mse23/full_mse23_array.sbatch
+archive/mse23/manifest_mse23_full.txt
+archive/mse23/manifest_mse23_smoke.txt
+archive/mse23/smoke_mse23_array.sbatch
+archive/mse23/smoke_mse23.sbatch
+archive/rc2_calib/manifest_calib_a_rc2.sha256
+archive/rc2_calib/manifest_calib_a_rc2.txt
+archive/rc2_calib/manifest_calib_b_rc2.sha256
+archive/rc2_calib/manifest_calib_b_rc2.txt
+archive/rc2_calib/rc2_profile_array.sbatch
+archive/rc2_calib/rc2_row_state.py
+archive/rc2_calib/submit_rc2_profile.sh
+archive/tier2_memetic/manifest_tier2_memetic.tsv
+archive/tier2_memetic/manifest_tier2_mse.tsv
+archive/tier2_memetic/smoke_tier2_memetic_oracle.sbatch
+archive/tier2_memetic/smoke_tier2_memetic.sbatch
+archive/tier2_memetic/tier2_oracle.csv
+archive/tier2_memetic/tier2_oracle_uuf250_0100.sbatch
+archive/tier2_memetic/tier2_skipped.txt
+archive/uuf/full_uuf250_array.sbatch
+archive/uuf/full_uuf_array.sbatch
+archive/uuf/manifest_uuf250_1000c.txt
+archive/uuf/manifest_uuf_diff.txt
