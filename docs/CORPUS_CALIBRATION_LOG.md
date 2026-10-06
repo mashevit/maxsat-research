@@ -1,5 +1,7 @@
 # Corpus calibration — running log
 
+> **Current state and active plans (2026-10-06):** see [`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md). This document is kept as a record; where it conflicts with `docs/current/`, the current documents win.
+
 Checkpoint records for the milestones in
 [`CORPUS_CALIBRATION_GOALS.md`](CORPUS_CALIBRATION_GOALS.md) §6. One entry per
 turn: what was verified, what was implemented, what was submitted (job ids or
@@ -1157,3 +1159,144 @@ needed to attribute the remaining two thirds to selection and recombination.
 ### Next (awaiting approval)
 
 Same choice as Checkpoint 6 among the read-out §10 items.
+
+---
+
+## 2026-10-06 — Checkpoint 8: candidate cells verified; calib_c prepared; hard clauses reassessed
+
+Record: [`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md). Protocol draft:
+[`current/CORPUS_V1_PROTOCOL_DRAFT.md`](current/CORPUS_V1_PROTOCOL_DRAFT.md). Against
+`28d4da6`; the work tree is **uncommitted**. **Nothing was submitted.** No ρ
+was used.
+
+### Decisions recorded (user, this turn)
+
+- **RC2 window:** 30 s < t ≤ 900 s, certified.
+  - 30.000 s exactly is below the window; 900.000 s is inside.
+  - No calibration instance sits at 30.0 s, so this selects the same 70 as
+    M2's 30 ≤ t ≤ 900.
+- **Memetic not run** on the 107 certified instances below 30 s.
+- **No instrumentation inside polish calls.**
+- **No multistart on the calibration pool.**
+- **Memetic solver retained.**
+- **Primary configuration:** `memetic_deeppolish_p40_ls3p5`. Verified: pop
+  40, 3.5 s, 12,500 flips, clip, 900 s.
+- **Max-3-SAT n 250 c\* 1 is the reference regime,** not the justification
+  for expansion.
+
+### Verified
+
+- **Counts:** 290 / 177 / 113 censored / 107 below the window / 70 eligible;
+  420 runs; 202/210 and 208/210 successes; 28 first-call; 15 beyond
+  generation 1; Q2 9 (a35) and 5 (a05). `candidate_cells.py` reproduces
+  `instance_table.csv` with 0 mismatches.
+- **§5.3 applied literally: one cell passes, 3-SAT n250 α4.26.** The read-out
+  §6.2 sentence that α4.35 and n150 α4.8 pass dropped r1 and r2. A
+  correction is now in the read-out.
+- **"Seven cells" is not a result.** Under single definitions the counts are
+  8 cells with a run beyond generation 1, 5 with a Q2 instance, and 1 that
+  passes the cell rule.
+- **Categories:**
+  - reference: 3-SAT n250 α4.26, α4.35;
+  - promising: 2-SAT n400 α2.0, α2.15 (each Q2 1/4 against ≥ 2/4, with r1,
+    r2 and r4 passing);
+  - supported: none;
+  - unsuitable: the rest.
+
+### Prepared (not submitted)
+
+- **`calib_c`:** `instancegen/grids/calib_c.yaml`, the 2 cells above ×
+  generator seeds 101–120 = 40 instances.
+  - Manifests: `data/generated/calib_c/manifest.jsonl` and
+    `scripts/manifest_calib_c_rc2.{txt,sha256}`.
+  - Memetic builder: `scripts/make_calib_c_memetic_manifest.py`, primary arm,
+    3 seeds, eligible instances only.
+  - Decision: `candidate_cells.py --decision`, §5.3 unchanged, per cell.
+- **Compute:**
+  - worst case: 10.7 CPU-h (RC2) + 32 CPU-h (memetic);
+  - expected: ≈ 1.4 + 0.5 CPU-h.
+- **Commands:** `current/CORPUS_FREEZE_PREP.md` §9.
+
+### Hard clauses (reassessed)
+
+- **The old "no gradient" reason is inaccurate.** It rested on one MSE
+  instance at about 52 flips/s.
+- **Mixed-sign hard clauses: still excluded, for a verified reason.**
+  - Crossover of two feasible parents was never feasible (0/20) at hard
+    ratio 3–4.
+  - The polish only takes strictly hv-reducing flips and idles otherwise.
+  - `mutate1` gets a stale vector (`evo/memetic.py:152`).
+  - SAT-assisted initialisation alone would not fix this.
+- **Conflict-clause families: reopened as an option (H).** The diagnostic is
+  proposed, not prepared.
+- **Central documents updated:** generator plan §3.1 / E3 / stratum E; scope
+  note §1 and torus; goals §4.2, §5.5 and status header; handoff §6a.
+
+### Repository hygiene
+
+- RC2 tools were moved back from `scripts/archive/rc2_calib/`, because
+  `20ebac6` had broken `tests/test_rc2_row_state.py`.
+- **Tests:** instancegen 82 passed; staging 137 passed, 3 skipped.
+- **One intermittent staging failure** was seen once in 11 runs. Its name was
+  not captured. Open.
+
+### Next (awaiting approval)
+
+D1–D6 in `current/CORPUS_V1_PROTOCOL_DRAFT.md` §10. Most urgent: approve and submit
+`calib_c` (D5), and choose the next implementation milestone (D6;
+recommended: the MaxCut generator).
+
+---
+
+## 2026-10-06 — Checkpoint 9: user decisions applied; working documents moved to `docs/current/`; handoff written
+
+**Entry point for the next session:**
+[`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md). Nothing
+was submitted, nothing was generated, and no calculation was run for the new
+pending task. The work tree is still uncommitted.
+
+### Decisions (user)
+
+1. **RC2:** PySAT **1.9.dev3** (Checkpoint 2's open item is closed).
+   `RC2(wcnf, "g3")` with default options; cap 900 + 60; env `maxsat`, Python
+   3.11.15.
+2. **Primary memetic effort = seconds**, as pre-registered. Calls and flips
+   are secondary diagnostics. Checkpoint 8's recommendation to make calls
+   primary is **withdrawn**. Calls are not size- or host-free.
+3. **Instances per stratum: open.** The 40–50 target is withdrawn. The
+   trade-off is in protocol r2 §5.2.
+4. **No new instances for the n = 250, c\* = 1 reference regime** (m 1065 /
+   1088). Stratum R (seeds 1001–1080) is **removed**. The historical
+   conditions are documented in protocol §3.1.
+5. **`calib_c`:** preserved; **submission pending, not approved.**
+6. **MaxCut generator:** proposed next implementation milestone; **not
+   started.**
+7. **New pending task:** assess Max-3-SAT at n > 250 (c\* > 1 inside the RC2
+   window, with real memetic effort). Checkpoint 8's "no further Max-3-SAT
+   refinement" covers n ≤ 250 only and is not evidence against a regime at
+   larger n.
+
+### Documents
+
+- **Moved:** `docs/CORPUS_FREEZE_PREP.md` → `docs/current/` (now r2: dated
+  revision box; superseded r1 recommendations marked in place; new §4a for
+  n > 250). `docs/CORPUS_V1_PROTOCOL_DRAFT.md` → `docs/current/` (now r2,
+  with a revision log).
+- **New:** `docs/current/NEXT_SESSION_CONTEXT.md`, `docs/current/README.md`
+  (*later replaced by `docs/current/READING_LIST.md`, a minimal ordered
+  reading list*)
+  (which documents are live and which are records).
+- **References updated:**
+  - docs: goals, log, generator plan, scope note, M2 read-out, handoff;
+  - staging: `DIVERGENCE.md`, `candidate_cells.py`,
+    `make_calib_c_memetic_manifest.py`, `hard_clause_probe.py`,
+    `test_calib_c_prep.py`;
+  - `instancegen`: `test_cli.py`, `calib_c.yaml`.
+  These are comment and link changes only.
+- **Banners** pointing to `docs/current/` were added to the goals, generator
+  plan, scope note, M2 read-out and this log.
+- **The goals doc** marks its dev15 references as superseded.
+- **Not moved:** the M2 and calib_b working documents. Config files, scripts
+  and submission provenance cite their paths, and they are records of
+  completed rounds. They are not on `docs/current/READING_LIST.md` unless they
+  add information to the core documents.

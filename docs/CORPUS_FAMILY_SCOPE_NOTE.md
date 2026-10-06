@@ -1,5 +1,7 @@
 # Corpus families: MaxCut in, Max-Clique and set covering out
 
+> **Current state and active plans (2026-10-06):** see [`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md). This document is kept as a record; where it conflicts with `docs/current/`, the current documents win.
+
 **Date:** 2026-10-06. A summary of what the existing plans say about these
 three families, plus one gap found while summarising (the torus stratum,
 last section). Sources:
@@ -31,6 +33,28 @@ deliberately left out of the generated corpus.
   clique.
 - The handoff (§4 Step 4) also suggests generated graphs with a planted
   clique of known size as test fixtures.
+
+> **Reassessed 2026-10-06** ([`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md) §8).
+> - Reason 1 below is **not supported for this encoding.** Conflict clauses
+>   are anti-monotone: setting a variable false never breaks one. In a
+>   workstation probe on G(60, 0.5), the unchanged memetic solver reached and
+>   kept feasibility, and crossover of feasible parents stayed feasible 20/20.
+>   The "no gradient" wording is also inaccurate: the fitness ranks infeasible
+>   assignments by their number of hard violations.
+> - Reason 2 is moot if the conflict clauses stay hard.
+> - Reason 3 is moot for generated graphs.
+> - Reason 4 was an inference, and is contradicted at small n: RC2 proved
+>   c\* = 53 in 0.04 s.
+> - **Max-Independent-Set / Max-Clique on generated graphs is therefore
+>   reopened as an option (stratum H)**, gated by a small diagnostic: RC2
+>   window reachability, and 900 s runs that must end feasible. Its polish
+>   calls idle to their time limit, so effort is time-bound and it is never
+>   pooled with all-soft strata.
+> - **Mixed-sign hard clauses** (set covering, partial random k-SAT) stay
+>   excluded, for a verified reason: crossover and polish do not preserve
+>   feasibility.
+>
+> The original text follows unchanged.
 
 **Why it is excluded** (generator plan §3.1, decision E3):
 
@@ -146,3 +170,14 @@ Yes. It almost always does, and that is the point of the family.
 
 **Open item:** fix stratum E in `CORPUS_GENERATOR_PLAN.md` §3.2 (and the
 `MaxCutParams` of Step 1a) before `maxcut.py` is written.
+
+**Resolved 2026-10-06** (`current/CORPUS_FREEZE_PREP.md` §6.3):
+- Stratum E is a ±J spin glass on the L × L torus: an independent fair sign
+  per edge, all weights 1.
+- A positive edge uses `(x_u ∨ x_v)`, `(¬x_u ∨ ¬x_v)`. A negative edge uses
+  `(x_u ∨ ¬x_v)`, `(¬x_u ∨ x_v)`.
+- Frustration comes from the signs, so even sides are fine.
+- `MaxCutParams` gains `couplings ∈ {cut, pm1}`. The all-`cut` even torus
+  survives only as the c\* = 0 fixture.
+- Whether RC2 reaches the 30–900 s window on it is an empirical question for
+  its calibration gate.

@@ -1,0 +1,90 @@
+{
+ "batches": [
+  "calib_a",
+  "calib_b"
+ ],
+ "beyond_gen1_either_arm": 15,
+ "category": {
+  "promising": [
+   "max2sat_n400_a2",
+   "max2sat_n400_a2.15"
+  ],
+  "reference": [
+   "max3sat_n250_a4.26",
+   "max3sat_n250_a4.35"
+  ],
+  "supported": [],
+  "unsuitable": [
+   "max3sat_n50_a4.26",
+   "max3sat_n50_a5",
+   "max3sat_n50_a6",
+   "max3sat_n50_a8",
+   "max3sat_n50_a8.5",
+   "max3sat_n50_a9",
+   "max3sat_n70_a4.26",
+   "max3sat_n70_a5",
+   "max3sat_n70_a6",
+   "max3sat_n70_a6.2",
+   "max3sat_n70_a6.5",
+   "max3sat_n70_a8",
+   "max3sat_n100_a4.26",
+   "max3sat_n100_a5",
+   "max3sat_n100_a5.2",
+   "max3sat_n100_a5.5",
+   "max3sat_n100_a6",
+   "max3sat_n100_a8",
+   "max3sat_n150_a4.26",
+   "max3sat_n150_a4.6",
+   "max3sat_n150_a4.8",
+   "max3sat_n150_a5",
+   "max3sat_n150_a6",
+   "max3sat_n150_a8",
+   "max3sat_n250_a5",
+   "max3sat_n250_a6",
+   "max3sat_n250_a8",
+   "max2sat_n100_a2",
+   "max2sat_n100_a3",
+   "max2sat_n100_a4",
+   "max2sat_n100_a4.5",
+   "max2sat_n100_a5",
+   "max2sat_n100_a6",
+   "max2sat_n150_a2",
+   "max2sat_n150_a3",
+   "max2sat_n150_a3.15",
+   "max2sat_n150_a3.3",
+   "max2sat_n150_a4",
+   "max2sat_n150_a6",
+   "max2sat_n250_a2",
+   "max2sat_n250_a2.35",
+   "max2sat_n250_a2.5",
+   "max2sat_n250_a3",
+   "max2sat_n250_a4",
+   "max2sat_n250_a6",
+   "max2sat_n400_a2.3",
+   "max2sat_n400_a3",
+   "max2sat_n400_a4",
+   "max2sat_n400_a6"
+  ]
+ },
+ "cells": 53,
+ "cells_rule_5_3_pass": [
+  "max3sat_n250_a4.26"
+ ],
+ "cells_with_eligible": 24,
+ "eligible_tested_primary": 70,
+ "first_call_all_primary": 39,
+ "generated": 290,
+ "memetic_agg": [
+  "results/m2_full_p40/agg/tasks.csv"
+ ],
+ "q2_context_0p5": 5,
+ "q2_primary": 9,
+ "q2_rule": "succ < runs or median TTT >= 45 s",
+ "rc2_class": {
+  "below": 107,
+  "censored": 113,
+  "eligible": 70,
+  "failed": 0
+ },
+ "window": "30 < solve_s <= 900"
+}

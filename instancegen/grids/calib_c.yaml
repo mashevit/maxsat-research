@@ -1,0 +1,37 @@
+# Calibration batch `calib_c` -- a fixed reinforcement batch for the only two
+# non-reference cells that the existing evidence cannot decide.
+#
+# Plan, selection rule, stopping rule and budget: docs/current/CORPUS_FREEZE_PREP.md §5
+# (written and committed before any calib_c instance is profiled). Candidate
+# table: cluster_staging_maxsat/results/corpus_freeze_prep/candidate_cells.csv.
+#
+# Why these two cells and nothing else. Under the pre-registered §5.3 cell rule
+# (docs/CORPUS_CALIBRATION_GOALS.md), applied literally to calib_a + calib_b +
+# the M2 full pool (primary arm p40_ls3p5), no non-reference cell passes. Two
+# are one instance short on the memetic condition alone, with every other
+# condition met:
+#
+#   max2sat_n400_a2     certified 10/10, median 18.1 s, Q2 1/4 eligible, success>0 4/4
+#   max2sat_n400_a2.15  certified  5/5,  median 147.6 s, Q2 1/4 eligible, success>0 4/4
+#
+# With 4 eligible instances per cell, a Q2 fraction of 1/4 cannot be told apart
+# from the 1/2 the rule asks for. This batch adds generator seeds so that each
+# cell's memetic condition is decided on ~12-20 eligible instances instead of 4.
+# max2sat_n400_a2.3 is not included: it already fails the RC2 half of the rule
+# (certified 3/5), which more seeds cannot be expected to repair by itself, and
+# it has 0/3 Q2.
+#
+# Same generator conventions, solver configuration and cap (900 s + 60 s grace)
+# as calib_a/calib_b. Seeds 101-120 are disjoint from calib_a/b (1-10) and from
+# every final-corpus seed (>= 1001), so no instance is regenerated, and no
+# calib_c instance can ever enter a final evaluation.
+batch: calib_c
+dialect: old
+params:
+  hard_ratio: 0.0
+  w_max: 1
+  weight_dist: uniform
+seeds: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+        111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
+families:
+  - {family: max2sat, k: 2, n: [400], alpha: [2.0, 2.15]}

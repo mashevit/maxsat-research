@@ -140,6 +140,44 @@ def test_calib_b_filenames_are_disjoint_from_calib_a() -> None:
     assert names_a & names_b == set()
 
 
+# --- calib_c: the fixed reinforcement batch (docs/current/CORPUS_FREEZE_PREP.md §5) --
+
+CALIB_C = REPO / "instancegen" / "grids" / "calib_c.yaml"
+
+
+def test_calib_c_is_exactly_the_two_reinforcement_cells_at_seeds_101_120() -> None:
+    """The batch is fixed in advance: two existing cells, 20 fresh seeds each,
+    nothing adaptive. Seeds must be disjoint from calib_a/b (1-10) and below
+    every final-corpus seed (>= 1001)."""
+    g = load_grid(str(CALIB_C))
+    assert g.batch == "calib_c" and g.dialect == "old"
+    assert {c.cell_id for c in g.cells} == {"max2sat_n400_a2", "max2sat_n400_a2.15"}
+    for c in g.cells:
+        assert g.cell_seeds(c) == list(range(101, 121))
+    items = list(g.items())
+    assert len(items) == 40 and len({render(g, c, s)[2] for c, s in items}) == 40
+
+
+def test_calib_c_cells_exist_in_calib_a_or_b_with_identical_conventions() -> None:
+    """Reinforcement enlarges existing cells: same (k, n, alpha) and the same
+    generator conventions, so cell_id pools across batches."""
+    old = {(c.k, c.n, c.alpha) for p in (CALIB_A, CALIB_B) for c in load_grid(str(p)).cells}
+    a, g = load_grid(str(CALIB_A)), load_grid(str(CALIB_C))
+    assert g.params == a.params
+    for cell in g.cells:
+        assert (cell.k, cell.n, cell.alpha) in old
+        p = g.gen_params(cell, 101)
+        assert p.hard_ratio == 0.0 and p.w_max == 1 and p.weight_dist == "uniform" and p.n_hard == 0
+
+
+def test_calib_c_filenames_are_disjoint_from_calib_a_and_b() -> None:
+    g = load_grid(str(CALIB_C))
+    names_c = {render(g, c, s)[2] for c, s in g.items()}
+    for p in (CALIB_A, CALIB_B):
+        h = load_grid(str(p))
+        assert names_c & {render(h, c, s)[2] for c, s in h.items()} == set()
+
+
 # --- per-family seed override ----------------------------------------------
 
 def test_per_family_seeds_override_top_level(tmp_path: Path) -> None:

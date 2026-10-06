@@ -406,3 +406,25 @@ scripts/submit_m2_memetic.sh                      MAXSAT_GIT_SHA required (ALLOW
 The historical control `memetic_deeppolish.yaml` (unclipped) is unchanged and
 is not in the full-pool manifest.
 
+
+### Corpus freeze preparation (2026-10-06), staging only
+
+Record: [`docs/current/CORPUS_FREEZE_PREP.md`](../docs/current/CORPUS_FREEZE_PREP.md). **No
+file under `src/` or `configs/` changed.** The eight-file identity loop and
+the three-file diverged set are as before.
+
+```
+scripts/candidate_cells.py                 per-cell RC2 x memetic table, §5.3 literal, categories (no rho)
+scripts/make_calib_c_memetic_manifest.py   calib_c memetic manifest from calib_c RC2 rows (primary arm only)
+scripts/hard_clause_probe.py               workstation probe of the unchanged operators on hard clauses
+scripts/manifest_calib_c_rc2.{txt,sha256}  40 RC2 tasks (written by instancegen.cli)
+tests/test_calib_c_prep.py                 window boundary, not-run accounting, arm identity, table reproducibility
+results/corpus_freeze_prep/                candidate_cells.csv, candidate_instances.csv, summary.json
+results/hard_clause_probe/                 probe output (not a measurement)
+```
+
+`rc2_profile_array.sbatch`, `submit_rc2_profile.sh`, `rc2_row_state.py` and
+`aggregate_rc2_profile.py` were moved back from `scripts/archive/rc2_calib/`
+to `scripts/` (`git mv`, byte-identical). The archive commit `20ebac6` had
+broken `tests/test_rc2_row_state.py`, and the driver assumes `scripts/`. The
+calib_a/b RC2 manifests stay archived.

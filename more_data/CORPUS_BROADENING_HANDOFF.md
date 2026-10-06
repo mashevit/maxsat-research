@@ -310,6 +310,14 @@ the orthogonality analysis is *about* proof times.
 
 ### 6a. The feasibility wall and the decoder redesign
 
+> *2026-10-06:* reassessed in `docs/current/CORPUS_FREEZE_PREP.md` §8.
+> - The "no gradient" description below is inaccurate: the fitness ranks
+>   infeasible assignments by their number of hard violations.
+> - The failure on `00000293` is confounded by about 52 flips/s.
+> - On generated instances, what fails for mixed-sign hard clauses is
+>   *preserving* feasibility, through crossover and polish.
+> - Conflict-clause families are reopened as an option.
+
 Established on `00000293` (see `docs/` report, dated 2026-09-06): the memetic EA never
 reaches a hard-feasible assignment — five 1800 s runs, best `hard_violations 4249`,
 `best_cost 78`, the worst attainable value — while Glucose bootstrapped on the hard

@@ -1,0 +1,40 @@
+
+== ksat_n150_hr2.0_sr2.0_s1.wcnf  vars=150 hard=300 soft=300  RC2 c*=0 (0.00s)
+  (i) memetic seed 1: stop=time_cap hv=0 cost=10.0 gens=1 children=7 wall=20.0s
+  (i) memetic seed 2: stop=time_cap hv=0 cost=8.0 gens=1 children=6 wall=20.0s
+  JW init (40 members): feasible 0/40, median hv 38.0
+  (ii) Glucose parents: child feasible after crossover 2/20, after mutate1 3/20, after polish 12/20
+       hv after crossover median 2.0 range 0-7; after polish median 0.0 range 0-1; polish wall/call median 3.50s
+  Glucose model costs: [28.0, 30.0, 32.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 50.0]
+  (iii) polish from feasible model, cost before->after: [(35.0, 12.0), (37.0, 10.0), (30.0, 11.0), (28.0, 14.0), (38.0, 13.0), (36.0, 12.0)]
+  polished-child costs (feasible ones): [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 11.0, 11.0, 11.0, 13.0, 13.0]
+
+== ksat_n150_hr3.0_sr2.0_s1.wcnf  vars=150 hard=450 soft=300  RC2 c*=2 (1.21s)
+  (i) memetic seed 1: stop=time_cap hv=4 cost=infeasible gens=1 children=6 wall=20.0s
+  (i) memetic seed 2: stop=time_cap hv=1 cost=infeasible gens=1 children=6 wall=20.0s
+  JW init (40 members): feasible 0/40, median hv 60.5
+  (ii) Glucose parents: child feasible after crossover 0/20, after mutate1 0/20, after polish 0/20
+       hv after crossover median 6.5 range 2-12; after polish median 2.5 range 1-5; polish wall/call median 3.50s
+  Glucose model costs: [29.0, 30.0, 30.0, 33.0, 33.0, 33.0, 37.0, 39.0, 41.0, 46.0, 48.0, 48.0]
+  (iii) polish from feasible model, cost before->after: [(41.0, 24.0), (46.0, 18.0), (30.0, 19.0), (29.0, 19.0), (33.0, 29.0), (48.0, 36.0)]
+  polished-child costs (feasible ones): []
+
+== ksat_n150_hr4.0_sr2.0_s1.wcnf  vars=150 hard=600 soft=300  RC2 c*=8 (-3.12s)
+  (i) memetic seed 1: stop=time_cap hv=8 cost=infeasible gens=1 children=6 wall=20.0s
+  (i) memetic seed 2: stop=time_cap hv=7 cost=infeasible gens=1 children=6 wall=20.0s
+  JW init (40 members): feasible 0/40, median hv 78.0
+  (ii) Glucose parents: child feasible after crossover 0/20, after mutate1 0/20, after polish 0/20
+       hv after crossover median 8.0 range 4-13; after polish median 5.5 range 2-7; polish wall/call median 3.50s
+  Glucose model costs: [19.0, 22.0, 23.0, 26.0, 29.0, 30.0, 32.0, 35.0, 39.0, 40.0, 41.0, 42.0]
+  (iii) polish from feasible model, cost before->after: [(39.0, 33.0), (22.0, 19.0), (19.0, 14.0), (40.0, 34.0), (41.0, 35.0), (26.0, 24.0)]
+  polished-child costs (feasible ones): []
+
+== clique_n60_p0.5_s1.wcnf  vars=60 hard=910 soft=60  RC2 c*=53 (0.04s)
+  (i) memetic seed 1: stop=time_cap hv=0 cost=54.0 gens=1 children=6 wall=20.0s
+  (i) memetic seed 2: stop=time_cap hv=0 cost=54.0 gens=1 children=6 wall=20.0s
+  JW init (40 members): feasible 0/40, median hv 819.5
+  (ii) Glucose parents: child feasible after crossover 20/20, after mutate1 20/20, after polish 20/20
+       hv after crossover median 0.0 range 0-0; after polish median 0.0 range 0-0; polish wall/call median 3.50s
+  Glucose model costs: [54.0, 54.0, 55.0, 55.0, 55.0, 55.0, 56.0, 56.0, 56.0, 56.0, 56.0, 56.0]
+  (iii) polish from feasible model, cost before->after: [(55.0, 55.0), (56.0, 55.0), (54.0, 54.0), (54.0, 53.0), (56.0, 55.0), (55.0, 54.0)]
+  polished-child costs (feasible ones): [53.0, 53.0, 53.0, 54.0, 54.0, 54.0, 54.0, 54.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 56.0, 56.0]

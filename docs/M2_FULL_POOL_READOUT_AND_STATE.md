@@ -1,12 +1,15 @@
 # M2 full pool read-out, ρ(RC2, memetic) analysis, and state of the research
 
+> **Current state and active plans (2026-10-06):** see [`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md). This document is kept as a record; where it conflicts with `docs/current/`, the current documents win.
+
 **Date:** 2026-10-04. **Written against:** commit `69c9b97` plus the
 untracked results directory `cluster_staging_maxsat/results/m2_full_p40/`
 (copied from the cluster today) and a new analysis script
 `cluster_staging_maxsat/scripts/m2_rho_analysis.py`.
 **Amended 2026-10-06:** §0, §7.4, §10.3 and §11 now point to the JW-seeded
-multistart results (`docs/UUF_THREE_ARM_ABLATION_READOUT.md`); nothing else
-changed.
+multistart results (`docs/UUF_THREE_ARM_ABLATION_READOUT.md`). §6.2 also
+carries a correction of its cell-rule sentence (`docs/current/CORPUS_FREEZE_PREP.md`).
+Nothing else changed.
 
 **Intended reader:** a person or another LLM with no access to the
 repository. The document is self-contained. It explains the project, the
@@ -427,6 +430,20 @@ that at least half a cell's instances be non-trivial and that the RC2
 median be ≥ 10 s. It is computed here on pool instances only, not on whole
 cells. Only `max3sat_n250_a4.26` and `max3sat_n250_a4.35` pass, plus
 `max3sat_n150_a4.8` under `a35` (one instance).
+
+> **Correction 2026-10-06** ([`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md) §2.2).
+> Computing the rule on pool instances only drops its two RC2 conditions:
+> certified fraction ≥ 4/5 and certified median ≥ 10 s. Applied literally,
+> **only `max3sat_n250_a4.26` passes.**
+> - `max3sat_n250_a4.35` has 2/5 certified.
+> - `max3sat_n150_a4.8` has 3/5 certified, a certified median of 1.9 s, and
+>   one tested instance.
+>
+> The "seven" cells sometimes quoted from the list above mix two criteria:
+> - 5 cells hold a Q2 instance;
+> - #16 and #31 only have runs beyond generation 1.
+>
+> The cell-level count is 1.
 
 ### 6.3 Is the memetic hardness signal reliable? (`summary.json` → `reliability`)
 

@@ -14,6 +14,28 @@ those into a *measured calibration process*: a small grid, both solvers, frozen
 selection rules, then fresh instances. It supersedes the generator plan's Step 3
 grid and its Step 4 selection thresholds; everything else there stands.
 
+> **Current state (2026-10-06).**
+> - M1, M2 and the calibration batches are done.
+> - The verified candidate-cell table, the freeze recommendation, the
+>   `calib_c` reinforcement batch and the hard-clause reassessment are in
+>   [`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md).
+> - **Next-session entry point:**
+>   [`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md).
+> - The proposed final protocol is
+>   [`current/CORPUS_V1_PROTOCOL_DRAFT.md`](current/CORPUS_V1_PROTOCOL_DRAFT.md)
+>   (r2). It replaces §5.4's "seeds 1001–1020, 20 per cell": the sample size
+>   per stratum is open.
+> - **Decisions of 2026-10-06 that supersede parts of this document:**
+>   - RC2 runs on the cluster under **PySAT 1.9.dev3**, not the 1.9.dev15
+>     named in §1 and §4.1;
+>   - **seconds remain the primary memetic effort measure** (§4.2, §5.2,
+>     unchanged);
+>   - **no new instances** are generated for the Max-3-SAT n = 250, c\* = 1
+>     regime.
+> - The §5.3 rule is unchanged. Its r3/r4 conditions are evaluated over
+>   RC2-eligible instances (30 s < t ≤ 900 s), because no memetic run exists
+>   below the window.
+
 Notation: **α = m/n** (clause density; α_c ≈ 4.267 for random 3-SAT),
 **c\*** = optimum cost (unsatisfied soft weight), **ρ** = Spearman rank
 correlation. Throughout, *verified* means measured in this repository with a
@@ -39,7 +61,8 @@ success-rate companion), pooled and within family/cell, and how much of any
 relation is explained by the shared covariates (n, α, c\*)?
 
 **Scope of conclusions.** Every conclusion is about *this stack*: PySAT
-1.9.dev15 `RC2(wcnf, solver="g3")` with `adapt=exhaust=minz=False` (no
+1.9.dev15 *(superseded 2026-10-06: the cluster runs, and corpus_v1, use
+1.9.dev3)* `RC2(wcnf, solver="g3")` with `adapt=exhaust=minz=False` (no
 stratification; unweighted instances make `RC2Stratified` moot), and the
 `memetic_deeppolish` preset with the target-cost stop, single-threaded on the
 cluster's `main` partition. Conclusions cover the two random families and the
@@ -188,7 +211,9 @@ reinforcement cells carry 10 seeds instead of 5, so cell-level fractions in
 - **Solver configuration to hold fixed:** `RC2(wcnf, solver="g3")`, all
   options default (`adapt=False, exhaust=False, minz=False`). The cluster's
   `maxsat` env PySAT version is recorded per task and compared with
-  1.9.dev15; a mismatch is reported, not silently accepted.
+  1.9.dev15; a mismatch is reported, not silently accepted. *(2026-10-06:
+  the mismatch was reported at Checkpoint 2 and resolved by fixing
+  1.9.dev3, the version every cluster task ran.)*
 
 ### 4.2 Memetic arm (stochastic; several seeds per instance)
 
@@ -207,6 +232,16 @@ reinforcement cells carry 10 seeds instead of 5, so cell-level fractions in
   ever appears, is a failed run, not a censored one. `hard_violations` is
   always 0 here (no hard clauses), so feasibility is not a concern for
   these families.
+  **Why hard-clause families are out, verified 2026-10-06**
+  ([`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md) §8):
+  - The memetic solver cannot *preserve* feasibility on mixed-sign hard
+    clauses. Crossover of two feasible parents is almost never feasible, and
+    the polish only takes strictly hard-violation-reducing flips, then idles.
+    So SAT-assisted initialisation alone is not enough.
+  - Conflict-clause (Max-Independent-Set / Max-Clique) instances do not have
+    this problem and are an open option (stratum H).
+  - Reconsider mixed-sign families only with a separately specified
+    repair/decoder arm.
 - **Seeds are replicates, not instances.** Every per-instance statistic
   aggregates the 3 seeds first; nothing downstream sees a seed as a sample
   point. Success rate = successes / 3 (so it takes values in {0, ⅓, ⅔, 1} —
@@ -363,6 +398,9 @@ count is fixed only after A1 returns; the manifest generator prints it.
    torus lattice is bipartite, so every edge is cut and c\* = 0 by
    construction — it cannot carry proof-time information. If a lattice family
    is wanted later, use odd sides or ±J couplings, and say why.
+   *(2026-10-06: the lattice stratum is now specified as a ±J spin glass,
+   `current/CORPUS_FREEZE_PREP.md` §6.3; the hard-clause exclusion is reassessed in
+   its §8.)*
    **Broader corpus diversity — structured, weighted, industrial-style
    families — remains an explicit research objective after M5**, not a
    fallback: the two random families are where the measurement machinery is

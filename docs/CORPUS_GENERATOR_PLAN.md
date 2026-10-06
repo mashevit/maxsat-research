@@ -1,5 +1,7 @@
 # Broadening the corpus with generators — why MSE-2016 does not fit a core-guided oracle, and the steps to a generated corpus
 
+> **Current state and active plans (2026-10-06):** see [`current/NEXT_SESSION_CONTEXT.md`](current/NEXT_SESSION_CONTEXT.md). This document is kept as a record; where it conflicts with `docs/current/`, the current documents win.
+
 **Date:** 2026-09-14. Written against commit `3e79701`. Supersedes the
 "you need one generator, not six" verdict of
 [`archive/CORPUS_MSE2016_ASSESSMENT.md`](archive/CORPUS_MSE2016_ASSESSMENT.md) §2, for the
@@ -161,6 +163,30 @@ excluded from this corpus for the same feasibility-wall reason — the EA
 under test is the pure-soft `memetic_deeppolish`, and every committed tier-2
 number is pure-soft.
 
+> **Hard-clause exclusion — reassessed 2026-10-06** (full record:
+> [`current/CORPUS_FREEZE_PREP.md`](current/CORPUS_FREEZE_PREP.md) §8). The "feasibility
+> wall" above rested on one 134k-clause MSE instance, where the polish ran at
+> about 52 flips/s, and the wording "no gradient" was inaccurate: the fitness
+> −1e9 − 1e6·hv does rank infeasible assignments by their number of hard
+> violations. The verified reason is narrower, from the staging code and a
+> workstation probe on generated instances:
+> - **Mixed-sign hard clauses** (partial random k-SAT, set cover):
+>   - crossover of two *feasible* parents gave a feasible child 0 times in
+>     20 at hard ratio 3–4;
+>   - the polish accepts only flips that strictly reduce the hard-violation
+>     count, so it stalls in local minima and idles to its time limit;
+>   - `mutate1` reads a stale feasibility vector (`evo/memetic.py:152`).
+>   - **SAT-solver initialisation alone would not fix this.** It needs repair,
+>     a decoder or escape moves: a new arm. **Excluded for the current
+>     solver.**
+>   - Reconsider only when such an arm passes the operator probe and reaches
+>     feasibility on every seed in 900 s runs.
+> - **Conflict-clause hard instances** (Max-Independent-Set / Max-Clique on
+>   generated graphs): the existing operators found and kept feasibility.
+>   **Reopened as an option (stratum H)**, behind a small diagnostic. Its
+>   polish calls become time-bound, so it is never pooled with all-soft
+>   strata.
+
 ### 3.2 The factorial that makes effects attributable
 
 Handoff §2: vary one axis at a time from a fixed base, so the regression has
@@ -172,7 +198,7 @@ leverage on each covariate separately.
 | B | G1 3-SAT | 50 … 250 | 4.26 | 1 | n ladder at fixed density (joins the uuf250 stratum at n = 250) |
 | C | G2 2-SAT | 100, 150 | 3, 4, 5 | 1 | clause length 2 at random origin |
 | D | G3 MaxCut ER | 60–150 vertices | degree 4–8 | 1 | graph origin, clause length 2 |
-| E | G4 MaxCut torus | 8×8 … 12×12 | 4 (fixed) | 1 | designed structure |
+| E | G4 MaxCut torus | 8×8 … 12×12 | 4 (fixed) | 1 | designed structure. *Revised 2026-10-06: ±J spin-glass couplings (`couplings: pm1`); an unweighted all-"cut" even torus is bipartite with c\* = 0 and is a fixture only (`current/CORPUS_FREEZE_PREP.md` §6.3)* |
 | F | G5 reweight of A/C/D picks | as base | as base | uniform 1–8, few_classes:5 | weightedness, paired with its unweighted base |
 | S1 | `dimacs-mod`, `spinglass` | 27–70 | 1.1–57 | 1 | published structured benchmark |
 
@@ -425,7 +451,7 @@ weightedness axis specifically.
 |---|---|---|
 | E1 | Cap for certification | **900 s**, matching `uuf250_1000c`; not 600 (the `mse23` cap) and not 1800 |
 | E2 | Accept the two-decade c\* ceiling | **Yes**; state it as a limitation of a core-guided oracle rather than chase the third decade with a B&B solver (§1.2) |
-| E3 | Include `hard_ratio > 0` instances | **No** for corpus v1 — feasibility wall, and the EA arm under test is pure-soft |
+| E3 | Include `hard_ratio > 0` instances | **No** for corpus v1 — feasibility wall, and the EA arm under test is pure-soft. *Reassessed 2026-10-06* (`current/CORPUS_FREEZE_PREP.md` §8): stays **No** for mixed-sign hard clauses, for a verified operator-level reason; conflict-clause families are reopened as an option |
 | E4 | Which S1 leaves to keep screening | `dimacs-mod`, `spinglass`, `set-covering/*` only; drop the rest of the 104-task array |
 | E5 | Weight distributions for G5 | `uniform` w_max 8 and `few_classes:5` w_max 16 — the two shapes `INSTANCEGEN_PLAN` §11 shows drive `RC2Stratified` differently; `powerlaw` deferred |
 
