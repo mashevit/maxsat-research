@@ -1,14 +1,118 @@
 # Next-session context — MaxSAT corpus calibration (read this first)
 
 **Written:** 2026-10-06, at the end of the session that produced Checkpoints
-8–9 of the calibration log.
+8–9 of the calibration log. **Revised (r3) 2026-10-06** for the user's new
+direction (§0, Checkpoint 10). §0 overrides anything below it that it
+contradicts.
 
-**Repository:** `/home/mashe/maxsat-lab_new/maxsat-lab`, branch `main`, HEAD
-`28d4da6`.
+**Repository:** `/home/mashe/maxsat-lab_new/maxsat-lab`, branch `main`.
+- The Checkpoint 8–9 work is **committed**: `9a562d0`, then `53aa53f`
+  (staging log clean-up). HEAD is `53aa53f`.
+- The r3 documentation edits (§0; the r3 notes in `CORPUS_FREEZE_PREP.md`,
+  `CORPUS_V1_PROTOCOL_DRAFT.md`, `READING_LIST.md`; log Checkpoint 10) are
+  **uncommitted**.
 
-**Everything from this session is uncommitted** (§9). Nothing was submitted to
-Slurm. This workstation has no `sbatch` or ssh alias, so every cluster step
-is a command the user runs on the login node.
+Nothing was submitted to Slurm. This workstation has no `sbatch` or ssh
+alias, so every cluster step is a command the user runs on the login node.
+
+---
+
+## 0. Direction as of r3 (2026-10-06, user) — read first
+
+**New direction.** Explore grid points with **more variables, in both
+Max-2-SAT and Max-3-SAT**, with clause-to-variable ratios chosen to suit each
+size, in order to find hard instances. "Hard" means what it has meant
+throughout: RC2-eligible (certified, 30 s < t ≤ 900 s) **and** the memetic
+solver does meaningful work (Q2).
+
+**Decisions recorded with it:**
+1. **Effort stays in seconds** (ERT_s, median TTT). Calls and flips remain
+   secondary diagnostics. Unchanged from D2.
+2. **The 250-variable, optimum-1 reference stratum is preserved as it is.**
+   No new instances are generated for it (D4 unchanged). Its evidence is the
+   26 SATLIB instances plus the calib_a/b rows at n = 250, α 4.26 / 4.35.
+3. **`calib_c` is to be reassessed against this direction.** This does not
+   claim its construction was wrong: its two cells and seeds were derived
+   correctly from the evidence under the earlier plan, which was to settle
+   the n = 400 question. The question is now whether that two-cell n = 400
+   reinforcement still belongs in a plan aimed at larger n. Options: keep it
+   as prepared, revise it (for example, make n = 400 one rung of a larger-n
+   ladder), or replace it. **Until that is decided, `calib_c` is on hold.**
+   Its §9 commands in `CORPUS_FREEZE_PREP.md` are not to be run.
+4. **This session changed documents only.** No instances generated, no
+   manifests or submission scripts prepared, no jobs submitted, no cluster
+   commands written.
+
+**Existing evidence relevant to the direction.** Read off
+`results/corpus_freeze_prep/candidate_cells.csv`; nothing new was computed.
+"Elig" means certified in (30, 900] s.
+
+| family | n | α with eligible instances (elig / generated) | c\* of eligible | Q2 / tested (3.5 s arm) | first fully censored α |
+|---|---:|---|---|---|---|
+| Max-2-SAT | 100 | 4.0 (1/5), 4.5 (2/5), 5.0 (2/5), 6.0 (1/5) | 31–50 | 0/6 | none in grid |
+| Max-2-SAT | 150 | 3.0 (3/10), 3.15 (1/5), 3.3 (3/5) | 23–28 | 0/7 | 4.0 |
+| Max-2-SAT | 250 | 2.35 (2/5); 2.5 (0/5) | 18–22 | 0/2 | 3.0 |
+| Max-2-SAT | 400 | 2.0 (4/10), 2.15 (4/5), 2.3 (3/5) | 18–23 | 2/11 | 3.0 |
+| Max-3-SAT | 150 | 4.8 (1/5), 5.0 (1/5) | 2–3 | 1/2 | 6.0 |
+| Max-3-SAT | 250 | 4.26 (6/10), 4.35 (2/5) | 1 | 6/8 | 5.0 |
+
+What these rows suggest. These are observations to test, not results:
+- **The memetic side gets harder with n.** Q2 is 0/34 for Max-3-SAT at
+  n ≤ 100 and 6/8 at n = 250. For Max-2-SAT it is 0/15 at n ≤ 250 and 2/11
+  at n = 400. This supports the direction.
+- **The RC2 window moves toward the satisfiability threshold as n grows.**
+  For Max-2-SAT it moves from α 4–6 at n = 100 to α 2.0–2.3 at n = 400; the
+  threshold is α = 1. For Max-3-SAT it moves from α 4.8–5.0 at n = 150 to
+  α 4.26–4.35 at n = 250; the threshold is α ≈ 4.27. So a **fixed α list
+  across n will not work**: at larger n the window lies at lower α than any
+  tested cell. In Max-2-SAT, α 3.0 is already fully censored at n = 250
+  and n = 400.
+- **Max-2-SAT eligible c\* stays near 18–23 from n = 250 to n = 400.** One
+  hypothesis for placing α at larger n is to aim at a c\* band rather than
+  a fixed α. It is untested.
+- **Max-3-SAT eligible c\* falls to 1 by n = 250.** At n > 250, cells that
+  RC2 can certify may hold only c\* 0–1 instances. That would serve size
+  diversity, but not the "c\* > 1" aim of the earlier n > 250 assessment
+  (§5). Whether larger-n, c\* ≤ 1 cells are wanted is a decision. The
+  preserved reference stratum is specifically n = 250, so it does not
+  decide this.
+- **Seconds-based effort and larger m.** Per-call cost grows with m: about
+  1.25–3.0 s per call across the current pool. Larger instances therefore
+  get fewer generations within 900 s, and the Q2 seconds threshold (45 s)
+  means a different amount of search at different m. This is a property to
+  report, not a reason to change the measure.
+
+**Decisions left for the next session** (also in §8):
+- **R3-a `calib_c`:** keep, revise, or replace (decision 3). If it is revised
+  or replaced, `CORPUS_FREEZE_PREP.md` §5 gets a new dated revision before
+  anything is generated or submitted. No calib_c row exists yet, so a
+  revision now is not an adaptive change to a running batch.
+- **R3-b larger-n grid design:**
+  - which n values (Max-2-SAT beyond 400; Max-3-SAT beyond 250);
+  - how to place α per n: a per-n band next to the observed window, a target
+    c\* band, or a fixed list;
+  - generator seeds per cell (disjoint from 1–10, 101–120 and ≥ 1001);
+  - a two-α hedge per row, as in B1;
+  - a fixed task count and worst-case CPU-h;
+  - fixed stopping and decision rules: no adaptive top-up, no α
+    re-placement after rows arrive;
+  - memetic runs on eligible instances only, primary arm;
+  - no selection toward ρ.
+  - It must be a written plan approved before any generation.
+- **R3-c Max-3-SAT c\* range at n > 250:** accept c\* ≤ 1 cells for size
+  diversity, or require c\* > 1 (§5's original aim)? Evidence:
+  [`RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md`](RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md).
+  - Under the fixed RC2 and window, eligible instances at n ≥ 250 have
+    c\* = 1.
+  - c\* = 2 at n = 250 has an estimated median of 0.6–5 ks: at best an
+    occasional exception.
+  - At n ≥ 300 even c\* = 1 nears the cap.
+  - Higher density makes this worse.
+  - The notes withdraw an earlier "hours" estimate, which came from the
+    B1 slope.
+- **R3-d priority:** larger-n k-SAT first, or MaxCut (D6) first, or both in
+  parallel.
+- D3 (instances per stratum) remains open.
 
 **Authoritative current documents** (this folder, `docs/current/`):
 
@@ -89,12 +193,18 @@ hardness (ρ) is reported whatever it turns out to be.
    - caps were 900 / 600 s;
    - the memetic arm was unclipped, 0.5 s per call.
 5. **`calib_c`:** prepared and preserved. **Submission pending, not
-   approved.**
+   approved.** *[r3: on hold, to be reassessed against the larger-n
+   direction; §0 decision 3.]*
 6. **MaxCut generator:** the proposed next implementation milestone. **Not
    started.**
-7. **Pending:** a Max-3-SAT n > 250 assessment (§5).
+7. **Pending:** a Max-3-SAT n > 250 assessment (§5). *[r3: folded into
+   the larger-n direction for both Max-2-SAT and Max-3-SAT; §0.]*
 
 ## 4. Prepared but not approved or submitted: `calib_c`
+
+> **r3: on hold.** To be reassessed against the larger-n direction (§0
+> decision 3, R3-a). Its construction is not in question. Do not run the
+> steps below until R3-a is decided.
 
 **What.** Two 2-SAT n = 400 cells (α 2.0, m 800; α 2.15, m 860) × generator
 seeds 101–120, giving 40 instances. Files:
@@ -138,8 +248,11 @@ it is 50 %. The batch buys a firm answer instead of a four-instance one.
 | reference n250 α4.26 / 4.35 | the only §5.3 pass (α4.26) | **no new instances by decision**; evidence only |
 | 3-SAT n ≤ 100, 2-SAT n ≤ 250 | Q2 0/34 and 0/15 eligible | memetic does no measurable work there; closed |
 
-**Pending larger-Max-3-SAT assessment** (do it first next session;
-`CORPUS_FREEZE_PREP.md` §4a). The user's rejection of more n = 250, c\* = 1
+> **r3:** this assessment is now part of the larger-n direction for both
+> Max-2-SAT and Max-3-SAT (§0, R3-b, R3-c). The text below stays valid as
+> the Max-3-SAT half of it.
+
+**Pending larger-Max-3-SAT assessment** (`CORPUS_FREEZE_PREP.md` §4a). The user's rejection of more n = 250, c\* = 1
 instances is **not** a rejection of Max-3-SAT at larger sizes.
 
 **Task.** Assess n > 250, with matching clause counts and density choices.
@@ -270,16 +383,19 @@ optimises and certifies, and must never seed the memetic solver.
 | # | decision | state |
 |---|---|---|
 | D3 | instances per reported stratum | open (protocol §5.2) |
-| D5 | submit `calib_c` | pending user approval |
-| D6 | start the MaxCut milestone | proposed; needs approval, then the §6 design questions |
-| D7 | Max-3-SAT n > 250 | assessment pending (§5) |
+| D5 | submit `calib_c` | **on hold (r3)**: reassess against the larger-n direction; keep, revise or replace (R3-a) |
+| D6 | start the MaxCut milestone | proposed; needs approval, then the §6 design questions; priority against the larger-n work open (R3-d) |
+| D7 | Max-3-SAT n > 250 | **widened (r3)** to larger n for Max-2-SAT and Max-3-SAT (§0) |
+| R3-b | larger-n grid design (n values, α placement per n, seeds, hedge, task cap, stopping rule) | open; written plan and approval before any generation |
+| R3-c | accept Max-3-SAT c\* ≤ 1 cells at n > 250 for size diversity, or require c\* > 1 | open |
+| R3-d | order: larger-n k-SAT vs MaxCut | open |
 | — | conflict-clause diagnostic (H) | proposed, not prepared |
 | — | S1 900 s RC2 screen | not prepared (its old sbatch is in `scripts/archive/mse16/`) |
-| — | commit this session's work | not done; the user decides |
+| — | commit the r3 documentation edits | not done; the user decides (Checkpoint 8–9 work is committed in `9a562d0`) |
 | — | intermittent staging test failure | seen once in 11 full runs, name not captured; investigate |
 
-Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary), D4 (no new reference
-instances).
+Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary; reaffirmed r3), D4 (no
+new reference instances; reaffirmed r3).
 
 ## 9. Configurations, commits, paths
 
@@ -289,7 +405,8 @@ instances).
 - historical: `memetic_deeppolish.yaml` (unclipped 0.5 s).
 
 **Commits and jobs:**
-- HEAD `28d4da6`;
+- HEAD `53aa53f` (staging Slurm logs dropped, `from_cluster/` listings
+  added); `9a562d0` holds the Checkpoint 8–9 work;
 - M2 run code `69c9b97` (job 22131008);
 - JW multistart job 22314854;
 - archive move `20ebac6`. It broke the RC2 test; this session moved the four
@@ -315,13 +432,14 @@ instances).
   skipped;
 - `python -m pytest tests -q` (repo root): 5.
 
-**Uncommitted files from this session:**
-- `docs/current/*`;
-- edits to the goals, log, generator plan, scope note, M2 read-out,
-  handoff §6a and DIVERGENCE;
-- `instancegen/grids/calib_c.yaml`, `instancegen/tests/test_cli.py`;
-- the staging scripts, tests and results named above;
-- `data/generated/calib_c/manifest.jsonl`.
+**Uncommitted files (r3 session, documentation only):**
+- `docs/current/NEXT_SESSION_CONTEXT.md`, `CORPUS_FREEZE_PREP.md`,
+  `CORPUS_V1_PROTOCOL_DRAFT.md`, `READING_LIST.md`;
+- `docs/CORPUS_CALIBRATION_LOG.md` (Checkpoint 10);
+- `docs/CORPUS_CALIBRATION_GOALS.md` (status header line).
+
+The Checkpoint 8–9 files listed in earlier revisions of this section are in
+`9a562d0`.
 
 **Working conventions** (user):
 - one milestone per turn;
@@ -331,16 +449,22 @@ instances).
 
 ## 10. Where to resume, in order
 
-1. Read §3 above, the r2 box of `CORPUS_FREEZE_PREP.md`, and
-   `CORPUS_V1_PROTOCOL_DRAFT.md` §3, §5.2 and §10.
-2. Ask whether to commit this session's work. It is needed before any
-   submission.
-3. **Max-3-SAT n > 250 assessment** (§5): from existing rows only. Deliver a
-   recommendation or a bounded grid proposal, then stop for approval.
-4. **`calib_c`:** if approved, follow `CORPUS_FREEZE_PREP.md` §9; afterwards,
-   the pre-registered decision.
-5. **MaxCut milestone:** if approved, settle the §6 design questions in a
-   short plan, then implement `maxcut.py` + `verify.py` + tests. No RC2 run
-   until its calibration grid is approved.
+1. Read §0 (r3 direction), then §3, the r2 box and r3 note of
+   `CORPUS_FREEZE_PREP.md`, and `CORPUS_V1_PROTOCOL_DRAFT.md` §3, §5.2 and
+   §10.
+2. Ask whether to commit the r3 documentation edits.
+3. **Settle R3-a (`calib_c`: keep, revise or replace) and R3-c (Max-3-SAT
+   c\* range at n > 250)** with the user. These shape the grid.
+4. **Larger-n grid plan (R3-b)**, for Max-2-SAT and Max-3-SAT: a written
+   plan using the existing rows only, with the boundary evidence
+   (certified/censored counts and censored LBs per (n, α) from
+   `results/profile_calib_{a,b}_all.jsonl`), the α-placement rule per n,
+   seeds, a fixed task count, worst-case CPU-h and fixed decision rules.
+   Then **stop for approval**. Generation, manifests and cluster commands
+   come only after approval, one milestone per turn.
+5. **R3-d:** agree the order of the larger-n work and the MaxCut milestone
+   (§6). If MaxCut goes ahead: a short plan for the §6 design questions,
+   then `maxcut.py` + `verify.py` + tests. No RC2 run until its calibration
+   grid is approved.
 6. Later: the S1 RC2 screen; the H diagnostic proposal; D3 per stratum at
    freeze time.

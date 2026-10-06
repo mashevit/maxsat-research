@@ -1300,3 +1300,76 @@ pending task. The work tree is still uncommitted.
   and submission provenance cite their paths, and they are records of
   completed rounds. They are not on `docs/current/READING_LIST.md` unless they
   add information to the core documents.
+
+## 2026-10-06 — Checkpoint 10: new direction (larger n, Max-2-SAT and Max-3-SAT); `calib_c` on hold for reassessment
+
+**Documentation only.** No instances were generated. No manifests or
+submission scripts were prepared, no jobs were submitted, and no cluster
+commands were written. HEAD is `53aa53f`; the Checkpoint 8–9 work is
+committed in `9a562d0`. This checkpoint's edits are uncommitted.
+
+### Direction and decisions (user)
+
+1. **Explore grid points with more variables in both Max-2-SAT and
+   Max-3-SAT**, with clause-to-variable ratios suited to each size, to find
+   hard instances (RC2-eligible and memetic Q2). This widens the pending
+   Max-3-SAT n > 250 assessment (Checkpoint 9 item 7) to both families.
+2. **`calib_c` is to be reassessed against this direction.** The options
+   are keep, revise or replace. It is on hold until then. The user's term
+   "old grid heuristic" refers to whether the already-built `calib_c` grid
+   fits the new aim. **It is not a claim that its construction was wrong.**
+3. **Effort stays in seconds** (D2 reaffirmed).
+4. **The n = 250, c\* = 1 reference stratum is preserved, with no new
+   instances** (D4 reaffirmed).
+
+### Evidence noted
+
+Read off `results/corpus_freeze_prep/candidate_cells.csv`; nothing new was
+computed. The table is in `current/NEXT_SESSION_CONTEXT.md` §0.
+
+- Q2 rises with n:
+  - Max-3-SAT: 0/34 at n ≤ 100, 6/8 at n = 250;
+  - Max-2-SAT: 0/15 at n ≤ 250, 2/11 at n = 400.
+- The RC2 window moves toward the satisfiability threshold as n grows:
+  - Max-2-SAT: α 4–6 at n = 100, α 2.0–2.3 at n = 400;
+  - Max-3-SAT: α 4.8–5.0 at n = 150, α 4.26–4.35 at n = 250.
+  - So α must be placed per n.
+- Eligible c\*:
+  - Max-2-SAT: stays near 18–23 at n 250–400;
+  - Max-3-SAT: 1 at n = 250.
+
+### Documents
+
+- `current/NEXT_SESSION_CONTEXT.md`, r3: new §0; §3/§4/§5/§8/§9/§10
+  updated. The stale "everything uncommitted" and HEAD `28d4da6` statements
+  are corrected.
+- `current/CORPUS_FREEZE_PREP.md`: r3 note; §4a widened; §5 and §9 marked
+  on hold.
+- `current/CORPUS_V1_PROTOCOL_DRAFT.md`: r3 revision entry; K2-L row added;
+  K3-L, D5 and D7 updated; R3-d added.
+- `current/READING_LIST.md` and the goals status header: pointers updated.
+
+### Next (awaiting the user)
+
+- R3-a: `calib_c` keep, revise or replace.
+- R3-b: a larger-n grid plan, written and approved before any generation.
+- R3-c: Max-3-SAT c\* ≤ 1 cells at n > 250 acceptable or not.
+- R3-d: order of the larger-n work and MaxCut.
+- D3 stays open.
+
+### Addendum: research notes on the Max-3-SAT optimum at n ≥ 250
+
+New: `current/RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md`. It is built
+from existing rows only:
+- SATLIB uuf250 ×100 at 900 s;
+- uuf50–200 ×10 each at 600 s;
+- calib_a/b n = 250.
+
+**Findings:**
+- 0 of the 21 instances proven c\* ≥ 2 at n = 250 were certified within
+  900 s. All 78 eligible n = 250 instances have c\* = 1.
+- The per-c\* RC2 step at n ≤ 200 is ×5.5–9.8. From that, c\* = 2 at
+  n = 250 has an estimated median of 0.6–5 ks.
+
+**Correction.** The chat estimate of "hours" (from the B1 n = 250 slope,
+which measures the satisfiable → unsatisfiable jump) is withdrawn.

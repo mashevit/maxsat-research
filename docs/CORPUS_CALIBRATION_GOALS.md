@@ -35,6 +35,10 @@ grid and its Step 4 selection thresholds; everything else there stands.
 > - The §5.3 rule is unchanged. Its r3/r4 conditions are evaluated over
 >   RC2-eligible instances (30 s < t ≤ 900 s), because no memetic run exists
 >   below the window.
+> - **Direction (later 2026-10-06):** larger n in both Max-2-SAT and
+>   Max-3-SAT, with α chosen per size. `calib_c` is on hold for reassessment.
+>   Seconds stay primary. No new n = 250, c\* = 1 instances. See the
+>   handoff §0.
 
 Notation: **α = m/n** (clause density; α_c ≈ 4.267 for random 3-SAT),
 **c\*** = optimum cost (unsatisfied soft weight), **ρ** = Spearman rank

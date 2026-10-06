@@ -29,6 +29,14 @@ Related documents:
 
   The r1 versions of these items are superseded. They are listed here and in
   the freeze-prep r2 box, not silently rewritten.
+- **r3** (2026-10-06, end of day, user direction; documentation only):
+  - new direction: **larger n in both Max-2-SAT and Max-3-SAT**, with α
+    chosen per size, to find hard instances. K3-L is widened, and a K2-L
+    row is added (§3);
+  - `calib_c` is **on hold**, to be reassessed against the direction (keep,
+    revise or replace). Its construction is not in question;
+  - seconds stay primary (D2); the n = 250, c\* = 1 reference is preserved
+    with no new instances (D4).
 
 **Objective.** Generate diverse instances on which both RC2 and the memetic
 solver do meaningful work. The protocol is not tuned toward any value or sign
@@ -96,8 +104,9 @@ Further constraints:
 | id | family / cell | status | blocker |
 |---|---|---|---|
 | **REF** | Max-3-SAT n 250 (m 1065 / 1088), c\* 1: **historical evidence only** | **no new instances** (decision 2026-10-06) | — (§3.1) |
-| **K2** | random Max-2-SAT, n 400, α 2.0 and/or α 2.15 (m 800 / 860) | conditional | `calib_c` (submission pending), then the unchanged §5.3 rule per cell |
-| **K3-L** | random Max-3-SAT, n > 250, densities and clause counts to be chosen | **pending assessment** | next-session assessment (freeze-prep §4a): recommend against with evidence, or a bounded exploratory grid |
+| **K2** | random Max-2-SAT, n 400, α 2.0 and/or α 2.15 (m 800 / 860) | conditional; **r3: `calib_c` on hold** | reassess `calib_c` against the larger-n direction (keep / revise / replace); then the unchanged §5.3 rule per cell |
+| **K2-L** | random Max-2-SAT, n > 400, α chosen per n (r3) | **direction set; grid not designed** | written larger-n grid plan, approved before any generation (`NEXT_SESSION_CONTEXT.md` §0, R3-b) |
+| **K3-L** | random Max-3-SAT, n > 250, densities and clause counts to be chosen | **direction set (r3); grid not designed** | as K2-L; also R3-c (accept c\* ≤ 1 cells, or require c\* > 1) |
 | **C-ER** | MaxCut on G(n, p), unweighted | **proposed next implementation milestone; not started** | `instancegen/maxcut.py` + `verify.py`; RC2 and memetic calibration |
 | **C-PM** | ±J spin glass on the L × L torus, unweighted | planned with C-ER | as C-ER; spec in freeze-prep §6.3 |
 | **S1** | MSE-2016 `maxcut/dimacs-mod` (62) + `maxcut/spinglass` (5), published | on disk | 900 s RC2 screen of all 67 not run (3 profiled, at 300 s) |
@@ -334,6 +343,7 @@ Instances regenerate byte-for-byte from the grid.
 | D2 | primary memetic effort measure | **closed:** seconds, as pre-registered; calls and flips secondary (§7) |
 | D3 | instances per reported stratum | **open:** trade-off in §5.2; to be decided per stratum at its freeze |
 | D4 | reference stratum | **closed:** no new n = 250, c\* = 1 instances; historical evidence only (§3.1) |
-| D5 | submit `calib_c` | **pending:** prepared and preserved, not approved |
+| D5 | submit `calib_c` | **on hold (r3):** reassess against the larger-n direction; keep, revise or replace |
 | D6 | next implementation milestone | **proposed:** MaxCut generator (C-ER, C-PM). Not started. Open design questions are in `NEXT_SESSION_CONTEXT.md` §6 |
-| D7 | Max-3-SAT n > 250 | **pending assessment** next session (freeze-prep §4a) |
+| D7 | Max-3-SAT n > 250 | **widened (r3):** larger n in Max-2-SAT and Max-3-SAT; grid plan (R3-b) and c\* range (R3-c) open |
+| R3-d | order of the larger-n k-SAT work and MaxCut (D6) | **open** |

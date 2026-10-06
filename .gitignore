@@ -86,3 +86,6 @@ more_data/**
 !more_data/**/
 !more_data/**/*.md
 !more_data/**/manifest.jsonl
+
+# Personal notes (not for the repository)
+personal/

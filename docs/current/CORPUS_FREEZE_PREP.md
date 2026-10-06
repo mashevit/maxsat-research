@@ -34,6 +34,27 @@ Checkpoint 8 in [`CORPUS_CALIBRATION_LOG.md`](../CORPUS_CALIBRATION_LOG.md).
 >
 > Session handoff: [`NEXT_SESSION_CONTEXT.md`](NEXT_SESSION_CONTEXT.md).
 
+> **Note r3 — user direction, 2026-10-06 (end of day).** Documentation
+> only; nothing was generated, prepared or submitted.
+> 1. **New direction:** explore grid points with **more variables in both
+>    Max-2-SAT and Max-3-SAT**, with clause-to-variable ratios suited to each
+>    size, to find hard instances (RC2-eligible and memetic Q2). §4a is
+>    widened from Max-3-SAT n > 250 to both families.
+> 2. **`calib_c` (§5, §9) is on hold, to be reassessed** against this
+>    direction: keep as prepared, revise (e.g. n = 400 as one rung of a
+>    larger-n ladder) or replace. **Its construction is not in question.**
+>    The §5 cells and seeds follow correctly from §2 under the earlier aim of
+>    settling n = 400. If it is revised or replaced, §5 gets a new dated
+>    revision before anything is generated or submitted.
+> 3. **Effort stays in seconds** (r2 item 2, reaffirmed).
+> 4. **The n = 250, c\* = 1 reference stratum is preserved; no new instances
+>    for it** (r2 item 4, reaffirmed).
+>
+> The existing evidence for the direction is tabulated in
+> [`NEXT_SESSION_CONTEXT.md`](NEXT_SESSION_CONTEXT.md) §0. The RC2 window
+> moves toward the satisfiability threshold as n grows, and Q2 rises with n.
+> So larger-n cells need α placed per n, not a fixed α list.
+
 Paths starting with `results/` or `scripts/` are relative to
 `cluster_staging_maxsat/`. **No ρ was used anywhere in this document**: not
 to place cells, not to classify them, and not to size the batch.
@@ -343,6 +364,10 @@ to know:
 
 ### 4a. Pending (r2): Max-3-SAT at n > 250 — to assess next session, not done
 
+> **r3:** widened to larger n in **both** Max-2-SAT and Max-3-SAT
+> (`NEXT_SESSION_CONTEXT.md` §0, R3-b/R3-c). The Max-3-SAT text below still
+> holds as one half of that assessment.
+
 **Question.** Are there cells at n > 250, with matching clause counts and
 densities, that:
 - give c\* > 1 (or a c\* spread) while RC2 still certifies in 30 s < t ≤
@@ -384,6 +409,8 @@ arm, as for every batch.
 ## 5. The `calib_c` reinforcement batch (pre-registered here, before any calib_c row exists)
 
 > **Status (r2): prepared, preserved, submission pending; not approved.**
+> **Status (r3): on hold, to be reassessed against the larger-n direction
+> (keep / revise / replace). The design below is not claimed to be wrong.**
 
 ### 5.1 Cells and why
 
@@ -759,6 +786,9 @@ These conclusions are also recorded in the central documents:
 ---
 
 ## 9. Cluster commands for `calib_c` (prepared, not run; submission pending approval)
+
+> **r3: do not run.** `calib_c` is on hold pending reassessment (§5 status).
+> If it is revised or replaced, these commands are superseded too.
 
 `<user>@<cluster>` is the only placeholder.
 
