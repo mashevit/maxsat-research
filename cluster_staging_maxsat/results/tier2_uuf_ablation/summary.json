@@ -1,0 +1,226 @@
+{
+  "generated_by": "cluster_staging_maxsat/scripts/uuf_three_arm_ablation.py",
+  "bootstrap": {
+    "B": 10000,
+    "rng_seed": 20261006,
+    "strata": "group"
+  },
+  "instances": 26,
+  "runs_per_arm": 130,
+  "configs": {
+    "uni": "local_multistart_deeppolish",
+    "jw": "local_multistart_jw_deeppolish",
+    "mem": "memetic_deeppolish"
+  },
+  "survival": {
+    "km_median_ttt_s": {
+      "uni": 112.093,
+      "jw": 89.965,
+      "mem": 29.734
+    },
+    "km_median_polishes": {
+      "uni": 223,
+      "jw": 179,
+      "mem": 59
+    },
+    "successes": {
+      "uni": 124,
+      "jw": 127,
+      "mem": 118
+    },
+    "logrank_stratified_by_instance": {
+      "jw_vs_uni": {
+        "s": {
+          "O_minus_E_first_arm": 13.7,
+          "chi2": 3.859,
+          "p": 0.0495
+        },
+        "polish": {
+          "O_minus_E_first_arm": 14.01,
+          "chi2": 4.084,
+          "p": 0.0433
+        }
+      },
+      "mem_vs_jw": {
+        "s": {
+          "O_minus_E_first_arm": 30.18,
+          "chi2": 20.111,
+          "p": 0.0
+        },
+        "polish": {
+          "O_minus_E_first_arm": 30.39,
+          "chi2": 20.584,
+          "p": 0.0
+        }
+      },
+      "mem_vs_uni": {
+        "s": {
+          "O_minus_E_first_arm": 30.34,
+          "chi2": 20.853,
+          "p": 0.0
+        },
+        "polish": {
+          "O_minus_E_first_arm": 30.48,
+          "chi2": 21.202,
+          "p": 0.0
+        }
+      }
+    },
+    "fisher_pooled_success": {
+      "jw_vs_uni": 0.5001,
+      "mem_vs_jw": 0.0301,
+      "mem_vs_uni": 0.2211
+    }
+  },
+  "decomposition": {
+    "s": {
+      "mean_log_mem_over_uni": -0.672,
+      "share_from_jw_init": 0.365,
+      "share_from_ea": 0.635,
+      "spearman_logratio_jw_uni_vs_mem_uni": 0.182,
+      "spearman_ci_pct_2000": [
+        -0.299,
+        0.584
+      ]
+    },
+    "polish": {
+      "mean_log_mem_over_uni": -0.669,
+      "share_from_jw_init": 0.367,
+      "share_from_ea": 0.633,
+      "spearman_logratio_jw_uni_vs_mem_uni": 0.169,
+      "spearman_ci_pct_2000": [
+        -0.315,
+        0.563
+      ]
+    },
+    "flips": {
+      "mean_log_mem_over_uni": -0.725,
+      "share_from_jw_init": 0.259,
+      "share_from_ea": 0.741,
+      "spearman_logratio_jw_uni_vs_mem_uni": 0.236,
+      "spearman_ci_pct_2000": [
+        -0.238,
+        0.606
+      ]
+    }
+  },
+  "pairwise": [
+    {
+      "comparison": "jw/uni",
+      "factor": "JW initialisation",
+      "unit": "s",
+      "N": 26,
+      "geomean_ert_ratio": 0.782,
+      "ci_lo": 0.593,
+      "ci_hi": 1.058,
+      "wilcoxon_p": 0.0559,
+      "jw_better": 17,
+      "uni_better": 9,
+      "median_ratio": 0.723
+    },
+    {
+      "comparison": "jw/uni",
+      "factor": "JW initialisation",
+      "unit": "polish",
+      "N": 26,
+      "geomean_ert_ratio": 0.783,
+      "ci_lo": 0.596,
+      "ci_hi": 1.054,
+      "wilcoxon_p": 0.0559,
+      "jw_better": 17,
+      "uni_better": 9,
+      "median_ratio": 0.723
+    },
+    {
+      "comparison": "jw/uni",
+      "factor": "JW initialisation",
+      "unit": "flips",
+      "N": 26,
+      "geomean_ert_ratio": 0.829,
+      "ci_lo": 0.625,
+      "ci_hi": 1.129,
+      "wilcoxon_p": 0.1499,
+      "jw_better": 17,
+      "uni_better": 9,
+      "median_ratio": 0.784
+    },
+    {
+      "comparison": "mem/jw",
+      "factor": "population / crossover / EA",
+      "unit": "s",
+      "N": 26,
+      "geomean_ert_ratio": 0.653,
+      "ci_lo": 0.406,
+      "ci_hi": 1.037,
+      "wilcoxon_p": 0.1291,
+      "mem_better": 17,
+      "jw_better": 9,
+      "median_ratio": 0.585
+    },
+    {
+      "comparison": "mem/jw",
+      "factor": "population / crossover / EA",
+      "unit": "polish",
+      "N": 26,
+      "geomean_ert_ratio": 0.655,
+      "ci_lo": 0.411,
+      "ci_hi": 1.029,
+      "wilcoxon_p": 0.1227,
+      "mem_better": 17,
+      "jw_better": 9,
+      "median_ratio": 0.582
+    },
+    {
+      "comparison": "mem/jw",
+      "factor": "population / crossover / EA",
+      "unit": "flips",
+      "N": 26,
+      "geomean_ert_ratio": 0.584,
+      "ci_lo": 0.368,
+      "ci_hi": 0.933,
+      "wilcoxon_p": 0.0382,
+      "mem_better": 18,
+      "jw_better": 8,
+      "median_ratio": 0.497
+    },
+    {
+      "comparison": "mem/uni",
+      "factor": "whole package",
+      "unit": "s",
+      "N": 26,
+      "geomean_ert_ratio": 0.511,
+      "ci_lo": 0.327,
+      "ci_hi": 0.802,
+      "wilcoxon_p": 0.014,
+      "mem_better": 16,
+      "uni_better": 10,
+      "median_ratio": 0.598
+    },
+    {
+      "comparison": "mem/uni",
+      "factor": "whole package",
+      "unit": "polish",
+      "N": 26,
+      "geomean_ert_ratio": 0.512,
+      "ci_lo": 0.328,
+      "ci_hi": 0.819,
+      "wilcoxon_p": 0.014,
+      "mem_better": 16,
+      "uni_better": 10,
+      "median_ratio": 0.596
+    },
+    {
+      "comparison": "mem/uni",
+      "factor": "whole package",
+      "unit": "flips",
+      "N": 26,
+      "geomean_ert_ratio": 0.484,
+      "ci_lo": 0.308,
+      "ci_hi": 0.766,
+      "wilcoxon_p": 0.011,
+      "mem_better": 17,
+      "uni_better": 9,
+      "median_ratio": 0.537
+    }
+  ]
+}

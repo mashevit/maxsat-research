@@ -1,5 +1,11 @@
 # Ablation fairness audit — `memetic_deeppolish` vs `local_multistart_deeppolish`
 
+> **Addendum 2026-10-06.** The JW-seeded control of §5(a) has now been run
+> (130/130). See [`../UUF_THREE_ARM_ABLATION_READOUT.md`](../UUF_THREE_ARM_ABLATION_READOUT.md):
+> JW seeding accounts for about a third of the 1.95× package advantage (log
+> ERT); the rest (EA, crossover heuristic, continuation) is still not
+> separated. The body below is unchanged and describes the state on 2026-09-13.
+
 **Date: 2026-09-13.** Code inspection only; no code was modified and no
 experiments were launched. Companion to
 [`TIER2_MEMETIC_PLAN.md`](TIER2_MEMETIC_PLAN.md),

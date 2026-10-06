@@ -4,6 +4,9 @@
 untracked results directory `cluster_staging_maxsat/results/m2_full_p40/`
 (copied from the cluster today) and a new analysis script
 `cluster_staging_maxsat/scripts/m2_rho_analysis.py`.
+**Amended 2026-10-06:** §0, §7.4, §10.3 and §11 now point to the JW-seeded
+multistart results (`docs/UUF_THREE_ARM_ABLATION_READOUT.md`); nothing else
+changed.
 
 **Intended reader:** a person or another LLM with no access to the
 repository. The document is self-contained. It explains the project, the
@@ -75,6 +78,12 @@ the tree that runs on the Slurm cluster.
 - **The historical point agrees.** On 26 SATLIB uuf250/uuf200 instances,
   ρ(RC2, `memetic_deeppolish` ERT) = +0.19, CI about −0.22 to +0.54. There
   c\* is almost constant (24/26 have c\* = 1).
+- **Update 2026-10-06: the JW-seeded multistart arm on the same 26
+  instances is in** (`docs/UUF_THREE_ARM_ABLATION_READOUT.md`). JW seeding
+  makes no-EA multistart about 20 % faster (not significant at N = 26) and
+  explains about a third of memetic's advantage; memetic's largest wins are
+  on instances where JW seeding gives nothing. This answers the seeding
+  confound on the historical set only; §10.3 (calibration pool) stays open.
 - **Status:** these are calibration rows. The project's own rules
   (`CORPUS_CALIBRATION_GOALS.md` §5) make this ρ exploratory: it must not
   be reported as the final Q3 answer. The pipeline steps M3 (yield table),
@@ -567,12 +576,19 @@ config at 900 s, all with the old unclipped 0.5 s LS cap.
 | config | successes | N in ρ | ρ(RC2 s, ERT s) | BW CI |
 |---|---:|---:|---:|---|
 | `memetic_deeppolish` (pop 40, 12,500 flips / 0.5 s) | 118/130 | 26 | **+0.187** | −0.22, 0.54 |
-| `local_multistart_deeppolish` (no EA: uniform random restarts + the same polish) | **124/130** | 26 | +0.139 | −0.26, 0.50 |
+| `local_multistart_deeppolish` (no EA: uniform random restarts + the same polish) | 124/130 | 26 | +0.139 | −0.26, 0.50 |
+| `local_multistart_jw_deeppolish` (no EA: JW-seeded restarts + the same polish; run 2026-10-06) | **127/130** | 26 | +0.343 | −0.06, 0.65 |
 | `memetic_base` (pop 60, 700 flips / 0.05 s) | 70/130 | 20 (6 with 0 successes excluded) | −0.256; top-tied −0.021 | −0.63, 0.22 |
 | `memetic_pop150` | 94/130 | 24 (2 excluded) | −0.160; top-tied −0.003 | −0.53, 0.26 |
 
-- **The ablation.** The no-EA multistart baseline solves at least as many
-  runs as the memetic config with the same polish. That ablation has
+- **The ablation.** The no-EA multistart baselines solve at least as many
+  runs as the memetic config with the same polish. The full three-arm
+  ablation (uniform → JW → memetic) is read out in
+  `docs/UUF_THREE_ARM_ABLATION_READOUT.md` (added 2026-10-06): JW seeding
+  cuts multistart ERT by about 20 % (geomean ratio 0.78, CI 0.59–1.06), and
+  accounts for about a third (in log ERT) of memetic's 1.96× advantage over
+  uniform multistart. Memetic is much faster in a typical run (KM median
+  30 s vs 90 s for JW) but fails more (118 vs 127/130). That ablation has
   **not** been run on the calibration pool.
 - **The constant c\*** forces any ρ through RC2's per-call cost alone; see
   `docs/archive/CORPUS_MSE2016_ASSESSMENT.md` §5.1.
@@ -699,7 +715,11 @@ config at 900 s, all with the old unclipped 0.5 s LS cap.
 3. **No-EA baseline on the calibration pool**
    (`local_multistart_deeppolish`, and the JW-seeded variant, at matched
    polish). Without it, "memetic hardness" cannot be told apart from
-   "WalkSAT hardness". On uuf250 the no-EA baseline was at least as good.
+   "WalkSAT hardness". On uuf250 both no-EA baselines (uniform and, since
+   2026-10-06, JW-seeded) succeed at least as often as memetic, though
+   memetic is faster in a typical run
+   (`docs/UUF_THREE_ARM_ABLATION_READOUT.md`). **Still open on the
+   calibration pool.**
 4. **RC2 repeatability.** Re-run RC2 on about 15–20 pool instances, 3 times
    each, on the cluster. This gives the reliability needed to bound
    attenuation of ρ, as `CORPUS_CALIBRATION_GOALS.md` §5.2 already
@@ -749,6 +769,8 @@ first file plus this document is enough for most questions.
 | `m2_full_p40/analysis/rc2_population_290.csv` | 290 | every generated calibration instance: RC2 status, time, c\* or lower bound, in-pool flag |
 | `m2_full_p40/analysis/uuf_tier2_instance_table.csv` | 26 | historical SATLIB instances: RC2, plus successes and ERT for 4 configs incl. no-EA |
 | `m2_full_p40/analysis/uuf_tier2_rho.csv` | 8 | ρ for the historical set |
+| `tier2_local_multistart_jw_all.jsonl` | 130 | historical set, JW-seeded multistart arm, raw runs (2026-10-06) |
+| `tier2_uuf_ablation/instance_table.csv`, `pairwise_ert_ratios.csv`, `rho_rc2_vs_ert.csv`, `summary.json` | 26 / 9 / 9 / — | three-arm ablation on the historical set; see `docs/UUF_THREE_ARM_ABLATION_READOUT.md` §8 |
 | `m2_full_p40/analysis/arm_comparison_nontrivial.csv` | 15 | paired a05 vs a35 on the non-trivial instances |
 | `m2_full_p40/analysis/pilot_vs_full_reproducibility.csv` | 60 | same-seed comparison of pilot and full-pool runs |
 | `m2_full_p40/analysis/summary.json` | — | integrity counts, reliability, arm comparison, headline ρ rows |
@@ -820,6 +842,7 @@ The bootstrap seed is fixed (20261004), so reruns are identical.
 | `M2_DEEPPOLISH_HANDOUT.md`, `M2_DEEPPOLISH_SUMMARY.md` | the LS time-cap finding |
 | `M2_PILOT_READOUT.md`, `M2_FULL_POOL_RUN.md` | M2 pilot and run preparation |
 | `archive/TIER2_ABLATION_FAIRNESS_AUDIT.md`, `archive/CORPUS_MSE2016_ASSESSMENT.md` | historical uuf250 results, the power table |
+| `UUF_THREE_ARM_ABLATION_READOUT.md` | uniform vs JW multistart vs memetic on the historical uuf set (2026-10-06) |
 
 ---
 

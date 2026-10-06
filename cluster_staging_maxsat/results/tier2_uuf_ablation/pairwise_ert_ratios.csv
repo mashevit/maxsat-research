@@ -1,0 +1,10 @@
+comparison,factor,unit,N,geomean_ert_ratio,ci_lo,ci_hi,wilcoxon_p,jw_better,uni_better,median_ratio,mem_better
+jw/uni,JW initialisation,s,26,0.782,0.593,1.058,0.0559,17,9,0.723,
+jw/uni,JW initialisation,polish,26,0.783,0.596,1.054,0.0559,17,9,0.723,
+jw/uni,JW initialisation,flips,26,0.829,0.625,1.129,0.1499,17,9,0.784,
+mem/jw,population / crossover / EA,s,26,0.653,0.406,1.037,0.1291,9,,0.585,17
+mem/jw,population / crossover / EA,polish,26,0.655,0.411,1.029,0.1227,9,,0.582,17
+mem/jw,population / crossover / EA,flips,26,0.584,0.368,0.933,0.0382,8,,0.497,18
+mem/uni,whole package,s,26,0.511,0.327,0.802,0.014,,10,0.598,16
+mem/uni,whole package,polish,26,0.512,0.328,0.819,0.014,,10,0.596,16
+mem/uni,whole package,flips,26,0.484,0.308,0.766,0.011,,9,0.537,17

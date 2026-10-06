@@ -1113,3 +1113,47 @@ singletons. Read the plain-bootstrap and Bonett–Wright intervals instead.
 
 Choose among the §10 items before M3/M4. Items 1–3 are cheap and change
 what M4 can select.
+
+---
+
+## 2026-10-06 — Checkpoint 7: JW-seeded multistart returned; three-arm ablation on uuf
+
+Read-out: `docs/UUF_THREE_ARM_ABLATION_READOUT.md`. Analysis:
+`scripts/uuf_three_arm_ablation.py`, outputs in `results/tier2_uuf_ablation/`.
+These are the 26 historical SATLIB uuf250/uuf200 instances, **not** the
+calibration pool.
+
+### What came back
+
+- **Run.** `local_multistart_jw_deeppolish`, 26 instances × seeds 1–5, 900 s,
+  stop at oracle. One array, Slurm job 22314854, 11 hosts, 2026-10-06
+  12:31–12:51. `git_sha` null (not exported by this sbatch).
+- **Consolidated** into `results/tier2_local_multistart_jw_all.jsonl`
+  (130 rows, sorted by job id). Matches the manifest row for row; same
+  (instance, seed) grid as the uniform arm; one `config_hash`; all `ok`;
+  127 target, 3 time cap; 0 hard violations.
+
+### Results
+
+| contrast | ERT ratio, geomean (95 % CI), seconds | instances better | other |
+|---|---|---|---|
+| JW / uniform (seeding) | 0.78 (0.59–1.06) | 17/26 | stratified log-rank p = 0.05 |
+| memetic / JW (EA layer + crossover heuristic + inheritance) | 0.65 (0.41–1.04) | 17/26 | log-rank p < 0.001; memetic fails more, 118 vs 127/130 |
+| memetic / uniform (package) | 0.51 (0.33–0.80) | 16/26 | reproduces the audit's 1.95× |
+
+- About 37 % of the package gain (log ERT) is seeding; 63 % is the rest.
+- Memetic's largest wins (uuf250-0100, -097, -05, -090) are not seeding
+  effects. On five of the six instances where memetic loses to JW
+  multistart through stall failures, JW beats uniform.
+- ρ(RC2, ERT): JW +0.34 (CI −0.06 to 0.65), uniform +0.14, memetic +0.19.
+
+### Missing
+
+Unchanged from Checkpoint 6, except that the seeding confound is now
+answered on the historical set. The no-EA baselines (uniform and JW) on the
+calibration pool remain item 3. An iterated-local-search control would be
+needed to attribute the remaining two thirds to selection and recombination.
+
+### Next (awaiting approval)
+
+Same choice as Checkpoint 6 among the read-out §10 items.

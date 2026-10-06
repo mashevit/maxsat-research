@@ -1,0 +1,10 @@
+arm,config_id,unit,N,rho,ci_pct_plain_lo,ci_pct_plain_hi,ci_bonett_wright_lo,ci_bonett_wright_hi
+uni,local_multistart_deeppolish,s,26,0.139,-0.34,0.529,-0.264,0.501
+uni,local_multistart_deeppolish,polish,26,0.139,-0.295,0.518,-0.264,0.501
+uni,local_multistart_deeppolish,flips,26,0.134,-0.307,0.518,-0.269,0.497
+jw,local_multistart_jw_deeppolish,s,26,0.343,-0.099,0.706,-0.063,0.652
+jw,local_multistart_jw_deeppolish,polish,26,0.343,-0.103,0.706,-0.063,0.652
+jw,local_multistart_jw_deeppolish,flips,26,0.338,-0.14,0.703,-0.068,0.648
+mem,memetic_deeppolish,s,26,0.187,-0.234,0.545,-0.219,0.538
+mem,memetic_deeppolish,polish,26,0.187,-0.227,0.535,-0.219,0.538
+mem,memetic_deeppolish,flips,26,0.169,-0.272,0.551,-0.237,0.524

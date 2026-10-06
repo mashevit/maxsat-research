@@ -90,3 +90,11 @@ per-arm flip count is not a stable quantity.
 
 Both submitters were exercised with `DRY_RUN=1` only, plus the single-task 20 s
 smoke of each arm described above.
+
+## Addendum 2026-10-06 — the array has run
+
+Submitted and returned (Slurm array 22314854, 130/130 `ok`). Results:
+`results/tier2_local_multistart_jw_all.jsonl`; analysis
+`scripts/uuf_three_arm_ablation.py`; read-out
+`docs/UUF_THREE_ARM_ABLATION_READOUT.md` in the repository. The section
+above ("No SLURM job was submitted") describes the state on 2026-08-30.
