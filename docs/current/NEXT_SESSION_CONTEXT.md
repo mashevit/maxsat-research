@@ -423,6 +423,7 @@ optimises and certifies, and must never seed the memetic solver.
 | — | S1 900 s RC2 screen | not prepared (its old sbatch is in `scripts/archive/mse16/`) |
 | — | commit the r3 documentation edits | not done; the user decides (Checkpoint 8–9 work is committed in `9a562d0`) |
 | — | intermittent staging test failure | named 2026-10-07: `test_m2_prep.py::test_population_10_runs[p10_ls2p5]` (timing bound under deadline clipping); investigate |
+| U250 | extend the RC2 and memetic budgets until RC2 certifies all 100 SATLIB uuf250. Today 77 are certified at 900 s and 23 are censored (5 with LB 2) | **deferred, very low priority** (user, 2026-10-07); not planned or approved; `RESEARCH_NOTES.md` N-2026-10-07-f |
 | S-a…S-d | SATLIB RC2 screen | **settled 2026-10-07:** one array of all 263 unsat instances, %30, no pre-screen, satisfiable excluded. **Submission by the user is pending** (`SATLIB_BENCH_INTAKE.md` §5) |
 
 Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary; reaffirmed r3), D4 (no

@@ -45,6 +45,57 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-07-f — Possible expansion: certify all 100 SATLIB uuf250 with a longer budget, for RC2 and memetic [verified + decision: deferred, not urgent]
+
+*User, 2026-10-07:* a potential, very non-urgent expansion of the
+experiments: extend the time budget for both RC2 and memetic until RC2 has
+solved all of the 250-variable uuf250 instances
+(`data/unsat250_1000c/`). These are SATLIB "uuf250-1065" files:
+`p cnf 250 1065`, although the directory name says 1000c.
+
+**Current state** [verified]. Read off
+`cluster_staging_maxsat/results/profile_uuf250/uuf250_arr_task_*.jsonl`:
+100 rows, one per instance, RC2, cap 900 s, all from the SATLIB copies.
+
+| outcome | count | detail |
+|---|---:|---|
+| certified optimal, c\* = 1 | 77 | `solve_s` 14.6–889.6 s |
+| not finished: killed by the harness | 21 | `subprocess_killed` at cap + 60 s (≈ 960 s); LB recovered from the progress file |
+| not finished: solver timeout | 2 | `timeout` at ≈ 922–927 s (uuf250-027, -074) |
+| **not finished, total** | **23** | none is a software failure; all 23 are censored at budget |
+
+The censored lower bounds among the 23:
+- **LB 1 (18 instances):** 02, 04, 08, 013, 016, 022, 027, 032, 035, 039,
+  052, 069, 074, 077, 078, 086, 088, 092.
+- **LB 2, so c\* ≥ 2 is proven (5 instances):** 030, 036, 037, 085, 095.
+
+**Memetic coverage today** [verified]. By sha256 against
+`results/tier2_memetic_instance_index.csv`, memetic was run on 24 of the
+100 instances (5 seeds × 3 configs, 900 s). All 24 are among the 77
+certified ones. That leaves 53 certified instances without a memetic run,
+and the 23 censored ones have no reference optimum at all.
+
+**What the expansion would give.**
+- The full 100-instance SATLIB uuf250 set with known c\*.
+- The first certified c\* ≥ 2 instances at n = 250: at least the 5 with
+  LB 2. Today there are none (`RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md`
+  §3.1, C1).
+- The hardest-for-RC2 tail of the family, compared with memetic at a
+  matched, longer budget.
+
+**What it costs.** RC2 time grows by about 2.3 decades per unit of c\* at
+n = 250 (`docs/CALIB_B_B1_READOUT.md` §5) [inference]. The LB 2 instances
+may therefore need far more than 900 s. No budget is proposed here: the
+"hours" estimate from the B1 slope was withdrawn (§2, earlier notes,
+2026-10-06). Any plan needs a staged cap (for example, rerun the 23 at a
+longer cap and see how many finish) before committing memetic CPU.
+
+*Decision.* Recorded as a **deferred, low-priority option**. It is not
+planned, not approved, and not part of the current direction (larger-n
+grids, MaxCut, the SATLIB RC2 screen). If it is taken up: a written plan
+first, the RC2 extension before memetic, and SATLIB is cited
+(N-2026-10-07-e).
+
 ### N-2026-10-07-e — Citing SATLIB (required acknowledgement) [quote + decision]
 
 > Citing SATLIB: If you use SATLIB for your research, we ask you to
