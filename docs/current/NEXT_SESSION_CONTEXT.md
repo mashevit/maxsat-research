@@ -17,6 +17,36 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00. Update 2026-10-07 (r4): SATLIB benchmark intake — read with §0
+
+- **Research notes now have one entry point:**
+  [`RESEARCH_NOTES.md`](RESEARCH_NOTES.md). It indexes every document with
+  research content and holds dated notes. Add new notes there.
+- **SATLIB families** (`cluster_staging_maxsat/data/satlib_bench/`, 279
+  files) are labelled, normalised in place and verified:
+  [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md).
+  - 263 are unsatisfiable and go into **one** RC2 manifest,
+    `scripts/manifest_satlib_rc2.txt`: 64 structured (bf, dubois, hole,
+    jnh, pret) and 199 uuf200/uuf225.
+  - 16 are satisfiable (all jnh) and are excluded.
+  - PySAT, and therefore RC2, misread 209 of the originals. The originals
+    are in `data/raw/satlib_bench_original_20261007.tar.gz`.
+- **The RC2 screen is approved but not yet submitted.** It is one array:
+  263 tasks at %30, at most 70.1 CPU-h, and about 2.6 h elapsed compute in
+  the worst case. There is no pre-screen or screen-out, and satisfiable
+  instances are excluded (intake §5, §6). The user submits it later, using
+  the commands in intake §5.
+- **Cite SATLIB** (Hoos & Stützle, SAT 2000) in any publication that uses
+  these instances (`RESEARCH_NOTES.md` N-2026-10-07-e).
+- **The emphasis is unchanged:** optima above 1 come from Max-2-SAT and
+  MaxCut. The SATLIB families add origin and clause-length diversity
+  (`RESEARCH_NOTES.md` N-2026-10-07-d).
+- **The intermittent staging test failure (§8) is now named:**
+  `tests/test_m2_prep.py::test_population_10_runs[p10_ls2p5]`. It is a
+  timing-dependent bound under deadline clipping, and passes on rerun.
+
+---
+
 ## 0. Direction as of r3 (2026-10-06, user) — read first
 
 **New direction.** Explore grid points with **more variables, in both
@@ -392,7 +422,8 @@ optimises and certifies, and must never seed the memetic solver.
 | — | conflict-clause diagnostic (H) | proposed, not prepared |
 | — | S1 900 s RC2 screen | not prepared (its old sbatch is in `scripts/archive/mse16/`) |
 | — | commit the r3 documentation edits | not done; the user decides (Checkpoint 8–9 work is committed in `9a562d0`) |
-| — | intermittent staging test failure | seen once in 11 full runs, name not captured; investigate |
+| — | intermittent staging test failure | named 2026-10-07: `test_m2_prep.py::test_population_10_runs[p10_ls2p5]` (timing bound under deadline clipping); investigate |
+| S-a…S-d | SATLIB RC2 screen | **settled 2026-10-07:** one array of all 263 unsat instances, %30, no pre-screen, satisfiable excluded. **Submission by the user is pending** (`SATLIB_BENCH_INTAKE.md` §5) |
 
 Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary; reaffirmed r3), D4 (no
 new reference instances; reaffirmed r3).

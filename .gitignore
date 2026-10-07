@@ -72,6 +72,7 @@ cluster_staging/folder_tree.txt
 cluster_staging_maxsat/data/**
 !cluster_staging_maxsat/data/**/
 !cluster_staging_maxsat/data/generated/**/manifest.jsonl
+!cluster_staging_maxsat/data/satlib_bench/manifest.jsonl
 cluster_staging_maxsat/folder_tree.txt
 
 # MSE-2016 ms_random / ms_crafted benchmark (more_data/): 856 instances, 32 MB,

@@ -1373,3 +1373,59 @@ from existing rows only:
 
 **Correction.** The chat estimate of "hours" (from the B1 n = 250 slope,
 which measures the satisfiable → unsatisfiable jump) is withdrawn.
+
+## 2026-10-07 — Checkpoint 11: SATLIB benchmark intake (labels, normalisation, manifests); research-notes entry point
+
+Documents changed only, plus data preparation on the workstation. Nothing
+was submitted.
+
+- **Labelled** the 279 files in `cluster_staging_maxsat/data/satlib_bench/`
+  from their content: 263 unsat and 16 sat (jnh). CaDiCaL 1.5.3 (60 s
+  cap) confirmed every label, with 0 timeouts.
+- **Normalised in place** with `scripts/satlib_bench_intake.py`. The
+  originals are in `data/raw/satlib_bench_original_20261007.tar.gz`.
+  PySAT's reader misread 209 originals:
+  - 208 had empty clauses from `%`/`0` trailers and stray `0` lines;
+    pret60_25 crashed RC2;
+  - dubois100 lost one literal from each of 202 unterminated lines.
+- After normalisation, three readers agree on every file: PySAT, the
+  memetic reader and strict DIMACS.
+- **Manifests:**
+  - `data/satlib_bench/manifest.jsonl` (all 279);
+  - `scripts/manifest_satlib_bench_rc2.{txt,sha256}` (64);
+  - `scripts/manifest_satlib_uuf_rc2.{txt,sha256}` (199).
+- **Tests:** `tests/test_satlib_bench_intake.py`, 16 pass. Staging suite:
+  152 passed, 1 intermittent failure (now named:
+  `test_m2_prep.py::test_population_10_runs[p10_ls2p5]`), 3 skipped.
+- **New documents:**
+  - `current/SATLIB_BENCH_INTAKE.md`;
+  - `current/RESEARCH_NOTES.md`, the single entry point for research notes.
+    It records the user's hard-clause/Glucose wording note and the SATLIB
+    "hard for systematic and local search" quote.
+
+### Next (awaiting the user)
+
+- S-a: submit the S-A RC2 screen (64 tasks).
+- S-b: scope of S-B (uuf200/uuf225).
+- S-c: an optional workstation pre-screen.
+- S-d: confirm that the satisfiable jnh instances are excluded.
+- R3-a…d and D3 are unchanged.
+
+### Addendum 2026-10-07: user decisions on the SATLIB screen
+
+- **S-a / S-b.** Everything goes in **one** RC2 manifest,
+  `scripts/manifest_satlib_rc2.{txt,sha256}`, batch `satlib`, 263 tasks:
+  - the structured families (64);
+  - uuf200 and uuf225 (199).
+  - The two earlier manifests were removed.
+- **Throttle %30.** Worst case 70.1 CPU-h, 9 waves ≈ 2.6 h.
+- **S-c.** No pre-screen and no screen-out.
+- **S-d.** Satisfiable instances are never included.
+- **The user submits later**, using the commands in `SATLIB_BENCH_INTAKE.md`
+  §5.
+- `RESEARCH_NOTES.md` N-2026-10-07-e adds the SATLIB citation (Hoos &
+  Stützle, SAT 2000).
+- `manifest.jsonl` was regenerated with the SAT cross-check. All labels
+  were confirmed again.
+- Staging suite: 153 passed, 3 skipped. The first run that day had one
+  intermittent failure, which did not recur on rerun.
