@@ -1,0 +1,13 @@
+{
+ "what": "workstation exploratory RC2 check, NOT batch data; non-batch seeds 9101-9126; never enters the calib_2sat_sc readout",
+ "doc": "docs/current/CALIB_2SAT_SC.md \u00a710a",
+ "pysat": "1.9.dev2",
+ "python": "3.11.13",
+ "host": "workstation (WSL2, 12 logical CPUs)",
+ "parallel_runs": 8,
+ "cap_s": 900,
+ "grace_s": 60,
+ "solver": "RC2 g3 via src.cli.profile_hardness (subprocess runner)",
+ "started": "2026-10-08T13:40:15+03:00",
+ "ended": "2026-10-08T13:56:15+03:00"
+}

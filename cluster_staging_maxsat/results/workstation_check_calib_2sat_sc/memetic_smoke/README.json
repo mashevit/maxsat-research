@@ -1,0 +1,6 @@
+{
+ "what": "workstation memetic SMOKE, not data: primary arm p40_ls3p5, seed 1, budget 120 s (not 900), stop-at-oracle, 4 runs in parallel; instances = non-batch seeds from the RC2 workstation check",
+ "doc": "docs/current/CALIB_2SAT_SC.md \u00a710b",
+ "started": "2026-10-08T14:08:59+03:00",
+ "ended": "2026-10-08T14:11:00+03:00"
+}

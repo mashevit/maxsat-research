@@ -1,0 +1,5 @@
+n,m,gen_seed,rc2_c_star,memetic_best_cost,stop_reason,wall_s,time_to_target_s,generations,children,total_flips,peak_rss_mb,memetic_impl
+2000,2300,9102,3,3,target,1.187,1.167,2,44,550000,25,v2
+8000,9600,9116,11,11,target,22.296,22.209,11,385,4812500,39,v2
+32000,35200,9121,5,14,time_cap,120.379,,44,1642,20520794,84,v2
+32000,36800,9124,13,25,time_cap,120.402,,41,1547,19331635,86,v2

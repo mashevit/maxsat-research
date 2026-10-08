@@ -1,0 +1,5 @@
+n,m,gen_seed,rc2_c_star,memetic_best_cost,stop_reason,wall_s,generations,children,total_flips,flips_per_child,peak_rss_mb
+2000,2300,9102,3,5,time_cap,120.05,1,35,168064,4802,23
+8000,9600,9116,11,67,time_cap,120.172,1,34,38100,1121,33
+32000,35200,9121,5,2250,time_cap,120.636,1,32,9487,296,67
+32000,36800,9124,13,2563,time_cap,120.657,1,32,8917,279,68
