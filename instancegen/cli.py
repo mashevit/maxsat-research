@@ -30,12 +30,32 @@ Grid file shape (see instancegen/grids/calib_a.yaml):
       - {family: max2sat, k: 2, n: [150], alpha: [3], seeds: [6, 7, 8, 9, 10]}
 
 A family entry may carry its own `seeds:`, which replaces the top-level list
-for that entry's cells; that is how a refinement batch re-samples a cell an
+for that entry's cells (the top-level list may then be omitted, if every entry
+has one); that is how a refinement batch re-samples a cell an
 earlier batch already ran (calib_b, docs/CALIB_B_PLAN.md §4b) without
 regenerating the earlier seeds. Cell sizes are then unequal by design.
 
 `alpha` is the soft clause density m/n and maps straight onto
 GenParams.soft_ratio, so m = round(alpha * n) is what generate.py produces.
+
+An optional top-level `generator:` picks the sampler. It defaults to
+`weighted_ksat` (generate.generate, clauses drawn with replacement), which is
+what calib_a/b/c use; their grid files do not name it and their manifests are
+unchanged. `generator: ksat_distinct` selects generate.generate_distinct:
+exactly m = round(alpha * n) distinct clauses, all soft, weight 1. Such a grid
+has no `params:` block (there is nothing to set), must use dialect `old`, and
+its manifest rows carry the distinct generator's name, its sampling method and
+the rejected duplicate candidates (see instancegen/grids/calib_2sat_sc.yaml).
+
+A second subcommand writes one instance from the distinct-clause mode
+(generate.generate_distinct: exactly m distinct clauses, all soft, weight 1):
+
+    python -m instancegen.cli generate-distinct --n 32000 --k 2 --m 38400 \
+        --seed 1 --out-dir <dir>
+
+It writes <dir>/ksat_distinct_v<n>_k<k>_m<m>_s<seed>.wcnf and a .json sidecar
+whose `generator.name` is `ksat_distinct` (never `weighted_ksat`), then
+re-reads the file and validates it (instancegen/validate.py).
 """
 from __future__ import annotations
 
@@ -43,8 +63,10 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,8 +74,15 @@ from typing import Any, Dict, Iterator, List, Optional
 
 import yaml
 
-from instancegen import GENERATOR_NAME, GENERATOR_VERSION
-from instancegen.generate import GenParams, Instance, generate, instance_filename
+from instancegen import (
+    DISTINCT_GENERATOR_NAME, DISTINCT_GENERATOR_VERSION, DISTINCT_SAMPLING,
+    GENERATOR_NAME, GENERATOR_VERSION,
+)
+from instancegen.generate import (
+    DistinctParams, GenParams, Instance, distinct_filename, generate,
+    generate_distinct, instance_filename, n_possible_clauses,
+)
+from instancegen.validate import check_distinct_wcnf
 from instancegen.wcnf_io import format_wcnf
 
 MANIFEST_SCHEMA_VERSION = 1
@@ -79,8 +108,18 @@ class Grid:
     params: Dict[str, Any]
     seeds: List[int]
     cells: List[Cell]
+    generator: str = GENERATOR_NAME
 
-    def gen_params(self, cell: Cell, seed: int) -> GenParams:
+    @property
+    def distinct(self) -> bool:
+        return self.generator == DISTINCT_GENERATOR_NAME
+
+    def gen_params(self, cell: Cell, seed: int):
+        if self.distinct:
+            # Same rounding as GenParams.n_soft, so alpha means the same thing
+            # in both modes.
+            return DistinctParams(n_vars=cell.n, k=cell.k,
+                                  m=int(round(cell.alpha * cell.n)), seed=int(seed))
         return GenParams(
             n_vars=cell.n,
             k=cell.k,
@@ -112,12 +151,27 @@ class Grid:
 def load_grid(path: str) -> Grid:
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
-    for key in ("batch", "dialect", "params", "seeds", "families"):
+    generator = str(raw.get("generator", GENERATOR_NAME))
+    if generator not in (GENERATOR_NAME, DISTINCT_GENERATOR_NAME):
+        raise ValueError(f"grid {path}: unknown generator {generator!r}; expected "
+                         f"{GENERATOR_NAME!r} or {DISTINCT_GENERATOR_NAME!r}")
+    distinct = generator == DISTINCT_GENERATOR_NAME
+    # Top-level `seeds` may be omitted when every family entry has its own
+    # (calib_2sat_sc: one seed block per cell, so no two cells share a seed).
+    required = ("batch", "dialect", "families") + (() if distinct else ("params",))
+    for key in required:
         if key not in raw:
             raise ValueError(f"grid {path}: missing top-level key {key!r}")
-    for key in ("hard_ratio", "w_max", "weight_dist"):
-        if key not in raw["params"]:
-            raise ValueError(f"grid {path}: params missing {key!r}")
+    if distinct:
+        if raw.get("params"):
+            raise ValueError(f"grid {path}: generator {generator!r} takes no params "
+                             "(every clause is soft with weight 1)")
+        if raw["dialect"] != "old":
+            raise ValueError(f"grid {path}: generator {generator!r} writes dialect 'old' only")
+    else:
+        for key in ("hard_ratio", "w_max", "weight_dist"):
+            if key not in raw["params"]:
+                raise ValueError(f"grid {path}: params missing {key!r}")
 
     def _seed_list(raw_seeds, where: str) -> List[int]:
         out = [int(s) for s in raw_seeds]
@@ -127,9 +181,12 @@ def load_grid(path: str) -> Grid:
             raise ValueError(f"grid {path}: duplicate seeds {out} in {where}")
         return out
 
-    seeds = _seed_list(raw["seeds"], "top level")
+    seeds = _seed_list(raw["seeds"], "top level") if "seeds" in raw else []
     cells: List[Cell] = []
     for fam in raw["families"]:
+        if "seeds" not in raw and "seeds" not in fam:
+            raise ValueError(f"grid {path}: no top-level seeds, and family entry "
+                             f"has none either: {fam}")
         for key in ("family", "k", "n", "alpha"):
             if key not in fam:
                 raise ValueError(f"grid {path}: family entry missing {key!r}: {fam}")
@@ -146,9 +203,10 @@ def load_grid(path: str) -> Grid:
     return Grid(
         batch=str(raw["batch"]),
         dialect=str(raw["dialect"]),
-        params=dict(raw["params"]),
+        params=dict(raw.get("params") or {}),
         seeds=seeds,
         cells=cells,
+        generator=generator,
     )
 
 
@@ -175,18 +233,36 @@ def git_sha() -> Optional[str]:
         return None
 
 
-def render(grid: Grid, cell: Cell, seed: int) -> tuple[GenParams, Instance, str, bytes]:
-    """(params, instance, filename, wcnf bytes) for one instance. Pure; no I/O."""
+def render_full(grid: Grid, cell: Cell, seed: int):
+    """(params, instance, filename, wcnf bytes, rejected) for one instance.
+
+    `rejected` is the distinct mode's tuple of rejected duplicate candidates,
+    None for weighted_ksat. Pure; no I/O.
+    """
     p = grid.gen_params(cell, seed)
-    inst = generate(p)
+    if grid.distinct:
+        res = generate_distinct(p)
+        inst, name, rejected = res.instance, distinct_filename(p), res.rejected
+    else:
+        inst, name, rejected = generate(p), instance_filename(p), None
     text = format_wcnf(inst, dialect=grid.dialect)
-    return p, inst, instance_filename(p), text.encode("utf-8")
+    return p, inst, name, text.encode("utf-8"), rejected
+
+
+def render(grid: Grid, cell: Cell, seed: int) -> tuple[Any, Instance, str, bytes]:
+    """(params, instance, filename, wcnf bytes) for one instance. Pure; no I/O."""
+    return render_full(grid, cell, seed)[:4]
 
 
 def manifest_row(
-    grid: Grid, cell: Cell, seed: int, p: GenParams, inst: Instance, rel_path: str,
+    grid: Grid, cell: Cell, seed: int, p, inst: Instance, rel_path: str,
     data: bytes, *, sha: str, git: Optional[str], created_utc: str,
+    rejected: Optional[tuple] = None,
 ) -> Dict[str, Any]:
+    if grid.distinct:
+        return _distinct_manifest_row(grid, cell, seed, p, inst, rel_path, data,
+                                      sha=sha, git=git, created_utc=created_utc,
+                                      rejected=rejected or ())
     return {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "batch": grid.batch,
@@ -215,6 +291,52 @@ def manifest_row(
             "n_distinct_weights": inst.n_distinct_weights,
             "bytes": len(data),
         },
+        "git_sha": git,
+        "created_utc": created_utc,
+    }
+
+
+def _distinct_manifest_row(
+    grid: Grid, cell: Cell, seed: int, p: DistinctParams, inst: Instance,
+    rel_path: str, data: bytes, *, sha: str, git: Optional[str], created_utc: str,
+    rejected: tuple,
+) -> Dict[str, Any]:
+    """Same keys as a weighted_ksat row where they mean the same thing, plus the
+    sampling method, the clause-space size and the rejection record."""
+    return {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "batch": grid.batch,
+        "cell_id": cell.cell_id,
+        "family": cell.family,
+        "k": cell.k,
+        "n": cell.n,
+        "alpha": cell.alpha,
+        "m": p.m,
+        "seed": seed,
+        "instance": rel_path,
+        "instance_sha256": sha,
+        "dialect": grid.dialect,
+        "generator": {
+            "name": DISTINCT_GENERATOR_NAME,
+            "version": DISTINCT_GENERATOR_VERSION,
+            "sampling": DISTINCT_SAMPLING,
+            "params": asdict(p),
+        },
+        "sizes": {
+            "n_vars": inst.n_vars,
+            "n_clauses": len(inst.clauses),
+            "n_hard": len(inst.hard_clauses),
+            "n_soft": len(inst.soft_clauses),
+            "clause_ratio": p.m / p.n_vars,
+            "total_soft_weight": inst.total_soft_weight,
+            "n_distinct_weights": inst.n_distinct_weights,
+            "bytes": len(data),
+        },
+        "clause_space": n_possible_clauses(p.n_vars, p.k),
+        "n_candidates_drawn": p.m + len(rejected),
+        "n_rejected_duplicates": len(rejected),
+        "rejected_duplicates": [list(c) for c in rejected],
+        "python": platform.python_version(),
         "git_sha": git,
         "created_utc": created_utc,
     }
@@ -255,8 +377,17 @@ def cmd_generate_grid(args: argparse.Namespace) -> int:
     rel_paths: List[str] = []
     shas: List[str] = []
     n_written = n_same = 0
+    n_invalid = 0
     for cell, seed in items:
-        p, inst, name, data = render(grid, cell, seed)
+        p, inst, name, data, rejected = render_full(grid, cell, seed)
+        if grid.distinct:
+            # Validate the bytes about to be written, independently of the
+            # generator objects; a violation stops the batch before any manifest.
+            rep_ = check_distinct_wcnf(data.decode("utf-8"), n=p.n_vars, k=p.k, m=p.m)
+            if not rep_["ok"]:
+                n_invalid += 1
+                print(f"VALIDATION FAILED {name}: {rep_['problems'][:5]}", file=sys.stderr)
+                continue
         path = out_dir / name
         if path.exists() and path.read_bytes() == data:
             n_same += 1
@@ -266,9 +397,13 @@ def cmd_generate_grid(args: argparse.Namespace) -> int:
         sha = sha256_bytes(data)
         rel = _rel(root, path)
         rows.append(manifest_row(grid, cell, seed, p, inst, rel, data,
-                                 sha=sha, git=git, created_utc=created))
+                                 sha=sha, git=git, created_utc=created,
+                                 rejected=rejected))
         rel_paths.append(rel)
         shas.append(sha)
+
+    if n_invalid:
+        raise SystemExit(f"{n_invalid} instance(s) failed validation; no manifest written")
 
     manifest = out_dir / "manifest.jsonl"
     with open(manifest, "w", encoding="utf-8", newline="\n") as f:
@@ -282,6 +417,10 @@ def cmd_generate_grid(args: argparse.Namespace) -> int:
             f.write(f"{sha}  {rel}\n")
 
     seed_sizes = sorted({len(grid.cell_seeds(c)) for c in grid.cells})
+    if grid.distinct:
+        n_rej = sum(r["n_rejected_duplicates"] for r in rows)
+        print(f"generator={grid.generator}: all {len(rows)} files validated; "
+              f"{n_rej} duplicate candidates rejected in total")
     print(f"batch={grid.batch} cells={len(grid.cells)} "
           f"seeds/cell={','.join(str(x) for x in seed_sizes)} "
           f"instances={len(rows)} written={n_written} unchanged={n_same}")
@@ -348,6 +487,74 @@ def _check(grid: Grid, items, out_dir: Path, root: Path, slurm: Path, sha_file: 
     return 0
 
 
+def cmd_generate_distinct(args: argparse.Namespace) -> int:
+    p = DistinctParams(n_vars=args.n, k=args.k, m=args.m, seed=args.seed)
+    t0 = time.perf_counter()
+    try:
+        res = generate_distinct(p)
+    except ValueError as e:
+        raise SystemExit(f"generate-distinct: {e}")
+    t1 = time.perf_counter()
+    data = format_wcnf(res.instance, dialect="old").encode("utf-8")
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / distinct_filename(p)
+    path.write_bytes(data)
+    t2 = time.perf_counter()
+
+    report = check_distinct_wcnf(path.read_text(encoding="utf-8"),
+                                 n=p.n_vars, k=p.k, m=p.m)
+    t3 = time.perf_counter()
+    row = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "instance": path.name,
+        "instance_sha256": sha256_bytes(data),
+        "dialect": "old",
+        "generator": {
+            "name": DISTINCT_GENERATOR_NAME,
+            "version": DISTINCT_GENERATOR_VERSION,
+            "sampling": DISTINCT_SAMPLING,
+            "params": asdict(p),
+        },
+        "sizes": {
+            "n_vars": p.n_vars,
+            "n_clauses": len(res.instance.clauses),
+            "n_hard": 0,
+            "n_soft": len(res.instance.clauses),
+            "clause_ratio": p.m / p.n_vars,
+            "total_soft_weight": res.instance.total_soft_weight,
+            "n_distinct_weights": res.instance.n_distinct_weights,
+            "bytes": len(data),
+        },
+        "clause_space": n_possible_clauses(p.n_vars, p.k),
+        "n_candidates_drawn": p.m + len(res.rejected),
+        "n_rejected_duplicates": len(res.rejected),
+        "rejected_duplicates": [list(c) for c in res.rejected],
+        "validation": {k: v for k, v in report.items() if k != "problems"},
+        # rng.sample's algorithm is a CPython detail; byte-identity is
+        # guaranteed for a fixed interpreter version.
+        "python": platform.python_version(),
+        "git_sha": git_sha(),
+        "created_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    }
+    sidecar = path.with_suffix(".json")
+    with open(sidecar, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, indent=1) + "\n")
+
+    print(f"instance  : {path}  ({len(data)} bytes, sha256 {row['instance_sha256'][:16]}...)")
+    print(f"metadata  : {sidecar}")
+    print(f"clauses   : {p.m} accepted, {len(res.rejected)} duplicate candidates rejected")
+    print(f"timing    : generate {t1 - t0:.3f} s, format+write {t2 - t1:.3f} s, "
+          f"validate {t3 - t2:.3f} s")
+    if not report["ok"]:
+        print(f"VALIDATION FAILED: {len(report['problems'])} problem(s)")
+        for pr in report["problems"][:50]:
+            print("  " + pr)
+        return 1
+    print("VALIDATION OK")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="python -m instancegen.cli", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -365,6 +572,14 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--check", action="store_true",
                    help="verify files/manifests against the grid; write nothing")
     g.set_defaults(func=cmd_generate_grid)
+    d = sub.add_parser("generate-distinct",
+                       help="one instance with exactly m distinct clauses (weight 1)")
+    d.add_argument("--n", type=int, required=True, help="number of variables")
+    d.add_argument("--k", type=int, required=True, help="literals per clause")
+    d.add_argument("--m", type=int, required=True, help="number of distinct clauses")
+    d.add_argument("--seed", type=int, required=True)
+    d.add_argument("--out-dir", required=True)
+    d.set_defaults(func=cmd_generate_distinct)
     return ap
 
 

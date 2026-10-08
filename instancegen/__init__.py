@@ -11,3 +11,10 @@ maxsat_new.cnf (one-way edge, INSTANCEGEN_PLAN §7).
 
 GENERATOR_NAME = "weighted_ksat"
 GENERATOR_VERSION = "0.1.0"
+
+# Separate mode, separate name: generate.generate_distinct (exactly m distinct
+# clauses, rejection sampling). weighted_ksat above is unchanged and still
+# reproduces calib_a/b/c byte for byte.
+DISTINCT_GENERATOR_NAME = "ksat_distinct"
+DISTINCT_GENERATOR_VERSION = "1.0.0"
+DISTINCT_SAMPLING = "uniform_clauses_without_replacement_rejection"

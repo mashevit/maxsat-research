@@ -15,6 +15,7 @@ Purity contract, and why it matters (§7):
 from __future__ import annotations
 
 import bisect
+import math
 from dataclasses import dataclass
 from random import Random
 from typing import List, Tuple
@@ -215,7 +216,11 @@ def generate(p: GenParams) -> Instance:
 
     Clause construction: k distinct variables sampled without replacement, sign
     of each literal an independent fair coin. Tautologies and duplicate literals
-    are impossible by construction.
+    are impossible by construction. Clauses are drawn independently, i.e. *with*
+    replacement: the same clause (up to literal order) can occur more than once,
+    and nothing here removes it. generate_distinct below is the mode that
+    guarantees m distinct clauses; this function is kept as is because
+    calib_a/b/c are byte-reproducible from it.
 
     Order: the n_hard hard clauses are generated first, then the n_soft soft
     clauses (§8). One RNG stream, no second stream for the split.
@@ -259,3 +264,99 @@ def instance_filename(p: GenParams) -> str:
         f"_sr{p.soft_ratio:.2f}_hr{p.hard_ratio:.2f}"
         f"_w{p.w_max}_{weight_dist_slug(p.weight_dist)}_s{p.seed}.wcnf"
     )
+
+
+# --- distinct-clause mode ------------------------------------------------------
+#
+# Uniform random k-clauses sampled *without replacement*: exactly m distinct
+# clauses, all soft, weight 1. A separate params type rather than a new
+# GenParams field, because GenParams' field set is frozen (it is the manifest
+# `generator.params` that `cli --check` compares) and generate() must keep
+# reproducing calib_a/b/c. Documented in
+# docs/current/RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md.
+
+
+def n_possible_clauses(n_vars: int, k: int) -> int:
+    """Number of clauses over k distinct variables: 2^k * C(n, k)."""
+    return (2 ** k) * math.comb(n_vars, k)
+
+
+@dataclass(frozen=True)
+class DistinctParams:
+    n_vars: int
+    k: int
+    m: int
+    seed: int
+
+
+@dataclass(frozen=True)
+class DistinctResult:
+    """The instance plus every rejected duplicate candidate, in draw order.
+
+    `rejected` holds canonical clauses; each one is already among the accepted
+    clauses. len(rejected) + m is the number of candidates drawn.
+    """
+
+    instance: Instance
+    rejected: Tuple[Tuple[int, ...], ...]
+
+
+def validate_distinct(p: DistinctParams) -> None:
+    if p.k < 1:
+        raise ValueError(f"k must be >= 1, got {p.k}")
+    if p.k > p.n_vars:
+        raise ValueError(f"k={p.k} exceeds n_vars={p.n_vars}: cannot sample k distinct vars")
+    if p.m < 0:
+        raise ValueError(f"m must be >= 0, got {p.m}")
+    cap = n_possible_clauses(p.n_vars, p.k)
+    if p.m > cap:
+        raise ValueError(
+            f"m={p.m} exceeds the {cap} distinct clauses that exist for "
+            f"n_vars={p.n_vars}, k={p.k} (2^k * C(n, k))"
+        )
+
+
+def canonical(lits) -> Tuple[int, ...]:
+    """Signed literals sorted by variable id. Variables are distinct, so this
+    is a total order and two clauses that differ only in literal order map to
+    the same tuple."""
+    return tuple(sorted(lits, key=abs))
+
+
+def generate_distinct(p: DistinctParams) -> DistinctResult:
+    """Exactly p.m distinct uniform k-clauses, all soft with weight 1.
+
+    Per candidate: rng.sample(range(1, n+1), k) gives k distinct variables
+    uniformly (no list of all variables or clauses is built), then one fair
+    coin per variable for its sign. The candidate is canonicalised; if it is
+    already accepted it is rejected and recorded, otherwise it is appended.
+    Output order is acceptance order (a list, never set iteration order).
+
+    Rejection sampling is meant for sparse requests, m << 2^k C(n, k). Near
+    exhaustion of the clause space the expected number of draws per accepted
+    clause grows like N / (N - accepted) and the loop becomes slow (but still
+    terminates with probability 1 whenever m <= N).
+    """
+    validate_distinct(p)
+    rng = Random(p.seed)
+    variables = range(1, p.n_vars + 1)
+    seen: set = set()
+    accepted: List[Tuple[int, ...]] = []
+    rejected: List[Tuple[int, ...]] = []
+    while len(accepted) < p.m:
+        vs = rng.sample(variables, p.k)
+        clause = canonical(v if rng.random() < 0.5 else -v for v in vs)
+        if clause in seen:
+            rejected.append(clause)
+            continue
+        seen.add(clause)
+        accepted.append(clause)
+    soft = tuple(Clause(weight=1, lits=c, is_hard=False) for c in accepted)
+    # top = 1 + sum(soft weights), the same convention as generate().
+    inst = Instance(n_vars=p.n_vars, clauses=soft, top=1 + len(soft))
+    return DistinctResult(instance=inst, rejected=tuple(rejected))
+
+
+def distinct_filename(p: DistinctParams) -> str:
+    """`ksat_distinct_...`, never `wksat_...`, so the two modes cannot collide."""
+    return f"ksat_distinct_v{p.n_vars}_k{p.k}_m{p.m}_s{p.seed}.wcnf"
