@@ -39,6 +39,12 @@ grid and its Step 4 selection thresholds; everything else there stands.
 >   Max-3-SAT, with α chosen per size. `calib_c` is on hold for reassessment.
 >   Seconds stay primary. No new n = 250, c\* = 1 instances. See the
 >   handoff §0.
+> - **2026-10-08:** `calib_2sat_sc` (large-n, slightly supercritical random
+>   Max-2-SAT; n 2000–32000, α 1.10–1.20) is prepared, not submitted. Its
+>   eligibility adds c\* ≥ 3 as a condition *separate* from the (30, 900] s
+>   time window. See [`current/CALIB_2SAT_SC.md`](current/CALIB_2SAT_SC.md).
+>   Note that "c\*" in this document means the proven optimum. It is never
+>   a runtime, and never an incumbent's cost.
 
 Notation: **α = m/n** (clause density; α_c ≈ 4.267 for random 3-SAT),
 **c\*** = optimum cost (unsatisfied soft weight), **ρ** = Spearman rank

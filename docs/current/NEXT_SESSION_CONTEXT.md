@@ -17,6 +17,46 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000. Update 2026-10-08 (r6): `calib_2sat_sc` prepared; c\*/runtime correction — read first
+
+- **New batch, prepared and not submitted:** `calib_2sat_sc`, large-n,
+  slightly supercritical random Max-2-SAT.
+  - Grid: n ∈ {2000, 8000, 32000} × α ∈ {1.10, 1.15, 1.20}, 5 seeds per cell,
+    45 instances.
+  - Generator `ksat_distinct` (BBCKW's F_{n,m}: m distinct clauses, weight 1).
+  - Fresh per-cell seeds 201–245.
+  - Measured like calib_a/b: RC2 g3, PySAT 1.9.dev3 enforced, 900 s
+    wall-clock cap plus 60 s grace.
+  - Rules were pre-registered before any data.
+  - Everything — model, rules, budget (at most 12.0 CPU-h, about 40 min at
+    %30) and commands — is in [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md).
+  - Submit with `bash submit_rc2_calib_2sat_sc.sh` from `scripts/` after the
+    rsync. Read out with `scripts/calib_2sat_sc_readout.py`.
+  - Before submitting, run `bash preflight_calib_2sat_sc.sh` on the login
+    node (§9a). A workstation check on non-batch seeds is in §10a
+    (N-2026-10-08-g).
+  - **Login node: shell only.** The cluster terminates Python there. All
+    Python runs in Slurm jobs or on the workstation (§9).
+  - **Memetic at large n: resolved by `impl: v2`** (§10c, N-2026-10-08-i).
+    v1's WalkSAT polish was O(m) per flip. v2 makes v1's exact decisions
+    with incremental bookkeeping; config `memetic_deeppolish_p40_ls3p5_v2.yaml`.
+    Seconds are comparable only within one `impl`.
+- **Correction to §0 below.** "Aim at a c\* band rather than a fixed α" and
+  the G-d wording in `GRID_POINTS_WINDOW_30_900.md` conflate c\* (the
+  minimum number of unsatisfied clauses) with RC2 runtime (seconds).
+  Eligibility is a time condition, and the c\* minimum is separate
+  (N-2026-10-08-f).
+- **Finding:** calib_a/b instances are nested across α at the same (n, seed)
+  (N-2026-10-08-e). Within-cell independence holds. Across-α pooling
+  overstates the sample.
+- **Generator:** `weighted_ksat` samples with replacement, so calib_a/b/c
+  contain duplicate clauses. The new `ksat_distinct` mode does not
+  (N-2026-10-08-c).
+- **On hold / unchanged:** `calib_c`, R3-a…d, the cap-3600 re-run and the
+  SATLIB memetic manifest are as in r5.
+
+---
+
 ## 000. Update 2026-10-08 (r5): SATLIB RC2 rows are back — read before §00
 
 - The 263-task SATLIB RC2 array ran (job 22379183, 2026-10-07). Rows are in

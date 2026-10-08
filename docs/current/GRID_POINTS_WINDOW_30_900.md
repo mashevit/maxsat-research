@@ -39,6 +39,13 @@ answer about "n = 150, c\* = 3" (§4).
   α 4.26: four of five have c\* = 0).
 - Window width log10(900/30) = **1.48 decades** (the 60–600 s window was 1.0).
 
+> **Terminology note, 2026-10-08 (RESEARCH_NOTES N-2026-10-08-f).** "c\* in
+> window" in the tables below is shorthand for "the c\* values of the
+> certified instances whose RC2 *time* fell in (30, 900] s". The window is a
+> runtime condition, in seconds. c\* is the minimum number of unsatisfied
+> clauses. They are separate measurements, and neither determines the other
+> across n or α.
+
 ## 2. Grid points per (k, n, c\*)
 
 Read "in / certified" per c\*. Q2 is over the eligible generated instances,
@@ -196,6 +203,16 @@ instead, and then a lower α would be needed.
 **Memetic side.** Q2 is 2/11 at n = 400 and 0/15 at n ≤ 250, the only
 upward signal in this family.
 
+> **Correction, 2026-10-08 (N-2026-10-08-f).** The projection above treats the
+> c\* band of in-window instances at n = 250–400 as a target that would keep
+> RC2 time in the window at n = 600. That conflates c\* with runtime. The
+> eligibility condition is on time. A minimum c\* is a separate condition,
+> and the time at a given c\* depends on n and α (as "the opposite risk" says).
+> The α ≈ 1.8–2.0 suggestion stays an untested hypothesis about α, not a
+> c\* → time mapping. A different larger-n direction, α slightly above the
+> 2-SAT threshold at n = 2000–32000, is prepared as `calib_2sat_sc`
+> ([`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md)).
+
 ## 5. Grid points by status
 
 | status | Max-3-SAT | Max-2-SAT |
@@ -228,6 +245,9 @@ direction is n > 400 at α at or just below 2.0.
   evidence?
 - **G-d. Max-2-SAT n > 400.** Choose the n value(s) and a two-α hedge around
   α ≈ 1.8–2.0, aiming at c\* ≈ 18–23.
+  *(2026-10-08: "aiming at c\* ≈ 18–23" should read "aiming at certified
+  RC2 times in (30, 900] s, with c\* recorded separately". See the §4.4
+  correction and N-2026-10-08-f.)*
 
 Nothing in this note authorises generation or submission. Each of G-b to
 G-d needs a written plan and approval first.

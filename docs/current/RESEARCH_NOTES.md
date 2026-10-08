@@ -43,8 +43,217 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | M2 full pool: solver mechanics, ρ, threats to validity | `docs/M2_FULL_POOL_READOUT_AND_STATE.md` | Why 3-SAT and 2-SAT differ; the RC2 time decomposition; memetic reliability. |
 | SATLIB benchmark families: intake, parser pitfalls, c\* expectations, citation | [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) | 263 unsat / 16 sat; 209 originals misread by PySAT; what these families can and cannot add. See N-2026-10-07-b…e (e is the required SATLIB citation). RC2 results: §8, N-2026-10-08-a (95 eligible). |
 | RC2 re-run at cap 3600 s, with predictions recorded in advance | [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md) | 148 censored instances (excluding mse16/raw/more_data); 9 groups by sibling evidence, each with a prediction; comparison script. See N-2026-10-08-b. |
+| Random k-SAT generation: with vs without replacement; the `ksat_distinct` mode | [`RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md`](RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md) | The existing `weighted_ksat` samples clauses with replacement, so calib_a/b/c contain duplicate clauses. The new mode gives exactly m distinct weight-1 clauses by rejection sampling. Algorithm, seed behaviour, format, validation, and an n = 32000 benchmark. See N-2026-10-08-c. |
+| Large-n, slightly supercritical random Max-2-SAT (`calib_2sat_sc`) | [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md) | The model (BBCKW F_{n,m}, distinct clauses), the near-threshold theory used only as a covariate (n·ε³ = λ³), the measurement conventions (wall-clock 900 s cap, SIGALRM delay, watchdog), pre-registered cell rules, budget and commands. See N-2026-10-08-d…f. |
+| Memetic solver `impl: v2` — why, what, how checked | [`MEMETIC_IMPL_V2.md`](MEMETIC_IMPL_V2.md) | v1's WalkSAT polish is O(m) per flip: measured at n 2000–32 000 (about 300 flips per 3.5 s call at n = 32 000; 120 s left it 2000+ above c\*). v2 makes v1's exact decisions with incremental bookkeeping (57 equivalence tests), 50–1800× faster per flip; v1 stays the default. Seconds are comparable only within one `impl`. N-2026-10-08-h/i. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-08-i — Memetic `impl: v2`: incremental WalkSAT with v1's exact decisions; seconds comparable only within one impl [decision + verified]
+
+- **The user's decision:** "go with option 2, make walksat incremental keep
+  possibility to use older version, you can make in new version more
+  optimizations".
+- **What v2 is** (`CALIB_2SAT_SC.md` §10c):
+  - a top-level config key `impl: v2`; an absent key means v1, the historical
+    code;
+  - the frozen files (`sat/walksat.py`, `sat/state.py`, `evo/operators.py`)
+    are unchanged.
+  - v2 = an incremental polish (O(occ) per flip), a crossover with cached
+    statics, and no no-op advisor round trip.
+- **Equivalence [verified].** v2 reproduces v1's trajectory exactly under a
+  flip or iteration budget: polish, crossover and whole EA runs, including
+  hard+soft (57 tests).
+- **Speed [verified].**
+  - Polish: 50× faster at m = 2300 and about 1800× at m = 36 800.
+  - Same arm, 120 s: optimum at n = 2000 in 1.2 s and at n = 8000 in 22 s
+    (c\* 3 and 11; v1 after 120 s: best 5 and 67). At n = 32 000, best 14
+    and 25 against c\* 5 and 13 (v1: 2250 and 2563).
+- **Comparability [decision].**
+  - Seconds-based memetic effort is comparable only within one `impl`.
+  - Existing results are v1 and stay v1.
+  - Shards record `memetic_impl` (schema 3).
+  - The large-n memetic assessment uses
+    `memetic_deeppolish_p40_ls3p5_v2.yaml`.
+
+### N-2026-10-08-h — The memetic solver's WalkSAT polish costs O(m) per flip: at n ≥ 8000 the established arm barely searches [verified + decision pending]
+
+- **Smoke run** (`CALIB_2SAT_SC.md` §10b): primary arm p40_ls3p5, 120 s,
+  stop-at-oracle, on four large-n instances with RC2-proven c\*.
+  - Every run did 1 generation.
+  - Best costs were 5 (c\* 3, n 2000), 67 (c\* 11, n 8000), 2250 (c\* 5,
+    n 32 000) and 2563 (c\* 13, n 32 000).
+  - Flips per 3.5 s call: about 4800 at m = 2300, about 1120 at m = 9600,
+    and about 290 at m ≈ 36 000.
+- **Cause** (code): `walksat_polish` calls `state.unsat_hard_ids()` and
+  `unsat_soft_indices()` on every flip, and each is a full scan of the m
+  clauses (`src/sat/state.py:298/301/332`).
+- **Implication [inference].** At n ≥ 8000, a memetic failure under the
+  established configuration measures the implementation, not the instance.
+  The memetic half of the selection objectives cannot be assessed there until
+  this is decided.
+- **Options** (§10b; the user decides):
+  1. memetic only where it works;
+  2. incremental unsat bookkeeping — a new solver version, so earlier results
+     are comparable only if repeated;
+  3. a larger per-call allowance, which does not remove the O(m) factor.
+- **RC2 batch:** unaffected.
+
+**Also on 2026-10-08 — the login-node rule.** The cluster terminates Python and
+other heavy work on the login node (user's report, quoted in
+`CALIB_2SAT_SC.md` §9). Changes made:
+- the preflight's login part is now shell only, and its Python checks run in
+  a compute-node verify job;
+- `RESUME=1` in `submit_rc2_profile.sh` and `submit_m2_memetic.sh` no longer
+  calls Python. Explicit ids go in `IDS=`, computed on the workstation.
+
+### N-2026-10-08-g — Workstation RC2 check on the `calib_2sat_sc` cells (non-batch seeds): c\* > 2 occurs at n ≥ 8000; runtime does not follow c\* [verified; exploratory]
+
+- Run on the workstation: PySAT 1.9.dev2, 8 runs in parallel, cap 900 s.
+  - 15 instances, 1–2 per cell, seeds 9101–9126, none of them batch
+    instances.
+  - Rows: `cluster_staging_maxsat/results/workstation_check_calib_2sat_sc/`.
+  - Table: `CALIB_2SAT_SC.md` §10a.
+- **c\*.**
+  - n = 2000: c\* 0–3, in milliseconds.
+  - n = 8000: c\* 0–11.
+  - n = 32000, α 1.10–1.15: c\* 3–13.
+  - n = 32000, α 1.20: both censored at 960 s (SIGKILL), with lower bounds
+    19 and 18.
+- **Runtime.** It spread widely at equal or similar c\*: c\* 8 took 1.0 s
+  and c\* 11 took 161 s at n = 8000, α 1.2.
+- **Window.** Only 2 of 13 completions fell in (30, 900] s: c\* 11 at 161 s
+  and c\* 13 at 85 s.
+- **Status.** Not data for the batch readout. The grid and rules are
+  unchanged.
+
+### N-2026-10-08-f — Correction: c\* and RC2 runtime were conflated in the larger-n Max-2-SAT projection [correction]
+
+These two quantities are separate measurements and must be kept apart:
+- **c\***: the proven minimum number of unsatisfied clauses (soft weight;
+  all weights are 1 in the random families);
+- **RC2 runtime**: wall-clock seconds to prove optimality.
+
+Where they were conflated:
+- **`GRID_POINTS_WINDOW_30_900.md` §4.4 and decision G-d** project "n = 600
+  needs c\* ≈ 18–23" and say "aiming at c\* ≈ 18–23". That treats the c\*
+  band of instances whose *time* fell in (30, 900] s at n = 250–400 as if
+  c\* set the time.
+- The same document notes that "time at fixed c\* grows with n", which
+  already undercuts the projection.
+- **`NEXT_SESSION_CONTEXT.md` §0** ("aim at a c\* band rather than a fixed
+  α") carries the same assumption.
+- My chat answer of 2026-10-08 called near-threshold cells "trivial for RC2
+  … unless n is in the thousands". That extrapolated from n ≤ 400 as if
+  small c\* implied short runtime at every n.
+
+The correct framing:
+- Eligibility is a **time** condition (certified, 30 < t ≤ 900 s).
+- A minimum on c\* (now c\* ≥ 3 for Max-2-SAT, `CALIB_2SAT_SC.md` §6) is a
+  **separate** condition.
+- Neither predicts the other across n or α. Neither establishes memetic
+  difficulty, which is measured separately in seconds.
+
+Dated correction notes were added under the affected passages. Their
+original text is unchanged.
+
+### N-2026-10-08-e — calib_a/b instances are nested across α at the same (n, seed) [verified + inference]
+
+**[verified]** Both generators draw clauses one at a time from one RNG stream.
+So for a fixed (n, seed), the instance at a smaller α is a prefix of the
+instance at a larger α. Confirmed on the files:
+- `calib_a/…v100_k2_sr2.00…_s1` is the first 200 clauses of `…sr3.00…_s1`;
+- `calib_a/…v400_k2_sr2.00…_s3` is a prefix of `calib_b/…v400_k2_sr2.15…_s3`;
+- `calib_a/…v250_k3_sr4.26…_s2` is a prefix of `calib_b/…v250_k3_sr4.35…_s2`.
+
+Different seeds in the same cell are not nested.
+
+**[inference]**
+- Within a cell, instances are independent.
+- Across α cells at the same n, they are paired, and per seed c\* is
+  non-decreasing in α.
+- Pooled analyses that treat instances from different α cells as independent
+  (the pooled ρ and its cell-stratified bootstrap, `CORPUS_CALIBRATION_GOALS.md`
+  §5.2; candidate-cell tables read across α) overstate the effective sample
+  size. The size of that effect is not estimated here.
+- Nothing is regenerated.
+
+**[decision]** New batches give each cell its own seed block. `calib_2sat_sc`
+uses seeds 201–245, one per instance.
+
+### N-2026-10-08-d — `calib_2sat_sc`: large-n, slightly supercritical random Max-2-SAT prepared (not submitted) [quote + decision + verified]
+
+**The user's motivation, as given:**
+> - The proven satisfiability threshold for standard uniform random 2-SAT is alpha = m/n = 1.
+> - The critical window has width Theta(n^(-1/3)). Staying inside that window does not make the expected optimum grow without bound as n increases.
+> - My aim is to keep alpha slightly above 1 and increase n substantially, looking for instances with a proven optimum c* > 2 and meaningful computational difficulty.
+> - Near-threshold theory suggests n*(alpha-1)^3 as a useful scaling quantity, with logarithmic qualifications in known bounds. Do NOT treat it as a numerical prediction of c* or runtime.
+> - Describe this batch as "large-n, slightly supercritical random Max-2-SAT," rather than claiming that all cells lie inside the critical window.
+
+**References** (model definitions read from the TeX sources):
+- **BBCKW,** RSA 18(3):201–256, 2001, doi:10.1002/rsa.1006.
+  - Model: F_{n,m}, "exactly m different clauses" over the 4·C(n, 2) proper
+    2-clauses.
+  - The scaling window has width Θ(n^{−1/3}).
+- **CGHS,** arXiv:math/0306047.
+  - Model: clauses chosen uniformly *with replacement*.
+  - For c = 1 + ε, c\* ≲ (ε³/3)n asymptotically, and ≳ α₀ε³/(3 ln(1/ε))·n
+    for small ε.
+  - In the window parametrisation c = 1 + λn^{−1/3}: c\* = O(λ³) for λ > 1,
+    and Θ(1) for |λ| ≤ 1.
+  - Note λ³ = n·ε³.
+
+**Batch** [decision; verified generation]:
+- n ∈ {2000, 8000, 32000} × α ∈ {1.10, 1.15, 1.20}, 5 seeds per cell, 45
+  instances, m = round(αn).
+- Generator `ksat_distinct` (= BBCKW F_{n,m}); all clauses soft, weight 1.
+- Fresh per-cell seeds 201–245.
+- All cells have λ = εn^{1/3} > 1: they lie above the window, not in it.
+- n·ε³ (2–256) is a covariate, not a prediction.
+
+**Measurement.** The calib_a/b RC2 measurement, unchanged:
+- RC2 g3, PySAT 1.9.dev3, enforced by a new opt-in `EXPECT_PYSAT` guard;
+- a 900 s **wall-clock** cap from the start, plus a 60 s SIGKILL grace with
+  lower-bound recovery.
+
+**Rules.** Pre-registered in `CALIB_2SAT_SC.md` §6 and the readout script.
+- Eligible: certified, 30 < t ≤ 900 s, and c\* ≥ 3.
+- Cell outcomes: promising / too_easy / too_hard / mixed, with stated
+  follow-ups.
+- Promising cells need a memetic assessment, in seconds, before any corpus
+  decision.
+- The final corpus uses fresh seeds.
+
+**Budget.** At most 12.0 CPU-h; about 40 min elapsed at %30.
+
+### N-2026-10-08-c — The existing generator samples clauses with replacement; `ksat_distinct` added for exactly m distinct clauses [verified + decision]
+
+- **The existing generator meets 5 of the 7 requirements.**
+  `instancegen.generate.generate` (`weighted_ksat` 0.1.0) satisfies distinct
+  variables, fair signs, no tautology and seed reproducibility.
+  - It does **not** exclude duplicate clauses.
+  - It sets m = round(α·n) rather than taking m as input.
+- **Measured duplicates in calib_a/b/c.**
+  - Max-2-SAT: 133 of 170 files contain a repeated clause, 493 extra copies
+    in total (0.09–1.2 % of clauses per cell, matching C(m, 2)/N).
+  - Max-3-SAT: 24 of 160 files, 35 extra copies.
+  - A repeated unit-weight clause acts as weight 2, and the recorded c\*
+    values include it. Those instances are unchanged and stay labelled
+    `weighted_ksat`.
+- **Decision.** A separate mode was added in the same package:
+  `generate_distinct` / `generate-distinct`, generator name `ksat_distinct`
+  1.0.0. It samples clauses uniformly without replacement by rejection,
+  records the rejected candidates, writes the old WCNF dialect, and has its
+  own filename prefix.
+  - `GenParams` and `generate()` are untouched: a pinned SHA-256 matches the
+    calib_a file on disk.
+- **Benchmark (generation only, no RC2).** k = 2, n = 32000, m = 38400 takes
+  0.26 s wall clock and 43 MB peak, and writes 626 KB. There was 1 rejected
+  candidate; the output is byte-identical across runs and passes validation.
+- **Not established.** Excluding duplicates says nothing about hardness or
+  c\*; that is left to calibration.
+- **Full note:**
+  [`RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md`](RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md).
 
 ### N-2026-10-08-b — Predictions for the RC2 cap-3600 re-run, recorded before submission [inference, pre-registered]
 

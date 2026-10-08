@@ -1429,3 +1429,122 @@ was submitted.
   were confirmed again.
 - Staging suite: 153 passed, 3 skipped. The first run that day had one
   intermittent failure, which did not recur on rerun.
+
+## 2026-10-08 — Checkpoint 12: distinct-clause generator; `calib_2sat_sc` (large-n, slightly supercritical Max-2-SAT) prepared, not submitted
+
+**Distinct-clause generator.**
+- Finding: `weighted_ksat` samples clauses with replacement, so calib_a/b/c
+  contain duplicates (Max-2-SAT: 133 of 170 files).
+- Added: the `ksat_distinct` mode (exactly m distinct clauses, weight 1, by
+  rejection sampling), `instancegen/validate.py` and the CLI subcommand
+  `generate-distinct`.
+- `weighted_ksat` output is unchanged (pinned by SHA-256).
+- The k = 2, n = 32000, m = 38400 benchmark generated in 0.26 s with a
+  43 MB peak.
+- See `current/RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md` and
+  N-2026-10-08-c.
+
+**`calib_2sat_sc`.** The plan, rules, budget and commands are in
+`current/CALIB_2SAT_SC.md`.
+- Grid: n {2000, 8000, 32000} × α {1.10, 1.15, 1.20}, 45 instances,
+  generator `ksat_distinct` (= BBCKW F_{n,m}).
+- Seeds 201–245, one per instance.
+- 45 files generated and validated. `--check` OK and sha256 OK.
+- instancegen: 125 passed. Staging: 174 passed, 3 skipped.
+
+**Seeds.**
+- A first generation used one seed list for all cells. It turned out nested
+  across α (the prefix property), so it was deleted before any use and
+  regenerated with per-cell seeds.
+- The same nesting was confirmed in calib_a/b (N-2026-10-08-e).
+
+**Cluster scripts.**
+- New wrapper: `scripts/submit_rc2_calib_2sat_sc.sh` (cap 900, grace 60,
+  %30).
+- New opt-in `EXPECT_PYSAT` guard in `rc2_profile_array.sbatch` /
+  `submit_rc2_profile.sh`; this batch sets 1.9.dev3. Earlier wrappers'
+  commands are unchanged (checked with `DRY_RUN=1`).
+- The readout `scripts/calib_2sat_sc_readout.py` implements the
+  pre-registered rules and has tests.
+
+**Workstation smoke (non-batch seeds 9001/9002, PySAT dev2; not data).**
+- The guard refuses to run under the wrong version.
+- The completed path and the SIGKILL/lower-bound path both work, and resume
+  skips finished tasks.
+- At n = 32000, SIGALRM was taken 28 s late, inside a C-level SAT call.
+- Peak RSS was 101 MB.
+
+**Correction.** c\* and RC2 runtime had been conflated in `GRID_POINTS` §4.4
+and G-d and in the handoff §0. Dated correction notes were added
+(N-2026-10-08-f).
+
+**Budget.** At most 12.0 CPU-h; about 40 min elapsed at %30, excluding queue
+delay.
+
+### Next (awaiting the user)
+
+- Submit `calib_2sat_sc` (`CALIB_2SAT_SC.md` §9). Nothing was submitted.
+- After the rows return: aggregate, run the readout, report every instance,
+  and propose the next batch from the §6 outcomes.
+
+### Addendum 2026-10-08 (later): preflight and workstation check
+
+**Preflight.**
+- `scripts/preflight_calib_2sat_sc.sh`, documented in `CALIB_2SAT_SC.md`
+  §9a. It checks files, checksums and the env (PySAT 1.9.dev3), and runs the
+  array script on the login node on two non-batch smoke instances
+  (`calib_2sat_sc_smoke`, seeds 9001/9002).
+- Optional: a 2-task node-level smoke array, followed by `CHECK_SMOKE`.
+- Tested on the workstation with a test-only version override.
+
+**Version pin.** `submit_rc2_calib_2sat_sc.sh` now hard-codes
+`EXPECT_PYSAT=1.9.dev3`. The previous `${EXPECT_PYSAT:-…}` let an inherited
+variable change the batch's version; a preflight test exposed this.
+
+**Workstation RC2 check (§10a, N-2026-10-08-g).**
+- 15 non-batch instances.
+- c\* ≥ 3 appeared at n ≥ 8000.
+- 2 of 13 completions were in (30, 900] s.
+- n = 32000, α 1.20 was censored with lower bounds 18–19.
+- Not batch data. The grid is unchanged.
+
+### Addendum 2026-10-08 (later still): login-node rule; memetic at large n
+
+**Login-node rule.** The cluster terminates Python and heavy work on the login
+node.
+- The preflight was rewritten: the login part is shell only, verified with
+  `python`/`python3` tripwires (0 calls). The Python checks now run in
+  `preflight_calib_2sat_sc_verify.sbatch` on a compute node, chained with
+  `--dependency=afterany` to the 2-task smoke array.
+- `submit_rc2_profile.sh` `RESUME=1` no longer computes pending ids with
+  Python. It resubmits the range, and finished tasks skip themselves on their
+  node, or it uses `IDS=`.
+- `submit_m2_memetic.sh` `RESUME=1` now requires `IDS=`, because memetic
+  tasks do not skip themselves.
+- The existing RC2 `RESUME=1` commands in other docs remain valid.
+
+**Memetic smoke at n 2000–32000** (`CALIB_2SAT_SC.md` §10b, N-2026-10-08-h).
+- The WalkSAT polish is O(m) per flip, from full clause scans in
+  `src/sat/state.py`.
+- At n = 32 000, one generation fits in 120 s and the incumbent is about 2250
+  above c\*.
+- A user decision is needed before any memetic assessment at n ≥ 8000.
+- The RC2 batch is unaffected.
+
+### Addendum 2026-10-08 (end of day): memetic `impl: v2`
+
+**What was added.**
+- The user chose option 2.
+- New staging files: `src/sat/walksat_v2.py`, `src/evo/impl_v2.py`.
+- `memetic.py` and `run_memetic_shard.py` now carry the `impl` switch and the
+  shard schema 3 field `memetic_impl`.
+- New config: `configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml`.
+
+**Checks.**
+- The eight frozen files are still IDENTICAL to the repo.
+- v2 reproduces v1 exactly under a flip or iteration budget (57 tests).
+- Staging suite: 231 passed, 3 skipped.
+
+**Smoke.** At n = 2000 and n = 8000, v2 reaches c\* in 1.2 s and 22 s. At
+n = 32 000 it gets within 9–12 of c\* in 120 s; v1 was 2000+ away. See
+`current/CALIB_2SAT_SC.md` §10c and N-2026-10-08-i.
