@@ -41,9 +41,46 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Corpus family scope | `docs/CORPUS_FAMILY_SCOPE_NOTE.md` | MaxCut is in; Max-Clique and set covering are out (partly revised by `CORPUS_FREEZE_PREP.md` §8.5). The torus stratum gap. |
 | Memetic vs multistart on uuf | `docs/UUF_THREE_ARM_ABLATION_READOUT.md` | memetic 118/130, uniform multistart 124/130, JW multistart 127/130 on the 26 uuf instances. |
 | M2 full pool: solver mechanics, ρ, threats to validity | `docs/M2_FULL_POOL_READOUT_AND_STATE.md` | Why 3-SAT and 2-SAT differ; the RC2 time decomposition; memetic reliability. |
-| SATLIB benchmark families: intake, parser pitfalls, c\* expectations, citation | [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) | 263 unsat / 16 sat; 209 originals misread by PySAT; what these families can and cannot add. See N-2026-10-07-b…e (e is the required SATLIB citation). |
+| SATLIB benchmark families: intake, parser pitfalls, c\* expectations, citation | [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) | 263 unsat / 16 sat; 209 originals misread by PySAT; what these families can and cannot add. See N-2026-10-07-b…e (e is the required SATLIB citation). RC2 results: §8, N-2026-10-08-a (95 eligible). |
+| RC2 re-run at cap 3600 s, with predictions recorded in advance | [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md) | 148 censored instances (excluding mse16/raw/more_data); 9 groups by sibling evidence, each with a prediction; comparison script. See N-2026-10-08-b. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-08-b — Predictions for the RC2 cap-3600 re-run, recorded before submission [inference, pre-registered]
+
+- 148 censored instances are re-run at a 3600 s cap (`RC2_CAP3600_RERUN.md`).
+- They are split into 9 groups by sibling evidence at 900 s. Each group has
+  a stated prediction (`RC2_CAP3600_RERUN.md` §6). In short:
+  - groups where sibling seeds certified (G1, G4, G6): majority certify;
+  - groups where no sibling certified (G3, G5): ≤ 10 % certify;
+  - uuf250 with LB 2 (G8): no call; it directly tests C2 of the Max-3-SAT
+    note.
+- Claim under test: sibling evidence predicts certification better than
+  the size of the LB.
+- Check with `cluster_staging_maxsat/scripts/compare_cap3600_predictions.py`.
+  Record the outcome in §6 of that document and as a new note here. Never
+  edit this entry.
+
+### N-2026-10-08-a — SATLIB RC2 screen: 95 of 263 eligible, almost all uuf; jnh has c\* up to 4 but is far below the window [verified]
+
+- 263 rows back (job 22379183), 251 certified, 12 censored, 0 failed;
+  PySAT 1.9.dev3 throughout.
+- **Eligible (certified, 30 < t ≤ 900 s): 95** — uuf200 34, uuf225 60,
+  hole9 1. c\* = 1 on 70, c\* = 2 on 25.
+- dubois, pret, bf, hole6–9: c\* = 1 as predicted in N-2026-10-07-d; all
+  but hole9 solve in under 6 s.
+- jnh: c\* = 1 ×17, 2 ×11, 3 ×5, 4 ×1, all in under 0.6 s, so none
+  eligible.
+- The 11 censored uuf all carry a recovered lower bound of 2 (c\* ≥ 2);
+  hole10 censored without a bound.
+- uuf200-01…010 reproduce the historical c\* exactly.
+- *Implication [inference]:* the SATLIB batch adds n = 200/225 uuf points
+  and a single structured instance to the memetic stage. It does not add
+  origin diversity to the eligible set, and it does not widen c\* beyond
+  {1, 2}. Max-2-SAT and MaxCut remain the source of larger optima.
+
+Evidence: `SATLIB_BENCH_INTAKE.md` §8;
+`cluster_staging_maxsat/results/profile_satlib_all.jsonl`.
 
 ### N-2026-10-07-f — Possible expansion: certify all 100 SATLIB uuf250 with a longer budget, for RC2 and memetic [verified + decision: deferred, not urgent]
 

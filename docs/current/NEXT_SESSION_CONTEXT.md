@@ -17,6 +17,40 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000. Update 2026-10-08 (r5): SATLIB RC2 rows are back — read before §00
+
+- The 263-task SATLIB RC2 array ran (job 22379183, 2026-10-07). Rows are in
+  `cluster_staging_maxsat/results/profile_satlib/` and merged into
+  `results/profile_satlib_all.jsonl` / `_env.jsonl` by
+  `aggregate_rc2_profile.py --batch satlib`. 251 certified, 12 censored,
+  0 failed; PySAT 1.9.dev3 throughout.
+- **95 eligible** (certified, 30 < t ≤ 900 s): uuf200 34, uuf225 60, hole9 1;
+  c\* = 1 ×70, c\* = 2 ×25. jnh has c\* up to 4 but solves in < 0.6 s.
+  Full readout: [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) §8;
+  note `RESEARCH_NOTES.md` N-2026-10-08-a.
+- **Next milestone:** the memetic manifest builder for the 95 eligible
+  instances (modelled on `make_calib_c_memetic_manifest.py`), plus the
+  not-run list for the other 168. Not started.
+- The "not yet submitted" wording in §00 below is superseded.
+- **RC2 cap-3600 re-run prepared (2026-10-08; user submits).** It covers
+  every instance under `data/` that hit the cap in every RC2 row it has,
+  excluding `mse16/`, `raw/` and `more_data/`. That is 148 tasks: calib_a 88,
+  calib_b 25, satlib 12, uuf250 23. The 3 `unsat_uuf_diff/uuf250-0{2,4,8}`
+  copies are deduplicated by clause content. Files:
+  `scripts/make_rc2_cap3600_manifest.py` (with `--check`),
+  `scripts/manifest_rc2_cap3600.{txt,sha256,tasks.csv}`, and
+  `scripts/submit_rc2_cap3600.sh`. The wrapper uses cap 3600 + grace 120,
+  `--time 01:10:00`, `--mem 16G`, %30 and output
+  `results/profile_cap3600/`. Worst case is 153 CPU-h, about 6 h elapsed.
+  calib_c has no RC2 rows, so it is not included.
+  The full data table, with a breakdown per cell, is in
+  [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md).
+  Predictions were recorded before submission (§6, N-2026-10-08-b). When
+  the rows are back, run `scripts/compare_cap3600_predictions.py` and fill
+  in the §6 outcome.
+
+---
+
 ## 00. Update 2026-10-07 (r4): SATLIB benchmark intake — read with §0
 
 - **Research notes now have one entry point:**

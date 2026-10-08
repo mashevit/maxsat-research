@@ -1,0 +1,1 @@
+{"instance": "data/satlib_bench/uuf225-960/UUF225.960.100/uuf225-060.cnf", "size_mb": 0.0137, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 159.73, "final_cost": 2, "cost_lower_bound": 2, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T2a", "tier_reason": "60.0<solve_s<=300.0"}

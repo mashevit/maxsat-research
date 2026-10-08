@@ -1,0 +1,1 @@
+{"instance": "data/satlib_bench/jnh/jnh310.cnf", "size_mb": 0.0171, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 0.227, "final_cost": 3, "cost_lower_bound": 3, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T1", "tier_reason": "solve_s<=60.0"}

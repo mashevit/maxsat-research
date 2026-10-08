@@ -2,9 +2,9 @@
 
 **Date:** 2026-10-07. **Status:** the intake milestone is done. The files
 are labelled, normalised in place and verified, and the manifests are
-written. **No RC2 or memetic run has been submitted.** The RC2 screen in §5
-is approved as one array of 263 tasks. You will submit it later (§5).
-Decisions S-a…S-d were settled on 2026-10-07 (§6).
+written. The RC2 screen in §5 (one array of 263 tasks) **ran on 2026-10-07
+and its rows are back; results are in §8** (2026-10-08). No memetic run has
+been submitted. Decisions S-a…S-d were settled on 2026-10-07 (§6).
 
 All paths are relative to `cluster_staging_maxsat/` unless they start with
 `docs/`.
@@ -228,7 +228,7 @@ the known intermittent one. Its name is now captured:
   each family is reported as its own stratum and never silently pooled with
   generated strata.
 
-## 5. RC2 screen: one array over all 263 unsat instances (approved 2026-10-07; to be submitted)
+## 5. RC2 screen: one array over all 263 unsat instances (approved and run 2026-10-07; results in §8)
 
 It uses the same RC2 configuration as every calibration batch (protocol
 §2.1):
@@ -306,3 +306,69 @@ Array throttle: **%30**.
 ## 7. Research notes recorded with this intake
 
 Recorded in [`RESEARCH_NOTES.md`](RESEARCH_NOTES.md) (entries N-2026-10-07-a…e).
+
+## 8. RC2 screen results (rows returned; read 2026-10-08)
+
+**Run.** Slurm array job 22379183, 263 tasks, 2026-10-07 12:46–12:59 UTC
+(first-start times; 7 hosts). PySAT 1.9.dev3 and Python 3.11.15 on all 263
+rows. No resumes. Aggregated with
+`python3 scripts/aggregate_rc2_profile.py --batch satlib --manifest scripts/manifest_satlib_rc2.txt`:
+- per-task rows: `results/profile_satlib/task_<N>.{jsonl,env.json}`;
+- merged: `results/profile_satlib_all.jsonl`, `results/profile_satlib_env.jsonl`
+  (263 rows each, none superseded);
+- **251 completed (certified optimal), 12 censored, 0 failed.**
+
+**Per family [verified, read off the rows]:**
+
+| family | tasks | certified | c\* distribution | RC2 s, median / max (certified) | in (30, 900] s |
+|---|---:|---:|---|---|---:|
+| bf | 4 | 4 | 1 ×4 | 0.04 / 0.1 | 0 |
+| dubois | 13 | 13 | 1 ×13 | 0.01 / 0.01 | 0 |
+| pret | 8 | 8 | 1 ×8 | 0.01 / 0.01 | 0 |
+| hole | 5 | 4 | 1 ×4 (hole6–9) | hole8 5.7, hole9 63.5 | 1 (hole9) |
+| jnh | 34 | 34 | 1 ×17, 2 ×11, 3 ×5, 4 ×1 | 0.03 / 0.53 | 0 |
+| uuf200 | 99 | 95 | 1 ×78, 2 ×17 | c\*=1: 11.8 / 68.5; c\*=2: 261.7 / 628.8 | 34 (17 × c\*=1, 17 × c\*=2) |
+| uuf225 | 100 | 93 | 1 ×85, 2 ×8 | c\*=1: 49.7 / 346.6; c\*=2: 567.6 / 815.4 | 60 (52 × c\*=1, 8 × c\*=2) |
+| **total** | **263** | **251** | | | **95** |
+
+**Censored (12):** all killed at cap + grace (≈ 960 s).
+- 11 uuf (uuf200-014, -033, -035, -087; uuf225-04, -07, -019, -043, -072,
+  -085, -088). Each has a lower bound of **2** recovered from the progress
+  file, so **c\* ≥ 2** on all of them. They are not eligible (not
+  certified), and stay on the not-run list with that reason.
+- hole10: no bound recovered. Pigeonhole is exponential for resolution, as
+  expected in §4.
+
+**Against the §4 expectations:**
+- dubois, pret, hole, bf: c\* = 1 everywhere it was certified, as expected.
+  All but hole9 are far below 30 s, so they are **not eligible** for the
+  memetic stage under the standing rule.
+- **jnh is the surprise on c\*:** 17 of 34 have c\* ≥ 2 (up to 4), but every
+  jnh instance certifies in under 0.6 s, so **none is in the window**. jnh
+  widens c\* only if a below-window stratum is ever admitted.
+- **uuf200 historical cross-check:** c\* matches on all 10 of uuf200-01…010.
+  Times agree within ≈ 20 %; uuf200-06 moved from 31.5 s to 29.7 s and so
+  falls just out of the window. 19 certified rows lie in (25, 35] s, so the
+  30 s edge is sensitive to host noise — eligibility is still read off this
+  run only (rule fixed in §5).
+- On uuf, c\* = 2 costs about an order of magnitude more RC2 time than
+  c\* = 1 at the same n (medians above), consistent with the
+  `CALIB_B_B1_READOUT.md` §5 slope. All 11 censored uuf are c\* ≥ 2.
+- The `tier_reason` text "solve_s>600.0 (cap misconfigured?)" on 5 rows is
+  the aggregator's legacy label for 600 < t ≤ 900 s; the cap was 900 s as
+  intended (env sidecar `cap_s` = 900). Not a fault.
+
+**Eligible set for the memetic stage: 95 instances** (certified and
+30 < t ≤ 900 s): uuf200 34, uuf225 60, hole9 1. c\* = 1 on 70, c\* = 2 on
+25.
+- **Origin diversity in the eligible set is thin:** 94 of 95 are uniform
+  random 3-SAT; hole9 is the only structured instance.
+- c\* stays in {1, 2}. This confirms N-2026-10-07-d: optima above 2 must come
+  from Max-2-SAT and MaxCut.
+
+**Next (not started):** the memetic manifest builder for this batch
+(modelled on `make_calib_c_memetic_manifest.py`), arm
+`memetic_deeppolish_p40_ls3p5`, 3 seeds, 900 s, stop at the RC2 optimum, on
+the 95 eligible instances; the other 168 go to a not-run list with their
+reason (below window / censored). Research note: `RESEARCH_NOTES.md`
+N-2026-10-08-a.
