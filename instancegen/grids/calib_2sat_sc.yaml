@@ -1,0 +1,46 @@
+# Calibration batch `calib_2sat_sc` -- large-n, slightly supercritical random
+# Max-2-SAT. Plan, model, pre-registered cell rules, budget and commands:
+# docs/current/CALIB_2SAT_SC.md.
+#
+# 9 cells x 5 generator seeds = 45 instances. m = round(alpha * n):
+#
+#   n \ alpha    1.10    1.15    1.20
+#   2000         2200    2300    2400
+#   8000         8800    9200    9600
+#   32000       35200   36800   38400
+#
+# Model: uniform random 2-CNF with exactly m *distinct* clauses -- the F_{n,m}
+# of Bollobas, Borgs, Chayes, Kim & Wilson (RSA 18(3), 2001,
+# doi:10.1002/rsa.1006): each clause has 2 distinct variables, signs are fair
+# coins, and no clause repeats in either literal order. All clauses are soft
+# with weight 1. This is random 2-CNF, not a MaxCut encoding. Generator
+# `ksat_distinct` 1.0.0 (instancegen.generate.generate_distinct), not the
+# with-replacement `weighted_ksat` that calib_a/b/c use.
+#
+# The satisfiability threshold is alpha = 1, with a scaling window of width
+# Theta(n^(-1/3)). These cells sit slightly above it, with n*(alpha - 1)^3 from
+# 2 to 256. That quantity is a descriptive covariate here (Coppersmith,
+# Gamarnik, Hajiaghayi & Sorkin, arXiv:math/0306047), not a prediction of c*
+# or of RC2 time. The cells are not claimed to lie inside the window.
+#
+# Seeds: one block of 5 per cell, 201-245, so no two of the 45 instances share
+# a seed. A shared seed list would nest the cells: generate_distinct has a
+# prefix property, so the alpha 1.10 instance for (n, seed) would be the first
+# m clauses of the alpha 1.15 and 1.20 instances with that seed (calib_a/b are
+# nested this way; docs/current/CALIB_2SAT_SC.md §3). Seeds 201-245 are fresh:
+# disjoint from calib_a/b (1-10), calib_c (101-120) and every final-corpus seed
+# (>= 1001). A final corpus drawn from these cells would use seeds never used
+# here, so no pilot instance can enter it.
+batch: calib_2sat_sc
+generator: ksat_distinct
+dialect: old
+families:
+  - {family: max2sat_distinct, k: 2, n: [2000],  alpha: [1.10], seeds: [201, 202, 203, 204, 205]}
+  - {family: max2sat_distinct, k: 2, n: [2000],  alpha: [1.15], seeds: [206, 207, 208, 209, 210]}
+  - {family: max2sat_distinct, k: 2, n: [2000],  alpha: [1.20], seeds: [211, 212, 213, 214, 215]}
+  - {family: max2sat_distinct, k: 2, n: [8000],  alpha: [1.10], seeds: [216, 217, 218, 219, 220]}
+  - {family: max2sat_distinct, k: 2, n: [8000],  alpha: [1.15], seeds: [221, 222, 223, 224, 225]}
+  - {family: max2sat_distinct, k: 2, n: [8000],  alpha: [1.20], seeds: [226, 227, 228, 229, 230]}
+  - {family: max2sat_distinct, k: 2, n: [32000], alpha: [1.10], seeds: [231, 232, 233, 234, 235]}
+  - {family: max2sat_distinct, k: 2, n: [32000], alpha: [1.15], seeds: [236, 237, 238, 239, 240]}
+  - {family: max2sat_distinct, k: 2, n: [32000], alpha: [1.20], seeds: [241, 242, 243, 244, 245]}

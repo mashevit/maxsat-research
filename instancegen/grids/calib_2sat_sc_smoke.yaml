@@ -1,0 +1,17 @@
+# Pipeline smoke instances for calib_2sat_sc -- NOT data.
+#
+# Used only by cluster_staging_maxsat/scripts/preflight_calib_2sat_sc.sh to
+# exercise the RC2 pipeline on the cluster before the real array is submitted
+# (docs/current/CALIB_2SAT_SC.md §9a). Seeds 9001/9002 are outside the batch
+# (201-245) and outside every calibration or corpus range; their rows go to
+# results/smoke_calib_2sat_sc_*/ and never into a readout.
+#
+#   task 1: n=2000,  alpha 1.10 -- expected to complete in well under a second
+#   task 2: n=32000, alpha 1.20 -- run with a short cap to exercise the
+#           timeout / SIGKILL watchdog and the lower-bound recovery
+batch: calib_2sat_sc_smoke
+generator: ksat_distinct
+dialect: old
+families:
+  - {family: max2sat_distinct, k: 2, n: [2000],  alpha: [1.10], seeds: [9001]}
+  - {family: max2sat_distinct, k: 2, n: [32000], alpha: [1.20], seeds: [9002]}

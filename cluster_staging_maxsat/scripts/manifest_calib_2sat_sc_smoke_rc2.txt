@@ -1,0 +1,2 @@
+data/generated/calib_2sat_sc_smoke/ksat_distinct_v2000_k2_m2200_s9001.wcnf
+data/generated/calib_2sat_sc_smoke/ksat_distinct_v32000_k2_m38400_s9002.wcnf
