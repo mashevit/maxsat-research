@@ -428,3 +428,23 @@ results/hard_clause_probe/                 probe output (not a measurement)
 to `scripts/` (`git mv`, byte-identical). The archive commit `20ebac6` had
 broken `tests/test_rc2_row_state.py`, and the driver assumes `scripts/`. The
 calib_a/b RC2 manifests stay archived.
+
+## 2026-10-08: memetic `impl: v2` (staging only)
+
+**New files (staging only, no repo counterpart):**
+- `src/sat/walksat_v2.py`: an incremental WalkSAT polish with v1's decisions;
+- `src/evo/impl_v2.py`: the `impl` switch, the v2 polish wrapper, and the
+  crossover with cached statics.
+
+**Changed (already-divergent files):**
+- `src/evo/memetic.py`: the polish and crossover are chosen by `impl`. Under
+  v2, the no-op advisor round trip is skipped, but its single RNG draw is kept.
+  The result gains `impl`.
+- `src/cli/run_memetic_shard.py`: shard schema 3, with an additive
+  `memetic_impl` field.
+
+**Unchanged.** The eight byte-identical files in the loop above are untouched
+and verified IDENTICAL on 2026-10-08. v1 (an absent `impl` key, i.e. every
+existing config) runs exactly the historical code. Documentation:
+`docs/current/MEMETIC_IMPL_V2.md` (why, design, equivalence, speed); tests:
+`tests/test_walksat_v2.py`; benchmark: `scripts/bench_walksat_v1_v2.py`.

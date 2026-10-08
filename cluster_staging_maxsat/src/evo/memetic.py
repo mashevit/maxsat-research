@@ -4,6 +4,7 @@ import time, math, random
 
 from .population import Population, Individual, evaluate_assignment, build_hard_occurs
 from .operators import tournament, clause_aware_crossover, mutate,mutate1, frozen_hard_unit_vars, short_polish, clause_aware_crossover1
+from .impl_v2 import memetic_impl, select_crossover, select_polish
 from llm.advisor import LLMAdvisor, apply_advice
 from llm.providers.noop import NoopProvider
 # or: from llm.providers.ollama import OllamaProvider
@@ -114,6 +115,13 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         time_to_target_s = time.time() - start_t
 
     ls_small = _ls_budget(cfg)
+    # `impl` (src/evo/impl_v2.py): v1 = the historical code paths (default; an
+    # absent key is v1), v2 = same algorithm and random decisions with faster
+    # bookkeeping (incremental polish, cached crossover statics, no no-op
+    # advisor round trip).
+    impl = memetic_impl(cfg)
+    polish = select_polish(cfg)
+    crossover = select_crossover(cfg)
     # --- opt-in deadline clipping (`ea.deadline_mode: clip`) -----------------
     # Without it the run budget is tested only at the top of each generation, so
     # a run overshoots `time_cap` by up to one whole generation of polish calls
@@ -147,28 +155,34 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         while len(new_members) < pop_size:
             p1 = tournament(pop.members, k, rng)
             p2 = tournament(pop.members, k, rng)
-            child_bits = clause_aware_crossover1(p1, p2, wcnf, rng)
+            child_bits = crossover(p1, p2, wcnf, rng)
             #mutate(child_bits, pmutate, rng, frozen=frozen)
             mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, ind.hard_satisfied)
-            # get violated hard clause indices for the *child* (cheap way: evaluate once)
-            ''''''''
-            tmp_child = Individual(assign01=child_bits)
-            pop.evaluate(wcnf, tmp_child)
+            if impl == "v2":
+                # v2 skips the block below (a pre-polish evaluation of the child
+                # and a NoopProvider advisor call whose advice is empty) but keeps
+                # its one RNG draw, the advisor's rng_seed, so the stream is v1's.
+                rng.randrange(1 << 30)
+            else:
+                # get violated hard clause indices for the *child* (cheap way: evaluate once)
+                ''''''''
+                tmp_child = Individual(assign01=child_bits)
+                pop.evaluate(wcnf, tmp_child)
 
-            violated_idxs = []
-            # if you stored one bool per hard clause in order, collect violated:
-            # violated_idxs = [i for i, sat in enumerate(tmp_child.hard_satisfied) if not sat]
-            # If you don't have hard_satisfied yet, skip LLM or compute violated list separately.
+                violated_idxs = []
+                # if you stored one bool per hard clause in order, collect violated:
+                # violated_idxs = [i for i, sat in enumerate(tmp_child.hard_satisfied) if not sat]
+                # If you don't have hard_satisfied yet, skip LLM or compute violated list separately.
 
-            advice = advisor.propose(
-                wcnf=wcnf,
-                child_assign01=child_bits,
-                violated_hard_clause_idxs=violated_idxs,
-                rng_seed=rng.randrange(1 << 30),
-                extra={"gen": gen, "child_hv": tmp_child.hard_violations},
-            )
-            child_bits = apply_advice(child_bits, advice)
-            ''''''''
+                advice = advisor.propose(
+                    wcnf=wcnf,
+                    child_assign01=child_bits,
+                    violated_hard_clause_idxs=violated_idxs,
+                    rng_seed=rng.randrange(1 << 30),
+                    extra={"gen": gen, "child_hv": tmp_child.hard_violations},
+                )
+                child_bits = apply_advice(child_bits, advice)
+                ''''''''
             if deadline_clip:
                 remaining = time_cap - (time.time() - start_t)
                 if remaining <= 0:
@@ -178,7 +192,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 ls_call = dict(ls_small, time_limit_s=min(ls_small["time_limit_s"], remaining))
             else:
                 ls_call = ls_small
-            child_bits, flips_t1 = short_polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
+            child_bits, flips_t1 = polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
             flips_t += flips_t1
             child = Individual(assign01=child_bits, meta={"gen": gen})
             pop.evaluate(wcnf, child)
@@ -268,6 +282,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         "final_noise": 0.0,
         "stop_reason": stop_reason,
         "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
+        "impl": impl,
         "meta": {"ea_generations": gen, "children": total_children, **exports,},
         "satisfied_clauses": {
             "total": total_clauses,

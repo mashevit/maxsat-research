@@ -77,7 +77,11 @@ except Exception:
 #    plus cpu_time_s / restarts / flips_in_target_restart / target_reached.
 #    Every version-1 field is still present and still means what it meant, so
 #    src/bench/combine_tier2.py reads both without a branch.
-SHARD_SCHEMA_VERSION = 2
+# 3: additive `memetic_impl` -- the EA implementation used ("v1" historical,
+#    "v2" faster bookkeeping with v1's decisions; config key `impl`,
+#    src/evo/impl_v2.py). Null on the local_multistart path.
+#    Every version-2 field is unchanged.
+SHARD_SCHEMA_VERSION = 3
 
 DEFAULT_SOLVER = "memetic_ea"
 KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
@@ -368,6 +372,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         # population and therefore no generation and no child.
         "ea_generations": None,
         "children": None,
+        "memetic_impl": None,
         # local_multistart-only; stay null on the EA path, where a "restart" has
         # no meaning (run_memetic reports a hard-coded 0).
         "restarts": None,
@@ -472,6 +477,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     ttt = res.get("time_to_target_s")
     rec["time_to_target_s"] = None if ttt is None else round(float(ttt), 3)
     rec["ea_generations"] = meta.get("ea_generations")
+    rec["memetic_impl"] = res.get("impl")
     rec["children"] = meta.get("children")
     rec["total_flips"] = int(res.get("total_flips", 0))
     rec["best_assignment_hash"] = "sha256-12:" + hashlib.sha256(bits.encode()).hexdigest()[:12]
