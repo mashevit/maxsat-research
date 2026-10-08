@@ -5,7 +5,7 @@
 #   cd ~/maxsat-lab/scripts && mkdir -p logs
 #   DRY_RUN=1 MANIFEST=manifest_m2_pilot.tsv OUTDIR=results/m2_pilot/tasks bash submit_m2_memetic.sh
 #   MANIFEST=manifest_m2_pilot.tsv OUTDIR=results/m2_pilot/tasks bash submit_m2_memetic.sh
-#   RESUME=1 MANIFEST=manifest_m2_pilot.tsv OUTDIR=results/m2_pilot/tasks bash submit_m2_memetic.sh
+#   IDS=<ids> RESUME=1 MANIFEST=manifest_m2_pilot.tsv OUTDIR=results/m2_pilot/tasks bash submit_m2_memetic.sh
 #
 # Anything after `--` is passed through to sbatch.
 #
@@ -24,7 +24,11 @@
 # scripts/parts/ with LOCAL line numbers; pass one as MANIFEST=parts/<file>.tsv
 # with the full manifest's OUTDIR. Do not narrow --array instead: MaxArraySize
 # bounds the index itself, so --array=211-420 fails like --array=1-420.
-#   RESUME     1 => submit only ids m2_results.py reports pending: missing
+#   RESUME     1 => submit only the ids in IDS (required). Compute them on the
+#              workstation after the rsync back -- never on the login node, where
+#              the cluster terminates Python -- with
+#                python3 scripts/m2_results.py pending --manifest scripts/<manifest> --outdir <outdir> --summary
+#              which lists missing
 #              shards, infra errors, invalid submissions. Budget exhaustion and
 #              late target hits are final; watchdog rows are not expected and
 #              are investigated, not resubmitted automatically.
@@ -95,13 +99,14 @@ mkdir -p logs
 
 ARRAY_SPEC="1-${TASK_COUNT}"
 if [[ "$RESUME" == "1" ]]; then
-    PENDING=$(cd .. && "${PYTHON:-python3}" scripts/m2_results.py pending \
-                  --manifest "scripts/${MANIFEST}" --outdir "$OUTDIR" --summary)
-    if [[ -z "$PENDING" ]]; then
-        echo "RESUME=1: no infra/invalid tasks pending in $OUTDIR; nothing to submit."
-        exit 0
+    # No Python here: the cluster terminates Python on the login node, and the
+    # memetic tasks do not skip themselves, so the pending ids must be given.
+    if [[ -z "${IDS:-}" ]]; then
+        echo "FATAL: RESUME=1 needs IDS=<id list>. Compute it on the workstation after the rsync back:" >&2
+        echo "    python3 scripts/m2_results.py pending --manifest scripts/${MANIFEST} --outdir ${OUTDIR} --summary" >&2
+        exit 2
     fi
-    ARRAY_SPEC="$PENDING"
+    ARRAY_SPEC="$IDS"
 fi
 
 EXPORTS="ALL,MANIFEST=scripts/${MANIFEST},OUTDIR=${OUTDIR},STOP_AT_ORACLE=1,GRACE=60"

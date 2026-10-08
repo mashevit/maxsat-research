@@ -9,7 +9,8 @@
 #   cd ~/maxsat-lab/scripts && mkdir -p logs
 #   DRY_RUN=1 bash submit_rc2_profile.sh        # print the sbatch command, submit nothing
 #   bash submit_rc2_profile.sh                  # calib_a: 180 tasks, %30, cap 900, grace 60
-#   RESUME=1 bash submit_rc2_profile.sh         # after a partial run: only unfinished ids
+#   RESUME=1 bash submit_rc2_profile.sh         # after a partial run: resubmit; finished tasks self-skip
+#   IDS=3,17 RESUME=1 bash submit_rc2_profile.sh   # or only these ids (computed on the workstation)
 #   MANIFEST=manifest_calib_b_rc2.txt OUTDIR=results/profile_calib_b bash submit_rc2_profile.sh
 #
 # Anything after `--` is passed through to sbatch (e.g. `-- --time=00:30:00`).
@@ -27,7 +28,18 @@
 #   THROTTLE   max concurrent tasks (%N)          (default 30; the cluster allows 30
 #                                                 single-CPU tasks per user; 20 was
 #                                                 the earlier RC2 screens' setting)
-#   RESUME     1 => --array = ids reported pending by rc2_row_state.py
+#   EXPECT_PYSAT  passed to the array tasks when set (they refuse to run on any
+#              other PySAT version); unset by default
+#   RESUME     1 => resubmit after a partial run. With IDS set, --array = IDS;
+#              without it, the full range, and every task whose row is already
+#              valid exits at once on its compute node (rc2_profile_array.sbatch
+#              asks rc2_row_state.py there). Nothing runs Python on the login node:
+#              the cluster terminates Python and other heavy work there.
+#              Pending ids, if wanted, are computed on the workstation after the
+#              rsync back:
+#                python3 scripts/rc2_row_state.py --manifest scripts/<manifest> \
+#                    --outdir <outdir> --cap <cap> --pending
+#   IDS        explicit --array id list for RESUME=1 (e.g. 3,17,40-45)
 #   DRY_RUN    1 => print the command instead of running it
 #
 # Elapsed-time expectation (compute only, excluding queue delay): worst case
@@ -119,17 +131,16 @@ mkdir -p logs
 
 ARRAY_SPEC="1-${TASK_COUNT}"
 if [[ "$RESUME" == "1" ]]; then
-    PENDING=$(cd .. && "${PYTHON:-python3}" scripts/rc2_row_state.py --manifest "scripts/${MANIFEST}" \
-                  --outdir "$OUTDIR" --cap "$CAP" --pending --summary)
-    if [[ -z "$PENDING" ]]; then
-        echo "RESUME=1: every task in $MANIFEST already has a valid row in $OUTDIR at cap>=${CAP}; nothing to submit."
-        exit 0
+    # No Python here: this runs on the login node.
+    if [[ -n "${IDS:-}" ]]; then
+        ARRAY_SPEC="$IDS"
+    else
+        echo "RESUME=1: resubmitting ${ARRAY_SPEC}; tasks with a valid row at cap>=${CAP} skip themselves on the node"
     fi
-    ARRAY_SPEC="$PENDING"
 fi
 
 CMD=(sbatch "--array=${ARRAY_SPEC}%${THROTTLE}"
-     "--export=ALL,MANIFEST=scripts/${MANIFEST},OUTDIR=${OUTDIR},CAP=${CAP},GRACE=${GRACE}"
+     "--export=ALL,MANIFEST=scripts/${MANIFEST},OUTDIR=${OUTDIR},CAP=${CAP},GRACE=${GRACE}${EXPECT_PYSAT:+,EXPECT_PYSAT=${EXPECT_PYSAT}}"
      ${PASSTHRU[@]+"${PASSTHRU[@]}"} "$ARRAY_SCRIPT")
 
 echo "submit dir : $SCRIPT_DIR"

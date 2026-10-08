@@ -27,6 +27,9 @@
 #   OUTDIR     per-task JSONL dir             (default results/profile_calib_a)
 #   CAP        RC2 wall-clock cap, s          (default 900)
 #   GRACE      SIGKILL margin beyond CAP, s   (default 60)
+#   EXPECT_PYSAT  if set, the task refuses to run (exit 2, no row) unless
+#              pysat.__version__ equals it. Unset by default, so earlier batches
+#              behave as before; calib_2sat_sc sets 1.9.dev3.
 #   LOCAL_SMOKE  1 => skip `module load`/conda (workstation smoke runs only)
 #
 # --time must cover CAP + GRACE plus startup. 20 min covers 900 + 60 = 960 s
@@ -45,7 +48,11 @@
 #
 # Provenance: ${OUTDIR}/task_N.env.json records the PySAT version, python,
 # host, Slurm job id, cap and grace so a version drift on the cluster is
-# detectable after the fact (the calibration holds PySAT 1.9.dev15 fixed).
+# detectable after the fact. Every cluster RC2 batch so far (calib_a/b, satlib)
+# ran the `maxsat` env's PySAT 1.9.dev3 / python 3.11.15; the "1.9.dev15" in
+# docs/CORPUS_CALIBRATION_GOALS.md §4.1 was the workstation version
+# (docs/CALIB_B_PLAN.md §6). EXPECT_PYSAT turns the after-the-fact check into
+# a refusal to run.
 
 set -euo pipefail
 echo "task=${SLURM_ARRAY_TASK_ID} host=$(hostname) start=$(date -Iseconds)"
@@ -81,6 +88,11 @@ mkdir -p "$OUTDIR"
 
 PYSAT_VERSION=$(python -c 'import pysat; print(pysat.__version__)' 2>/dev/null || echo unknown)
 echo "instance=${INSTANCE} cap=${CAP} grace=${GRACE} out=${OUT} pysat=${PYSAT_VERSION} python=$(python --version 2>&1)"
+
+if [[ -n "${EXPECT_PYSAT:-}" && "$PYSAT_VERSION" != "$EXPECT_PYSAT" ]]; then
+    echo "FATAL: pysat ${PYSAT_VERSION} != EXPECT_PYSAT ${EXPECT_PYSAT}; not running (no row written)" >&2
+    exit 2
+fi
 
 STATE=$(python scripts/rc2_row_state.py --out "$OUT" --instance "$INSTANCE" --cap "$CAP")
 echo "resume_state=${STATE}"
