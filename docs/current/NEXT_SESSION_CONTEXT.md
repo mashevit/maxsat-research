@@ -17,6 +17,62 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000. Wrap-up 2026-10-11 (r8): read first — state, and the decisions kept for tomorrow
+
+**Done today, after r7 (all on the workstation; nothing submitted by me):**
+
+| thread | state | where |
+|---|---|---|
+| calib_2sat_sc2 RC2 readout | **2 promising cells**: n 16000 α 1.20 and n 64000 α 1.10; 6 eligible, c\* 9–14 | `CALIB_2SAT_SC.md` §13a, N-2026-10-11-n |
+| EvalMaxSAT MSE s1 readout | 18 proven optima, all = best-known (7 new for MSE 2023); MSE 2023 19/30 no feasible incumbent | `MSE_EVALMAXSAT_3600.md` §9, N-2026-10-11-o |
+| memetic assessment of the promising cells | **prepared, not submitted**: v2, two paired arms, 12.5k and 200k flips per call; 36 tasks, ≤ 9.6 CPU-h | `CALIB_2SAT_SC.md` §13b, N-2026-10-11-p/q |
+| upload list incl. solver code | `scripts/rsync_files_calib_2sat_sc2_memetic.txt` (40 paths); the 4 solver files updated vs the cluster (v2) are marked 1a | N-2026-10-11-r |
+| HP-1 size-aware hyperparameters | literature report + instance-size inventory + calibration plan. **User decision: continuous flips per variable, floor 12,500: `max(12500, c·n)`; no categories** | `HYPERPARAMETER_CALIBRATION_PLAN.md` §0, `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`, N-2026-10-11-s/t |
+| LLM-driven solver design | research summary written | `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`, N-2026-10-11-t |
+
+**Decisions kept for tomorrow (the user, 2026-10-11: "keep the decisions for
+tomorrow"):**
+1. **Commit today's work.** Nothing is committed (see the file list
+   below). The memetic submit needs `MAXSAT_GIT_SHA`, so it needs a commit
+   first.
+2. **Submit the 36-task memetic batch** (`CALIB_2SAT_SC.md` §13b
+   commands). §6's Q2 verdict is taken from the 12.5k arm, with the 200k
+   arm reported beside it. That split is my proposal; confirm it.
+3. **HP-1 plan** (`HYPERPARAMETER_CALIBRATION_PLAN.md` §0 and §7):
+   - the c grid;
+   - an upper cap on flips or none;
+   - scope: the all-soft solver first?
+   - the objective: TTT to a proven c\*, with anytime only as a fallback?
+   - the budget: ≤ 118 CPU-h, now likely less, because S-band instances
+     keep 12,500 for any c ≤ 31;
+   - whether the 12.5k/200k batch is enough L-band evidence for a first c.
+4. **Hard-clause solver H4** (multistart arm) still awaits approval. Its
+   18 proven MSE targets are now known (`MSE_EVALMAXSAT_3600.md` §9).
+5. **Older open items** (§8): calib_c (R3-a), MaxCut, and the others,
+   unchanged.
+
+**Closed today:** LLM-driven solver design is **not pursued** (user decision;
+`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md` §7, N-2026-10-11-u). It stays as
+related work only.
+
+**Uncommitted at wrap-up:**
+- **Modified:** `scripts/m2_results.py` (`memetic_impl` and
+  `ls_polish_flips` checks; prefixed `pop_idx` sort), `CALIB_2SAT_SC.md`,
+  `MSE_EVALMAXSAT_3600.md`, `NEXT_SESSION_CONTEXT.md`, `RESEARCH_NOTES.md`.
+- **New:**
+  - the f200k config;
+  - the sc2 memetic manifest builder, manifest files and tests;
+  - `size_inventory.py` with `results/size_inventory.csv`;
+  - the result directories for calib_2sat_sc2 (RC2), evalmaxsat_mse_s1
+    and the memetic smoke;
+  - three new documents (`HYPERPARAMETER_CALIBRATION_PLAN.md`,
+    `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`,
+    `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`).
+- **Tests:** staging 254 passed, 3 skipped, 1 failed. The failure is the
+  SATLIB PySAT test, which already failed before today's changes; venv
+  PySAT differs. Run with `~/.venvs/maxsat/bin/python -m pytest tests -q`
+  (system python3 has no pytest).
+
 ## 00000. Update 2026-10-11 (r7): cap-3600 rows read; hard-clause solver planned; multistart attention point — read first
 
 **Project state in one table.**
@@ -564,6 +620,7 @@ optimises and certifies, and must never seed the memetic solver.
 | — | commit the r3 documentation edits | not done; the user decides (Checkpoint 8–9 work is committed in `9a562d0`) |
 | — | intermittent staging test failure | named 2026-10-07: `test_m2_prep.py::test_population_10_runs[p10_ls2p5]` (timing bound under deadline clipping); investigate |
 | U250 | extend the RC2 and memetic budgets until RC2 certifies all 100 SATLIB uuf250. Today 77 are certified at 900 s and 23 are censored (5 with LB 2) | **deferred, very low priority** (user, 2026-10-07); not planned or approved; `RESEARCH_NOTES.md` N-2026-10-07-f |
+| HP-1 | **To-do (user, 2026-10-11): a hyperparameter module.** It would set solver hyperparameters from instance features, for example more local-search flips per call for larger instances, instead of one constant per YAML. Requirements: a pure function of config + instance size; resolved values recorded in the shard; fixed-value configs unchanged; `m2_results.py` checks the resolved values | **plan written 2026-10-11** (`HYPERPARAMETER_CALIBRATION_PLAN.md`: size inventory, bands S/M/L, flip grid, racing, held-out categorical vs continuous; ≤ 118 CPU-h); **awaiting approval (P0)**; **rule decided: continuous `max(12500, c·n)`, no categories (§0 of the plan)**. Literature: `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`. N-2026-10-11-r/s/t |
 | S-a…S-d | SATLIB RC2 screen | **settled 2026-10-07:** one array of all 263 unsat instances, %30, no pre-screen, satisfiable excluded. **Submission by the user is pending** (`SATLIB_BENCH_INTAKE.md` §5) |
 
 Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary; reaffirmed r3), D4 (no

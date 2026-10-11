@@ -44,13 +44,249 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | SATLIB benchmark families: intake, parser pitfalls, c\* expectations, citation | [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) | 263 unsat / 16 sat; 209 originals misread by PySAT; what these families can and cannot add. See N-2026-10-07-b…e (e is the required SATLIB citation). RC2 results: §8, N-2026-10-08-a (95 eligible). |
 | RC2 re-run at cap 3600 s, with predictions recorded in advance | [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md) | 148 censored instances (excluding mse16/raw/more_data); 9 groups by sibling evidence, each with a prediction; comparison script. See N-2026-10-08-b. Outcome (§6): 25/148 certified; N-2026-10-11-a. |
 | Random k-SAT generation: with vs without replacement; the `ksat_distinct` mode | [`RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md`](RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md) | The existing `weighted_ksat` samples clauses with replacement, so calib_a/b/c contain duplicate clauses. The new mode gives exactly m distinct weight-1 clauses by rejection sampling. Algorithm, seed behaviour, format, validation, and an n = 32000 benchmark. See N-2026-10-08-c. |
-| Large-n, slightly supercritical random Max-2-SAT (`calib_2sat_sc`) | [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md) | **Readout §10d (2026-10-11): 1 eligible (n 8000, α 1.20, c\* 14), c\* up to 14, N-2026-10-11-h.** The model (BBCKW F_{n,m}, distinct clauses), the near-threshold theory used only as a covariate (n·ε³ = λ³), the measurement conventions (wall-clock 900 s cap, SIGALRM delay, watchdog), pre-registered cell rules, budget and commands. See N-2026-10-08-d…f. |
+| Large-n, slightly supercritical random Max-2-SAT (`calib_2sat_sc`) | [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md) | **Readout §10d (2026-10-11): 1 eligible (n 8000, α 1.20, c\* 14), c\* up to 14, N-2026-10-11-h. calib_2sat_sc2 readout §13a: 2 promising cells, 6 eligible (c\* 9–14), N-2026-10-11-n. Memetic v2 assessment prepared §13b (two arms: 12.5k and 200k flips per call, 36 tasks), N-2026-10-11-p/q.** The model (BBCKW F_{n,m}, distinct clauses), the near-threshold theory used only as a covariate (n·ε³ = λ³), the measurement conventions (wall-clock 900 s cap, SIGALRM delay, watchdog), pre-registered cell rules, budget and commands. See N-2026-10-08-d…f. |
 | Memetic solver `impl: v2` — why, what, how checked | [`MEMETIC_IMPL_V2.md`](MEMETIC_IMPL_V2.md) | v1's WalkSAT polish is O(m) per flip: measured at n 2000–32 000 (about 300 flips per 3.5 s call at n = 32 000; 120 s left it 2000+ above c\*). v2 makes v1's exact decisions with incremental bookkeeping (57 equivalence tests), 50–1800× faster per flip; v1 stays the default. Seconds are comparable only within one `impl`. N-2026-10-08-h/i. |
 | Hard-clause solver in a new staging tree; multistart-may-be-enough | [`HARD_CLAUSE_SOLVER_PLAN.md`](HARD_CLAUSE_SOLVER_PLAN.md) | The user's intention (2026-10-11): a new staging tree with a copy of the up-to-date solver, Glucose initialisation, and operators that keep hard feasibility. The plan also gives the evidence that most successes came at the first child or in the first generation, and what that does and does not show. Milestones H0–H6. N-2026-10-11-b/c. |
-| MSE 2016/2023/2024: state, best-known costs, EvalMaxSAT 3600 s sample | [`MSE_EVALMAXSAT_3600.md`](MSE_EVALMAXSAT_3600.md) | What exists for each MSE set; best-knowns rechecked (and the cross-year name trap); opinion; the driver fixes (new WCNF dialect, SIGTERM anytime stop); sample s1 (2 × 30, stratified by family); files and commands. N-2026-10-11-f/g. |
+| MSE 2016/2023/2024: state, best-known costs, EvalMaxSAT 3600 s sample | [`MSE_EVALMAXSAT_3600.md`](MSE_EVALMAXSAT_3600.md) | What exists for each MSE set; best-knowns rechecked (and the cross-year name trap); opinion; the driver fixes (new WCNF dialect, SIGTERM anytime stop); sample s1 (2 × 30, stratified by family); files and commands. N-2026-10-11-f/g. **s1 readout §9: 18 proven optima = best-known; 19/30 MSE 2023 no-ub. N-2026-10-11-o.** |
 | How Glucose (CDCL) works: decisions, conflicts, phases, assumptions | [`RESEARCH_NOTES_GLUCOSE_CDCL.md`](RESEARCH_NOTES_GLUCOSE_CDCL.md) | Decisions and decision levels, the trail, conflict analysis and backjumping, VSIDS and phases, `set_phases`, assumptions and cores. Why repair and moves are biased toward the given assignment but not nearest to it (probe-checked), why singleton cores are proofs but weak bounds, and why single calls can be slow (the conflict budget). N-2026-10-11-m. |
+| Hyperparameter setting: frameworks, algorithms, what is influential (2026) | [`RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`](RESEARCH_NOTES_HYPERPARAMETER_TUNING.md) | AC tools (irace 4.5, SMAC 2.4.1, Optuna 5.0.0; ParamILS, GGA, Hyperband/BOHB/DEHB), per-instance configuration (ISAC, ISAC+ MaxSAT, Hydra), configuring for scaling (Styles et al. 2012; Mascia et al. 2013; Mu et al. 2016), DAC, LLM-driven design. Recommendation for HP-1: batch racing per size band, held-out large instances. N-2026-10-11-s. |
+| HP-1 calibration plan; instance-size inventory | [`HYPERPARAMETER_CALIBRATION_PLAN.md`](HYPERPARAMETER_CALIBRATION_PLAN.md) | 1,947 instance files, m from 48 to 276,705; proven c\* per size band (S 465, M 144, L 22 all-soft). Plan: flip-limit grid per band (S/M/L by m-decade), size-scaled budgets, racing, held-out test of categorical vs continuous rules. Not run. N-2026-10-11-s. |
+| LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-11-u — LLM-driven solver design: study design sketched, direction not pursued [decision + inference]
+
+- **[decision, user, 2026-10-11]** The project does **not** go in the
+  LLM-driven solver design direction.
+- **Design sketch, kept for reference:** `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`
+  §7.1.
+  - The LLM is the mutation operator inside an evolutionary search over
+    one small function, such as the polish's variable-selection rule.
+  - Training uses S-band instances; validation uses held-out M / L
+    instances against the tuned HP-1 baseline.
+- **Reasons (§7.2):**
+  - ~1,000 CPU-h for even the narrowest study;
+  - weak transfer of LLM-evolved heuristics to larger instances;
+  - a new solver version would weaken comparability with the corpus
+    study;
+  - HP-1 targets the known weakness more cheaply.
+- The document stays as related-work context.
+
+
+### N-2026-10-11-t — HP-1 rule decided: continuous flips per variable with floor 12,500; LLM-driven solver design summarised [quote + decision + web-verified + inference]
+
+> update I do would like not categories - continous number of flips per var,
+> but in lower bound stay with 12500, I yes do want you to compile research
+> summary of current solver design driven by llm, with litreture
+
+*Source:* user, 2026-10-11.
+
+- **[decision, user]** HP-1 uses `ls_polish_flips = max(12500, c · n)`.
+  - The categorical rule is dropped.
+  - The bands only select and budget instances.
+  - `HYPERPARAMETER_CALIBRATION_PLAN.md` §0.
+- **[inference]** The rule only changes runs with n > 12,500 / c. For any
+  c ≤ 31, every n ≤ 400 instance keeps 12,500. Small-instance runs
+  therefore test the floor, and c is estimated in the M and L bands.
+- **LLM-driven solver design:** `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`.
+  - **Methods:** FunSearch (Nature 2023), EoH (ICML 2024), ReEvo
+    (NeurIPS 2024), LLaMEA (TEVC 2025), MCTS-AHD (ICML 2025), AlphaEvolve
+    (2025), Shinka / OpenEvolve.
+  - **SAT:** AutoSAT; SATLUTION (repository-scale evolution of SAT
+    Competition solvers; claims to beat the 2025 winners); LLM-written
+    local search from encodings (Schidler & Szeider 2025).
+  - **No MaxSAT local-search work found.**
+  - **Critiques:** search is needed (PPSN 2024); poor generalisation and
+    overfitting (bin packing, EvoSTAR 2025); HeuriGym QYI ≈ 0.6.
+  - **[inference]** Feasible here only for small functions (polish
+    score, crossover proxy, hard-clause moves), and after HP-1.
+- Decisions kept for tomorrow: `NEXT_SESSION_CONTEXT.md` §000000.
+- *Addendum, 2026-10-11 (later).* `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md` §6
+  records two follow-up questions:
+  - what HeuriGym is: an agentic benchmark, 9 problems, Quality-Yield
+    Index ≈ 0.6 for the best models;
+  - the difference between an LLM used as an agent and an LLM used as the
+    mutation operator inside an evolutionary search over thousands of
+    evaluated candidates.
+  - The cost estimate is refined: ~1,000 CPU-h for 2,000 candidates even on
+    small instances [inference].
+
+
+### N-2026-10-11-s — HP-1: literature report on hyperparameter setting, instance-size inventory, and a calibration plan (categories vs continuous rule) [quote + verified + inference + plan]
+
+> do some calibration for hyperparameter function on smaller instances too,
+> it may be not continuous, might be with categories of instance size, after
+> knowing what instance sizes might the solver meet, also do now research and
+> report of hyperparameter setting frameworks, and alghoritms available and
+> currently influencial online
+
+*Source:* user, 2026-10-11.
+
+- **Report:** `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`.
+  - The closest precedents for a size-dependent rule are the
+    "configuring for scaling" papers: Styles et al. 2012; Mascia et al.
+    2013, which fits a parameter scaling law from small instances; and
+    Mu et al. 2016, where a size-adaptive EAX parameter changed the
+    scaling class.
+  - ISAC is the precedent for categories.
+  - The tool versions were checked on 2026-10-11.
+- **[verified] Instance sizes:** 1,947 files; m from 48 to 276,705.
+  - The all-soft memetic solver meets m ≈ 50–70,000.
+  - The m ≥ 100k files are all hard-clause (MSE 2023/2024).
+  - Proven c\* by band of m (all-soft): S (< 1k) 465, M (1k–10k) 144,
+    L (10k–100k) 22.
+  - `scripts/size_inventory.py` → `results/size_inventory.csv`.
+- **[inference]** 12,500 flips per call is 30–250 flips per variable at
+  n ≤ 400 but 0.2 at n = 64,000. Flips per variable is the natural
+  parameter of a continuous rule.
+- **Plan:** `HYPERPARAMETER_CALIBRATION_PLAN.md`.
+  - A flip grid (3,125 to 800,000, factor 4) per band, with size-scaled
+    budgets (120 / 300 / 900 s).
+  - Two racing rounds (Friedman + Holm, pre-registered).
+  - Then a held-out comparison of the rules fixed-12.5k, fixed-200k,
+    categorical and continuous (c · n, clipped).
+  - ≤ 118 CPU-h worst case. **Not started; awaiting approval** (P0).
+
+
+### N-2026-10-11-r — Solver files updated relative to the cluster for the calib_2sat_sc2 memetic run; to-do: a size-aware hyperparameter module [quote + verified + decision: to-do, not started]
+
+> note in notes solver files only that were updated from those on cluster,
+> for example because of v2, note in todo to make work on making code module
+> to set hyperparameters, for example more flips for larger instances
+
+*Source:* user, 2026-10-11.
+
+**Baseline [verified].** This workstation cannot read the cluster. The last
+record of the cluster's solver code is the provenance file of the M2 full-pool
+submit, `results/m2_full_p40/provenance/submit_20261004T114233Z.txt`
+(2026-10-04, git `69c9b97`, job 22131008). It holds the sha256 of every
+`src/**/*.py` there. Each was compared with today's workstation file, and the
+`src/` entries of every later `rsync_files_*.txt` were checked.
+
+**Solver files updated relative to the cluster (4):**
+
+| file | state on the cluster | change | why |
+|---|---|---|---|
+| `src/evo/impl_v2.py` | absent | new, 214 lines | v2 selection (`impl` key), cached crossover statics |
+| `src/sat/walksat_v2.py` | absent | new, 323 lines | v2 incremental WalkSAT polish with v1's decisions |
+| `src/evo/memetic.py` | older (2026-10-04) | +36 / −21 | dispatches polish and crossover through `impl`; v2 skips the no-op advisor round trip but keeps its RNG draw |
+| `src/cli/run_memetic_shard.py` | older (2026-10-04) | +7 / −1 | shard schema 3: records `memetic_impl` |
+
+- All four come from commit `182d348` (2026-10-08, memetic impl v2), and
+  no later upload carried them.
+- **Without them, a v2 config fails on the cluster.** The old
+  `memetic.py` ignores `impl`, so the run would silently be v1. The
+  `memetic_impl` check in `m2_results.py` would then class every shard as
+  `invalid_submission`.
+
+**Everything else the run imports is unchanged** (sha256 equal to the
+2026-10-04 provenance). That covers `operators.py`, `population.py`,
+`multistart.py`, `sat/{cnf,state,walksat}.py`, `llm/*` and the package
+`__init__.py` files. Of the rest of `src/`, `oracle_evalmaxsat.py` also
+differs from 2026-10-04. It went up with the EvalMaxSAT s1 upload
+(`rsync_files_evalmaxsat_mse_s1.txt`), and the s1 rows show that it ran.
+The memetic run does not use it.
+
+The upload list `scripts/rsync_files_calib_2sat_sc2_memetic.txt` marks the
+4 files as group 1a.
+
+**To-do (not started; needs a plan and approval): a hyperparameter module.**
+- **The problem.** Hyperparameters are constants in each YAML. A per-call
+  flip limit that suits n = 250 (12,500) stops every call at n ≥ 16000
+  (§13b smoke). Today the only fix is a new config per size: the
+  `f200k` arm.
+- **What the module would do:** set hyperparameters from instance
+  features, for example more local-search flips for larger instances
+  (`ls_polish_flips` as a function of n or m, with a floor and a cap).
+  Pop size and the per-call time limit are candidates too.
+- **Requirements:**
+  - it is a pure function of the config and the instance's size, so a run
+    is reproducible from them;
+  - the resolved values are recorded in the shard;
+  - existing fixed-value configs give exactly today's runs;
+  - `m2_results.py` checks the resolved values, not the YAML.
+- **Ordering [decision, mine].** It comes after the readout of the two
+  calib_2sat_sc2 arms, which gives the first evidence on how much the flip
+  limit matters at large n. Listed in `NEXT_SESSION_CONTEXT.md` §8 as
+  **HP-1**.
+
+
+### N-2026-10-11-q — A second main memetic config: 200,000 flips per local-search call (v2), run paired with the pre-registered arm [quote + decision + verified]
+
+> do another main config with 200000 limit on local flips, use it in the
+> first suggested cluster to be done, however list all files that should be
+> uploaded to cluster including solver code.
+
+*Source:* user, 2026-10-11.
+
+- **Config:** `configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml`.
+  It is the v2 primary arm with `ls_polish_flips` = `flip_budget` = 200,000;
+  everything else is unchanged.
+- **Batch:** it is added to the calib_2sat_sc2 memetic assessment as a
+  second arm, paired line by line. The batch is now 36 tasks, ≤ 9.6 CPU-h.
+  `CALIB_2SAT_SC.md` §13b.
+- **[decision, mine]** The §6 Q2 verdict stays with the pre-registered arm
+  (12,500). The 200k arm is reported beside it. Whether it becomes the
+  corpus arm is decided after the readout.
+- **[verified, not data]** 120 s smoke runs, seed 1: 200k reached 14
+  (c\* 12, n 16000) and 19 (c\* 9, n 64000), against 19 and 28 at 12,500.
+- **Upload list:** the 18 solver modules a run imports (traced), the rest of
+  `src/` (for the provenance digest), 3 configs, 7 script and manifest
+  files, and the 6 instances. 40 paths in total.
+- `m2_results.py` now also checks `ls_polish_flips` per task.
+
+
+### N-2026-10-11-p — Memetic assessment of the calib_2sat_sc2 promising cells uses `impl: v2`; 18 tasks prepared [quote + decision + verified]
+
+> use v2 for the memetic assessment
+
+*Source:* user, 2026-10-11.
+
+- **Scope:** the 6 eligible instances of the 2 promising cells. The
+  pre-registered primary arm runs with `impl: v2` (config checked identical
+  except `impl`), seeds 1–3, 900 s, stop at the optimum. 18 tasks,
+  ≤ 4.8 CPU-h. Not submitted. `CALIB_2SAT_SC.md` §13b.
+- **[decision]** v2 seconds are not compared with v1 results
+  (N-2026-10-08-i). `m2_results.py` now rejects a shard whose `memetic_impl`
+  differs from the manifest's.
+- **[verified, not data]** 120 s smoke runs at n 16000 / 64000 did not
+  reach c\* (19 vs 12, 28 vs 9).
+- **[inference]** Every polish call spends its full 12,500 flips, so at
+  n = 64000 the fixed per-call flip budget may contribute to Q2 outcomes.
+  It stays as pre-registered; any change is a separate arm.
+
+### N-2026-10-11-o — EvalMaxSAT 3600 s on MSE s1: 18 proven optima, all equal to the best-known (7 new for MSE 2023); 19/30 MSE 2023 runs end with no feasible incumbent [verified + inference]
+
+- 60/60 rows, 0 errors, every incumbent model-checked; readout exit 0
+  (`MSE_EVALMAXSAT_3600.md` §9).
+- **Proven optima: 8 MSE 2023 + 10 MSE 2024, every one equal to its
+  year's best-known.** No table value was beaten. Seven MSE 2023 optima are
+  new relative to RC2 at 1800 s, including min-fill myciel5 = 196 where
+  RC2's LB was 97. 8 of the 18 took > 900 s, two > 3000 s.
+- **MSE 2023 (unweighted): 19/30 `no-ub`** — no hard-feasible assignment
+  after an hour, as predicted in §5a. **MSE 2024 (weighted): 28/30 have an
+  incumbent**, 11 of the 17 non-optimal ones within 5 % of the best-known.
+- **[inference]** The contrast is plausibly stratification on distinct
+  weights; families differ between the years, so it is not isolated.
+- For the hard-clause solver: 18 proven targets; on the 21 `no-ub` instances
+  any feasible solution already beats what EvalMaxSAT gives in an hour.
+
+### N-2026-10-11-n — `calib_2sat_sc2` readout: the first two `promising` cells (n 16000 α 1.20; n 64000 α 1.10), 6 eligible with c\* 9–14 [verified + inference]
+
+- Array 22645633: 15/15 rows, 14 certified, 1 censored (LB 12), 0 failed
+  (`CALIB_2SAT_SC.md` §13a).
+- **n 16000, α 1.20:** 3 eligible (c\* 12, 13, 14 at 65–673 s) → promising.
+  **n 64000, α 1.10:** 3 eligible (c\* 9, 10, 13 at 49–155 s) → promising.
+  **n 16000, α 1.15:** 5 fast (c\* 4–9, ≤ 14 s) → too_easy.
+- With calib_2sat_sc's one, **7 eligible Max-2-SAT instances at n ≥ 8000**.
+- RC2 log-time slope against c\* within a cell: ~0.75 (n 16000) and ~0.21
+  (n 64000) decades per unit, vs 2.32 for Max-3-SAT n = 250 — the window
+  spans several c\* values here [inference, 4–5 points per cell].
+- c\* tracks n·ε³ again (covariate only).
+- **Next (§6, proposal):** memetic assessment of the 6 eligible instances.
+  Open choice: v1 (pre-registered, but O(m) per flip at this n,
+  N-2026-10-08-h) vs `impl: v2`.
 
 ### N-2026-10-11-m — "Hopeless clauses" are singleton cores: an RC2-type proof found as a by-product of search; renamed, and a wording rule [decision + inference]
 

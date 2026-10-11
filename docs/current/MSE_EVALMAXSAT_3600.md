@@ -1,7 +1,7 @@
 # MSE 2016 / 2023 / 2024: what exists, best-known costs, and a 3600 s EvalMaxSAT sample (s1)
 
-**Date:** 2026-10-11. **Status:** sample s1 (60 tasks) is prepared and tested on
-the workstation. **Not submitted; the user submits** (§7). Paths are relative to
+**Date:** 2026-10-11. **Status:** sample s1 (60 tasks) ran and is read out
+(§9: 18 proven optima, all equal to the best-known; 21 no-ub). Paths are relative to
 `cluster_staging_maxsat/` unless they start with `docs/`.
 
 ## 1. The request (verbatim, 2026-10-11)
@@ -346,3 +346,52 @@ python3 scripts/evalmaxsat_mse_readout.py
   instances would be the s1 instances where EvalMaxSAT proves the optimum,
   because a target that is certainly reachable makes success unambiguous.
 - **s2** (the rest of the frame, 43 + 58) is a separate decision after s1.
+
+## 9. Sample s1 readout (2026-10-11)
+
+**Run:** 60/60 rows, one binary (sha256 `d629a8d7…`), 20 distinct hosts.
+`scripts/evalmaxsat_mse_readout.py` exit 0 → `results/evalmaxsat_mse_s1_all.jsonl`.
+No `error`, `unverified`, `opt>bk`, `unsat`, or RC2 contradiction. Every
+incumbent passed the model check. Every capped run stopped by SIGTERM within
+2.5 s of 3600 s, so the SIGKILL grace was never needed.
+
+| year | opt=bk | ub=bk | ub>bk | no-ub | other |
+|---|---:|---:|---:|---:|---:|
+| MSE 2023 (unweighted) | 8 | 0 | 3 | **19** | 0 |
+| MSE 2024 (weighted) | 10 | 1 | 17 | 2 | 0 |
+
+**Findings [verified unless marked]:**
+- **18 proven optima, all equal to the best-known.** So these 18 best-knowns
+  are now proven optimal, and no table value was beaten.
+  - Built-in check: task 13 (ja-00000385) → 37 in 144.8 s, as RC2.
+  - **7 new MSE 2023 optima where RC2 at 1800 s was censored:** bcp-SU3 106
+    (RC2 LB 103), GenHyperTW_b01 5 (LB 4), im-contension-B-3 63 (LB 58),
+    mbd-0277 24 (LB 22), min-fill myciel5 196 (**LB 97**), optimizing-BDDs
+    australian-credit 87 (LB 81), scheduling-cnf_small 28 (LB 25).
+  - MSE 2024 optima (10): MaxSATQueries compas 31514, af-synthesis stb_50_40_8
+    117, causal-discovery Bands 91349, drmx-cryptogen ×2 800, ja-kemeny-353
+    554, lisbon-wedding-9-18 395, metro 138, preference_planning p16 257,
+    quantum-circuit qgan 24.
+  - Solve times: 116–3476 s. 8 of 18 took > 900 s and 2 took > 3000 s
+    (GenHyperTW_b01 3476 s, min-fill 3317 s), so a longer cap could certify
+    more [inference].
+- **MSE 2023: 19 of 30 have no hard-feasible incumbent after an hour**, as
+  §5a predicted. The 3 `ub>bk` rows are far off: ja-slater-405 877 vs 278,
+  ramsey k3_n15 455 vs 30, ramsey k4_n20 4845 vs 24 (both Ramsey files are
+  all-soft).
+- **MSE 2024: almost always an incumbent** (28/30), mostly close: 11 of the
+  17 `ub>bk` gaps are ≤ 5 % (BTBNSL Hepatitis 0.05 %, lisbon-wedding 0.25 %
+  ×2, spot5 1.1 %, …). Far ones: decision-tree heart-cleveland 302 vs 122,
+  decision-tree primary-tumor 93 vs 67, setcover rail507 300 vs 174, ramsey
+  k3_n17 21103 vs 10372. mpe reached the best-known (28151) without proof.
+- **[inference] The 2023/2024 contrast is likely weights, not difficulty.**
+  With distinct weights EvalMaxSAT stratifies and gets a feasible solution
+  per stratum early; with unit weights it reaches a feasible point only near
+  the end of the core phase. The two years also differ in families, so this
+  is not separated here.
+
+**Targets for the hard-clause solver** (§8): 18 instances with a proven
+optimum (8 MSE 2023, 10 MSE 2024), best-known elsewhere. For the 21 `no-ub`
+rows, EvalMaxSAT gives no anytime reference at all, so any hard-feasible
+solution the hard-clause solver finds there is already more than this
+exact solver gives in an hour.

@@ -818,6 +818,202 @@ discretion).** Reasons:
 R3-a stays open. If you want calib_c, the next step is to regenerate its
 α 2.15 cell with seeds 121–140 and then submit it on its own.
 
+## 13a. calib_2sat_sc2 readout (2026-10-11)
+
+**Run:** array **22645633**, 15/15 rows: 14 certified, 1 censored, 0 failed.
+PySAT 1.9.dev3 and Python 3.11.15 on all rows; 8 distinct hosts.
+- `rc2_row_state.py --pending`: nothing pending.
+- `aggregate_rc2_profile.py --batch calib_2sat_sc2` →
+  `results/profile_calib_2sat_sc2_{all,env}.jsonl`.
+- `calib_2sat_sc_readout.py --batch calib_2sat_sc2` →
+  `results/calib_2sat_sc2/{instances,cells}.csv`. Exit 0.
+
+**Per cell [verified]** (c\*@RC2 seconds, in seed order):
+
+| n | α | n·ε³ | instances | eligible / low_cstar / fast / censored | §6 outcome |
+|---:|---:|---:|---|---|---|
+| 16000 | 1.15 | 54 | 6@4.0, 9@3.2, 6@0.6, 4@0.2, 9@14.0 | 0 / 0 / 5 / 0 | too_easy |
+| 16000 | 1.20 | 128 | **12@65.0**, LB 12, **14@672.9**, 12@7.7, **13@171.6** | **3** / 0 / 1 / 1 | **promising** |
+| 64000 | 1.10 | 64 | **13@155.4**, **10@81.6**, **9@49.1**, 6@6.7, 8@9.5 | **3** / 0 / 2 / 0 | **promising** |
+
+**Findings:**
+- **The first two `promising` cells of the larger-n study [verified].** Six
+  eligible instances in total, with c\* 9–14. Together with the one from
+  calib_2sat_sc (n 8000, α 1.20, c\* 14), there are now **7 eligible
+  Max-2-SAT instances at n ≥ 8000**.
+- **The proposals of §10d were right in direction.**
+  - α 1.20: the intermediate n (16000) lands in the window, between too_easy
+    n 8000 and too_hard n 32000.
+  - α 1.10: the same α at larger n (64000) lands in the window, at the
+    n·ε³ (64) of the n 8000 eligible cell.
+  - α 1.15, n 16000 (n·ε³ 54) stays too_easy: c\* 4–9 in ≤ 14 s.
+- **c\* again tracks n·ε³ [verified, covariate only]:** n·ε³ 54 → c\* 4–9;
+  64 → 6–13; 128 → 12–14 (and LB 12). Still not a prediction.
+- **RC2 time against c\* within a cell [inference, 4–5 points each]:**
+  - n 16000, α 1.20: about **0.75 decades per unit c\***; the two c\* = 12
+    instances differ by 8× (7.7 s vs 65 s).
+  - n 64000, α 1.10: about **0.21 decades per unit c\***; c\* 9–13 all
+    fall in 49–155 s.
+  - Both are far below 2.32 (Max-3-SAT, n = 250). The window spans several
+    c\* values here, as §10d suggested.
+- **The censored instance** (s252, n 16000, α 1.20) was SIGKILLed at
+  cap + 60 s; its lower bound 12 was recovered from the progress file.
+- **Host caveat.** Rows ran on 8 hosts of different types; seconds near the
+  window edges (s258 at 49 s, s253 at 673 s) could move on another host.
+
+**Pre-registered follow-up (§6), a proposal; nothing is run:** both
+`promising` cells qualify for the memetic assessment of their eligible
+instances: primary arm `configs/tier2/memetic_deeppolish_p40_ls3p5.yaml`,
+solver seeds 1–3, 900 s, effort in seconds (median TTT, ERT_s; Q2 = success
+< 3/3 or median TTT ≥ 45 s). At n ≥ 16000 the v1 polish is O(m) per flip
+(N-2026-10-08-h), so the v1 arm is expected to barely search. Whether the
+assessment uses v1 as pre-registered, `impl: v2`, or both is a decision
+before preparing it. A corpus cell only follows that, with fresh seeds.
+
+## 13b. Memetic assessment of the promising cells, `impl: v2`, two arms (prepared 2026-10-11; not submitted)
+
+**The user's decisions (2026-10-11)** [quote]:
+- "use v2 for the memetic assessment";
+- "do another main config with 200000 limit on local flips, use it in the
+  first suggested cluster to be done, however list all files that should be
+  uploaded to cluster including solver code."
+
+**What runs:**
+- **Instances (§6 rule):** the 6 `eligible` instances of the two `promising`
+  cells (§13a). The 9 others of the batch are listed with their class in
+  `scripts/manifest_calib_2sat_sc2_m2v2.not_run.csv`. The n 8000 eligible
+  instance of calib_2sat_sc is **not** included, because its cell is not
+  `promising`.
+- **Two arms, paired line by line** (same instance and seed on adjacent
+  lines):
+
+| arm | config | per-call flip limit | role |
+|---|---|---:|---|
+| `p40_ls3p5_v2` | `configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml` | 12,500 | the pre-registered primary arm, run with v2 |
+| `p40_ls3p5_f200k_v2` | `configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml` | 200,000 | new main config: the same with a larger flip limit |
+
+  - The build checks that each config equals the pre-registered
+    `memetic_deeppolish_p40_ls3p5.yaml` key for key, except `impl: v2` and
+    (second arm) `ls.ls_polish_flips` and `ls.flip_budget`.
+  - `ls_polish_flips` is the limit the polish reads; `flip_budget` is only its
+    fallback, and is kept equal.
+  - `ls.time_limit_s` stays 3.5 s. At ~270k–500k v2 flips/s a 200k call
+    takes ~0.4–0.75 s, so the flip limit should still end most calls.
+- **Runs:** solver seeds 1–3, 900 s, stop at the RC2 optimum, grace 60 s.
+  **36 tasks** (6 × 3 × 2).
+
+| pop_idx | instance (seed) | n | α | c\* | RC2 s | group |
+|---|---|---:|---:|---:|---:|---|
+| sc01 | s251 | 16000 | 1.20 | 12 | 65.0 | tier2 |
+| sc02 | s253 | 16000 | 1.20 | 14 | 672.9 | upper_ext |
+| sc03 | s255 | 16000 | 1.20 | 13 | 171.6 | tier2 |
+| sc04 | s256 | 64000 | 1.10 | 13 | 155.4 | tier2 |
+| sc05 | s257 | 64000 | 1.10 | 10 | 81.6 | tier2 |
+| sc06 | s258 | 64000 | 1.10 | 9 | 49.1 | lower_ext |
+
+**Measures (§6):** per instance and arm, the success count out of 3, median
+TTT and ERT_s. Q2 = success < 3/3 or median TTT ≥ 45 s.
+- **The §6 Q2 verdict is taken from `p40_ls3p5_v2`**, the pre-registered
+  arm.
+- `p40_ls3p5_f200k_v2` is reported next to it, paired per (instance, seed).
+  It shows how much of any Q2 outcome is due to the 12,500 flip limit.
+  Using it for corpus decisions is a separate decision after the readout
+  [decision, mine; open to the user].
+- Seconds are v2 seconds. They are not comparable with any v1 result
+  (N-2026-10-08-i).
+
+**Files and changes [verified]:**
+- `scripts/make_calib_2sat_sc_memetic_manifest.py`:
+  - reads the readout CSVs after re-running the readout with `--check`;
+  - takes the RC2 tier from `results/profile_calib_2sat_sc2_all.jsonl`;
+  - checks every instance's sha256 and both configs;
+  - writes `manifest_calib_2sat_sc2_m2v2.{tsv,tasks.csv,sha256,not_run.csv}`;
+  - `--check` rebuilds and diffs.
+- The sidecar has two extra columns, `memetic_impl` and `ls_polish_flips`.
+  `scripts/m2_results.py` classes a shard as `invalid_submission` if either
+  differs from its task.
+  - Manifests without the columns default to v1 and 12,500, so the M2
+    results are unchanged.
+  - `paired()` now also sorts prefixed `pop_idx` values (`sc01`); calib_c's
+    `cc001` would have crashed it.
+- `tests/test_calib_2sat_sc_memetic_prep.py`: 16 tests pass. Staging suite:
+  254 passed, 3 skipped, 1 failed. The failure,
+  `test_satlib_bench_intake.py::test_pysat_misreads_originals`, fails
+  without these changes too: the workstation venv's PySAT differs.
+- `submit_m2_memetic.sh`, `tier2_memetic_array.sbatch`: reused unchanged.
+  `DRY_RUN=1` passed with Python tripwires on PATH: sha256 OK, 36 rows,
+  18 per config.
+
+**Workstation smoke (not data; 120 s, seed 1, 2 runs in parallel per arm;
+rows in `results/workstation_check_calib_2sat_sc/memetic_smoke_sc2_v2/`):**
+
+| instance | n | c\* | arm | best at 120 s | generations | children | flips per child | peak RSS |
+|---|---:|---:|---|---:|---:|---:|---:|---:|
+| sc01 (s251) | 16000 | 12 | 12.5k | 19 | 46 | 1738 | 12,500 | 55 MB |
+| sc01 (s251) | 16000 | 12 | 200k | **14** | 5 | 161 | 199,497 | 57 MB |
+| sc06 (s258) | 64000 | 9 | 12.5k | 28 | 25 | 946 | 12,500 | 149 MB |
+| sc06 (s258) | 64000 | 9 | 200k | **19** | 4 | 137 | 199,773 | 147 MB |
+
+- Both arms recorded `memetic_impl` = v2, and cpu/wall was 0.99–1.0.
+- With 12,500 flips, every call ran to its flip limit; at n = 64000 one call
+  can touch at most a fifth of the variables.
+- **[inference, 1 seed, 120 s]** 200k flips per call gets closer to c\* on
+  both instances in the same time, with about 10× fewer children. Neither
+  arm reached c\* in 120 s.
+
+**Budget:** 36 × 960 s = **9.6 CPU-h** worst case. At %30 that is 2 waves,
+at most about 33 min of compute, excluding queue delay. `--time 00:20:00`,
+8 GB.
+
+**Files to the cluster:** `scripts/rsync_files_calib_2sat_sc2_memetic.txt`
+(40 paths, ~4.7 MB), in five commented groups:
+1. **Solver code:** the 18 modules a run imports, traced from a real run on
+   the workstation:
+   - `src/__init__.py`, `src/cli/__init__.py`, `src/cli/run_memetic_shard.py`;
+   - `src/evo/{__init__,impl_v2,memetic,multistart,operators,population}.py`;
+   - `src/llm/{__init__,advisor}.py`, `src/llm/providers/{__init__,noop}.py`;
+   - `src/sat/{__init__,cnf,state,walksat,walksat_v2}.py`.
+2. **The rest of `src/`** (6 files). These runs do not import them. They are
+   uploaded so that `src_tree_sha256` in the submit provenance matches the
+   workstation tree.
+3. **The three configs:** both arms, plus the pre-registered v1 arm that the
+   build compares them with.
+4. **Scripts:**
+   - `tier2_memetic_array.sbatch`, `submit_m2_memetic.sh`, `m2_results.py`;
+   - the manifest `.tsv` / `.tasks.csv` / `.sha256`;
+   - the list itself.
+5. **The 6 instances.** They are already on the cluster from the RC2 run,
+   and are re-sent so that `sha256sum -c` is certain to pass.
+
+The cluster environment (`module load anaconda; source activate maxsat`,
+with PyYAML) is the one the M2 arrays used. Nothing new is needed there.
+
+**Solver files updated relative to the cluster:** 4, all from the v2 commit
+`182d348`. They are `src/evo/impl_v2.py` and `src/sat/walksat_v2.py` (new),
+and `src/evo/memetic.py` and `src/cli/run_memetic_shard.py` (changed). The
+baseline is the 2026-10-04 M2 provenance file, which holds a sha256 for
+every cluster `src/` file. Every other module the run imports is unchanged.
+Without these 4 files a v2 config would silently run as v1 on the cluster.
+Details: N-2026-10-11-r.
+
+```bash
+# workstation -> cluster
+cd /home/mashe/maxsat-lab_new/maxsat-lab/cluster_staging_maxsat
+rsync -av --files-from=<(grep -v '^#' scripts/rsync_files_calib_2sat_sc2_memetic.txt) ./ <user>@<cluster>:~/cluster_staging_maxsat_evo/
+
+# login node (shell only)
+cd ~/cluster_staging_maxsat_evo/scripts && mkdir -p logs
+DRY_RUN=1 MANIFEST=manifest_calib_2sat_sc2_m2v2.tsv OUTDIR=results/calib_2sat_sc2_memetic/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_m2v2.tsv OUTDIR=results/calib_2sat_sc2_memetic/tasks bash submit_m2_memetic.sh
+# only if shards are missing (ids from the workstation `pending` below):
+IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_m2v2.tsv OUTDIR=results/calib_2sat_sc2_memetic/tasks bash submit_m2_memetic.sh
+
+# workstation, after the run
+rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/calib_2sat_sc2_memetic/ results/calib_2sat_sc2_memetic/
+python3 scripts/m2_results.py pending   --manifest scripts/manifest_calib_2sat_sc2_m2v2.tsv --outdir results/calib_2sat_sc2_memetic/tasks --summary
+python3 scripts/m2_results.py aggregate --manifest scripts/manifest_calib_2sat_sc2_m2v2.tsv --outdir results/calib_2sat_sc2_memetic/tasks
+```
+
 ## 11. Open risks
 
 1. **The memetic solver has never run at n ≥ 2000.** Its per-call time and
