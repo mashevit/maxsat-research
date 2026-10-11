@@ -42,6 +42,16 @@ beyond the window's upper edge.
 - c\* ≥ 3 at n = 250 is out of reach: each further unit multiplies the time
   again.
 
+*Update 2026-10-11 [verified] (N-2026-10-11-a; the claims above are
+unchanged):* the cap-3600 re-run certified the first c\* = 2 instances at
+n = 250:
+- uuf250-016, -069, -078, -085 and -086, at 1132–3078 s;
+- generated calib_b n=250 α 4.35 s1, at 2199 s.
+
+All of them are above 900 s. 11 uuf250 instances are still censored at
+LB 2 after 3600 s. C2 holds: none of the ≥ 16 uuf250 instances with
+c\* ≥ 2 certifies within the window.
+
 **C3 [extrapolation, n ≥ 300].** At n ≥ 300, eligible instances are
 expected to have c\* = 1 only.
 - c\* ≥ 2 is expected in the tens of ks.

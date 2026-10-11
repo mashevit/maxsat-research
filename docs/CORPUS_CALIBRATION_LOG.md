@@ -1548,3 +1548,37 @@ node.
 **Smoke.** At n = 2000 and n = 8000, v2 reaches c\* in 1.2 s and 22 s. At
 n = 32 000 it gets within 9–12 of c\* in 120 s; v1 was 2000+ away. See
 `current/CALIB_2SAT_SC.md` §10c and N-2026-10-08-i.
+
+## 2026-10-11 — Checkpoint 11: cap-3600 rows read; hard-clause solver plan (H0)
+
+- **Cap-3600 re-run** (array 22397120, 148/148 rows): 25 certified, 123
+  censored, 0 failed.
+  - Predictions: G3, G5, G7 and G9 held; G1, G2, G4 and G6 failed.
+  - First certified c\* = 2 at n = 250, all above 900 s.
+  - Readout: `current/RC2_CAP3600_RERUN.md` §6; N-2026-10-11-a.
+- **Hard-clause solver** (user's intention): a new staging tree, a copy of
+  the up-to-date solver, Glucose initialisation, and operators that keep
+  feasibility. Plan only: `current/HARD_CLAUSE_SOLVER_PLAN.md`;
+  N-2026-10-11-b.
+- **Attention point: multistart may be enough** (first-child /
+  first-generation successes): N-2026-10-11-c. The 2026-10-06
+  "no multistart on the calibration pool" decision is unchanged until the
+  user decides Q5.
+- Nothing was submitted and no code changed.
+
+## 2026-10-11 — Checkpoint 12: `calib_2sat_sc` read out; EvalMaxSAT MSE sample prepared
+
+- **calib_2sat_sc**: array 22610781, 45/45 rows, 2.04 CPU-h.
+  - 1 eligible: n 8000, α 1.20, s227, c\* 14, 540 s.
+  - Cells: 8 too_easy, 1 too_hard (n 32000, α 1.20).
+  - c\* up to 14 proven; LB up to 18.
+  - Readout: `current/CALIB_2SAT_SC.md` §10d; N-2026-10-11-h.
+  - Proposed next: n 16000 at α 1.15/1.20 and n 64000 at α 1.10 (not
+    prepared).
+- **Preflight fix**: the job-id parse in `preflight_calib_2sat_sc.sh`
+  tolerates the cluster's sbatch notices.
+- **EvalMaxSAT 3600 s on MSE 2023/2024**: sample s1 (60 tasks, one array
+  %30) prepared and tested, not submitted. The driver was fixed (new WCNF
+  dialect; SIGTERM anytime stop). `current/MSE_EVALMAXSAT_3600.md`;
+  N-2026-10-11-f/g.
+

@@ -358,6 +358,42 @@ stdlib and PySAT.
 | after the run | On the workstation: `scripts/aggregate_rc2_profile.py`, `scripts/calib_2sat_sc_readout.py`, `scripts/candidate_cells.py`. |
 | environment | Conda env `maxsat` with **PySAT 1.9.dev3** (`module load anaconda; source activate maxsat`, done inside each job). `instancegen/` is **not** needed on the cluster. |
 
+**Minimal copy (added 2026-10-11).** The table above is also a file list,
+`scripts/rsync_files_calib_2sat_sc.txt` (65 paths, about 12 MB). It is meant
+for `rsync --files-from`, as an alternative to rsyncing the whole tree:
+
+```
+cd /home/mashe/maxsat-lab_new/maxsat-lab/cluster_staging_maxsat
+rsync -av --files-from=<(grep -v '^#' scripts/rsync_files_calib_2sat_sc.txt) ./ <user>@<cluster>:~/maxsat-lab/
+```
+
+Tested on the workstation on 2026-10-11:
+- the list was rsynced into an empty scratch directory;
+- the login part of `preflight_calib_2sat_sc.sh` ran there, with a fake
+  `sbatch` and with `python`/`python3` tripwires on PATH;
+- result: **PREFLIGHT OK (login checks)**, both sha256 manifests matched,
+  and Python was called 0 times.
+
+`scripts/logs/` is not in the list. Create it with `mkdir -p logs` before
+submitting.
+
+**Preflight fix (2026-10-11).** On the cluster, `SUBMIT_SMOKE=1` reported
+`FAIL verify job submission failed`, although both jobs were submitted
+(smoke array 22609949, verify job 22609950).
+- The cause was the cluster's `sbatch`, which prints
+  `sbatch: GPU Parameter Not Set ! Using CPU Partition.` and `sbatch:`
+  before the id.
+- The script captured that output with `2>&1` and expected the id alone, so
+  the check failed. The array id survived only because its parse took the
+  last line.
+- Both parses now use `jobid_from`: the last line that is an id.
+- Re-tested with a fake `sbatch` that prints the same notice:
+  PREFLIGHT OK, and Python was called 0 times.
+- No measurement code changed.
+
+The user's tree on the cluster is `~/cluster_staging_maxsat_evo/`, not the
+`~/maxsat-lab/` placeholder used in the commands of this document.
+
 **Preflight.** It checks what the sha256 check cannot, without running Python
 on the login node.
 
@@ -619,6 +655,168 @@ stop-at-oracle, 4 runs in parallel; rows in
 - **Two separate measurements.** This smoke shows the solver now does
   meaningful search at n = 32 000. It does not measure these instances'
   memetic difficulty: 1 seed, 120 s, workstation.
+
+## 10d. Batch readout (2026-10-11)
+
+**Run:** array **22610781**, submitted 2026-10-11 after the node preflight
+(smoke 22609949 / verify 22609950). 45/45 rows: 38 certified, 7 censored,
+0 failed. PySAT 1.9.dev3 on all rows. 2.04 CPU-h actually spent (the maximum
+was 12.0).
+
+**Pipeline:**
+- `rc2_row_state.py --pending`: nothing pending;
+- `aggregate_rc2_profile.py --batch calib_2sat_sc` →
+  `results/profile_calib_2sat_sc_{all,env}.jsonl`;
+- `calib_2sat_sc_readout.py` → `results/calib_2sat_sc/{instances,cells}.csv`.
+
+**Per cell [verified]** (c\*@RC2 seconds per seed, in seed order;
+"LB" = censored at 900 s + 60 s with that lower bound):
+
+| n | α | n·ε³ | instances | eligible / low_cstar / fast / censored | §6 outcome |
+|---:|---:|---:|---|---|---|
+| 2000 | 1.10 | 2 | 0, 0, 0, 0, 1 (all ≤ 0.02 s) | 0 / 5 / 0 / 0 | too_easy |
+| 2000 | 1.15 | 6.75 | 1, 2, 1, 3, 1 (≤ 0.01 s) | 0 / 4 / 1 / 0 | too_easy |
+| 2000 | 1.20 | 16 | 0, 3, 3, 2, 3 (≤ 0.03 s) | 0 / 2 / 3 / 0 | too_easy |
+| 8000 | 1.10 | 8 | 0, 2, 0, 2, 0 (≤ 0.06 s) | 0 / 5 / 0 / 0 | too_easy |
+| 8000 | 1.15 | 27 | 4, 5, 1, 2, 1 (≤ 0.11 s) | 0 / 3 / 2 / 0 | too_easy |
+| 8000 | 1.20 | 64 | 9@5.2, **14@539.9**, 7@0.3, 10@21.7, 8@0.4 | **1** / 0 / 4 / 0 | too_easy |
+| 32000 | 1.10 | 32 | 6@2.7, 2@0.2, 6@6.7, 2@0.2, 7@2.5 | 0 / 2 / 3 / 0 | too_easy |
+| 32000 | 1.15 | 108 | 8@4.3, 8@2.4, LB 13, 7@18.0, LB 16 | 0 / 0 / 3 / 2 | too_easy (3 fast, 2 censored) |
+| 32000 | 1.20 | 256 | LB 18, 17, 13, 18, 17 | 0 / 0 / 0 / 5 | too_hard |
+
+**Findings [verified unless marked]:**
+- **The user's premise holds: this region has c\* well above 2.**
+  - 17 of 38 certified instances have c\* ≥ 3, up to **c\* = 14**
+    (proven).
+  - The censored lower bounds reach 13–18.
+  - At n ≤ 2000, c\* is 0–3 in milliseconds. So n ≤ 400 evidence would
+    indeed have said nothing about this region.
+- **One eligible instance:** `ksat_distinct_v8000_k2_m9600_s227`, with
+  c\* = 14 in 539.9 s. It is the first eligible Max-2-SAT instance at
+  n > 400 and the highest eligible c\* at α < 2.
+- **c\* tracks n·ε³** (Spearman 0.82 over the 38 certified). Used as a
+  covariate only, as pre-registered.
+- **RC2 time against c\***:
+  - At n = 8000 (c\* ≥ 3; 7 points, mostly one cell) the slope is
+    **0.41 decades per unit c\***: c\* 7–8 < 0.4 s, 9 → 5 s, 10 → 22 s,
+    14 → 540 s.
+  - Compare 2.32 decades per unit at Max-3-SAT n = 250
+    (`CALIB_B_B1_READOUT.md` §5). One unit of c\* costs far less here, so
+    the (30, 900] window should span several c\* values [inference, few
+    points].
+  - At n = 32000 the certified c\* 6–8 all took 2–18 s, while the censored
+    instances have LB 13–16. The certified and censored values do not
+    overlap: no c\* in 9–12 was observed.
+- **Agreement with the workstation check** (§10a, non-batch seeds): the same
+  pattern. Every cell in the window's neighbourhood has n·ε³ 64–108, and the
+  n = 32000, α 1.20 cell is censored at LB 17–19.
+
+**Pre-registered follow-ups (§6), as proposals; nothing is generated:**
+- α 1.20: n = 8000 is too_easy (4 fast with c\* 7–10, up to 22 s) and
+  n = 32000 is too_hard. Both rules point to **an n between 8000 and 32000
+  at α 1.20**, e.g. **n = 16000** (n·ε³ 128).
+- α 1.15: n = 32000 is too_easy by count (3 fast) but has 2 censored. The
+  rule says larger n at the same α. **[judgment]** The split is wide (c\* 7–8
+  in ≤ 18 s against LB ≥ 13), so larger n is likely to push it past the
+  window. **n = 16000 at α 1.15** (n·ε³ 54) is the intermediate point that
+  the α 1.20 rule also produces. Alternatively, reinforcement seeds at
+  n = 32000, α 1.15, to measure the split.
+- α 1.10: n = 32000 is too_easy (c\* 2–7, ≤ 7 s). The rule says larger n:
+  **n = 64000** (n·ε³ 64, the value of the eligible cell) and possibly
+  128000.
+- **Memetic:** the §6 rule runs the memetic assessment only for `promising`
+  cells, so none is due. The one eligible instance (n = 8000, c\* 14) can be
+  run exploratorily with `impl: v2` (config
+  `memetic_deeppolish_p40_ls3p5_v2.yaml`) if the user wants a first look.
+  That is not a cell result.
+- Every new cell gets its own fresh seed block (N-2026-10-08-e).
+
+## 13. Follow-up batch `calib_2sat_sc2` (prepared 2026-10-11; not submitted)
+
+**Request (user, 2026-10-11):** "prepare the next batch with n 16000 and
+64000, do manifest along with calob_c if you think it is needed".
+
+**Grid** (`instancegen/grids/calib_2sat_sc2.yaml`). These are the §10d
+proposals. Everything else is unchanged: model, generator `ksat_distinct`,
+measurement (RC2 g3, 900 s + 60 s, PySAT 1.9.dev3 pinned) and §6 rules.
+
+| n | α | m | n·ε³ | seeds | why |
+|---:|---:|---:|---:|---|---|
+| 16000 | 1.15 | 18400 | 54 | 246–250 | α 1.15, n 32000: 3 fast (c\* 7–8) and 2 censored (LB 13, 16). The intermediate n. |
+| 16000 | 1.20 | 19200 | 128 | 251–255 | α 1.20: n 8000 too_easy (the one eligible, c\* 14), n 32000 too_hard. An n between them. |
+| 64000 | 1.10 | 70400 | 64 | 256–260 | α 1.10, n 32000 too_easy (c\* 2–7, ≤ 7 s). The same α at larger n; n·ε³ equals that of the eligible cell. |
+
+**Seeds.** One fresh block per cell. They are disjoint from every earlier grid
+and below 1001; this is pinned by `instancegen/tests/test_grid_distinct.py`
+(2 new tests, 16 pass).
+
+**Generated and verified [verified]:**
+- `generate-grid`: all 15 files validated (2 duplicate candidates rejected
+  by the distinct sampler); `--check` OK; `sha256sum -c` OK.
+- Files: `data/generated/calib_2sat_sc2/` (15 `.wcnf` + `manifest.jsonl`),
+  `scripts/manifest_calib_2sat_sc2_rc2.{txt,sha256}`.
+
+**Readout.** `calib_2sat_sc_readout.py` gained `--batch` (choices
+`calib_2sat_sc`, `calib_2sat_sc2`; it sets the default paths and the expected
+instance count, 45 or 15). The rules are untouched:
+- `--check` on calib_2sat_sc still reproduces its CSVs byte for byte;
+- the 21 readout tests pass.
+
+**Pipeline smoke on the workstation (not data):**
+- **What ran:** batch instance s256 (n 64000, α 1.10), through
+  `profile_hardness` with cap 60 s, under PySAT 1.9.dev2.
+- **What it showed:** a clean timeout and 124 MB peak memory.
+- **Side observation:** the lower bound was **already 12 at 60 s**, so its
+  c\* ≥ 12.
+- This row is not used in the readout.
+
+**No node preflight this time.** The calib_2sat_sc node preflight passed on
+2026-10-11 for the same code path: the same sbatch, wrapper, PySAT guard and
+partition. `submit_rc2_profile.sh` still checks existence and sha256 before
+submitting.
+
+**Budget.** 15 × 960 s = **4.0 CPU-h** worst case; one wave at %30, at most
+20 min of compute, excluding queue delay.
+
+**Files to the cluster:** `scripts/rsync_files_calib_2sat_sc2.txt` (28 paths,
+~9 MB). It contains the RC2 code path, the wrapper, the manifests and the 15
+instances.
+
+```bash
+# workstation -> cluster
+cd /home/mashe/maxsat-lab_new/maxsat-lab/cluster_staging_maxsat
+rsync -av --files-from=<(grep -v '^#' scripts/rsync_files_calib_2sat_sc2.txt) ./ <user>@<cluster>:~/cluster_staging_maxsat_evo/
+
+# login node (shell only)
+cd ~/cluster_staging_maxsat_evo/scripts && mkdir -p logs
+DRY_RUN=1 bash submit_rc2_calib_2sat_sc2.sh     # sha256 OK + the sbatch line
+bash submit_rc2_calib_2sat_sc2.sh               # 15 tasks, %30
+RESUME=1 bash submit_rc2_calib_2sat_sc2.sh      # only if rows are missing
+
+# workstation, after the run
+rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/profile_calib_2sat_sc2/ results/profile_calib_2sat_sc2/
+python3 scripts/rc2_row_state.py --manifest scripts/manifest_calib_2sat_sc2_rc2.txt --outdir results/profile_calib_2sat_sc2 --cap 900 --pending
+python3 scripts/aggregate_rc2_profile.py --batch calib_2sat_sc2
+python3 scripts/calib_2sat_sc_readout.py --batch calib_2sat_sc2
+```
+
+**calib_c is not in this batch (decision of 2026-10-11, at the user's
+discretion).** Reasons:
+1. **It answers a different question.** calib_c reinforces two n = 400 cells
+   for the corpus rule, which needs a memetic run afterwards. This batch
+   places the larger-n RC2 window.
+2. **As prepared, it is nested.** Its α 2.0 and α 2.15 cells share seeds
+   101–120 (N-2026-10-11-e). It needs a new seed block for one cell before
+   any run.
+3. **Its stated pass chance is low:** 1–5 % at a true Q2 rate of 25 %
+   (`NEXT_SESSION_CONTEXT.md` §4).
+4. **Its main remaining value is memetic**: the n = 400 cells are among the
+   few Q2-non-trivial calibration instances. So it fits better with the open
+   multistart question (Q5 of `HARD_CLAUSE_SOLVER_PLAN.md`) than with an RC2
+   placement batch.
+
+R3-a stays open. If you want calib_c, the next step is to regenerate its
+α 2.15 cell with seeds 121–140 and then submit it on its own.
 
 ## 11. Open risks
 

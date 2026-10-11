@@ -3,6 +3,11 @@
 **Date:** 2026-10-08. **Status:** the manifest is built and verified, and a
 dry run passed. **Not submitted yet; the user submits.**
 
+**Update 2026-10-11:** it ran as array **22397120** (2026-10-08 08:13–12:23
+UTC, 18 hosts, PySAT 1.9.dev3 on all 148 rows). The rows are aggregated into
+`results/profile_cap3600_all.jsonl` / `_env.jsonl`: 25 certified, 123
+censored, 0 failed. The outcome is in §6 below and N-2026-10-11-a.
+
 All paths are relative to `cluster_staging_maxsat/` unless they start with
 `docs/`.
 
@@ -206,4 +211,57 @@ missing rows shows "pending" and is not judged.
   These rows give optima and time profiles beyond the window, not new
   memetic instances, unless that is decided separately.
 
-**Outcome:** *(fill in when the rows are back)*
+**Outcome (2026-10-11).** Produced by `compare_cap3600_predictions.py` on
+`results/profile_cap3600_all.jsonl` (148/148 rows) [verified]:
+
+| group | tasks | certified | c\* > old LB | median s (certified) | prediction | outcome |
+|---|---:|---:|---:|---:|---|---|
+| G1 Max-2-SAT borderline | 13 | 3 | 3 | 2198 | majority certify | **FAILED** (3/13) |
+| G2 Max-2-SAT near-edge | 4 | 0 | 0 | — | ≥ 1 of 4 | **FAILED** |
+| G3 Max-2-SAT deep | 40 | 0 | 0 | — | ≤ 10 % | HELD |
+| G4 3-SAT borderline | 16 | 6 | 1 | 1581 | majority certify | **FAILED** (6/16) |
+| G5 3-SAT deep | 40 | 0 | 0 | — | ≤ 10 % | HELD |
+| G6 SATLIB uuf200/225 | 11 | 4 | 0 | 1679 | majority certify | **FAILED** (4/11) |
+| G7 uuf250 LB 1 | 18 | 11 | 4 | 1510 | majority certify (lean) | HELD (11/18) |
+| G8 uuf250 LB 2 | 5 | 1 | 0 | 1495 | no call | recorded: 1 of 5 (uuf250-085, c\* = 2) |
+| G9 hole10 | 1 | 0 | 0 | — | stays censored | HELD |
+| **total** | **148** | **25** | **8** | 1544 | | |
+
+The claim under test, read in two parts:
+- **The ranking holds.** Groups with certified siblings (G1, G4, G6, G7)
+  certified 24 of 58 (41 %). Groups without (G3, G5) certified 0 of 80. LB
+  size is not what separates them: G5 includes calib_a n=250 m/n=5.00 at
+  LB 2 (0/5), while calib_b n=50 m/n=8.50 at LB 12 certified (task 109).
+- **The size was over-predicted.** "Majority certify" failed in 3 of the 4
+  groups that had it. A cap 4× longer converted 17 % of the censored
+  instances. RC2 time beyond the window is heavy-tailed; sibling evidence
+  says *which* instances will move, not *how many*.
+
+Also recorded, as §6 asked:
+- **Certification times.** 1 at ≤ 900 s, 16 in (900, 1800] s, 7 in
+  (1800, 2700] s, 1 in (2700, 3600] s.
+- **The one certification ≤ 900 s** is uuf250-027 (task 130): c\* = 1 at
+  844 s, host `ise-cpu-intl-1`. Its earlier row (`profile_uuf250`) timed
+  out at 922 s under the 900 s cap. This measures host or run noise of at
+  least ~9 % near the window edge. By §6's rule it does not make uuf250-027
+  eligible; only a row from the window's own protocol could do that.
+- **c\* against the old LB.** 8 of the 25 have c\* above the old LB: all 3
+  Max-2-SAT tasks (+1, +2, +1), calib_b n=50 m/n=8.50 s1 (+1), and 4 uuf250
+  tasks (016, 069, 078, 086: LB 1 → c\* 2).
+- **First certified c\* = 2 at n = 250.** Five uuf250 instances: 016
+  (1132 s), 069 (3078 s), 078 (2520 s), 085 (1495 s), 086 (1751 s). The
+  generated calib_b n=250 m/n=4.35 s1 also certified c\* = 2 (2199 s).
+  Every one is above 900 s. That fits C2 of
+  `RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md` (c\* = 2 at n = 250 sits at
+  or past the window's edge; median estimated 0.6–5 ks).
+- **The uuf250 family is now:** c\* = 1 ×84 (77 at ≤ 900 s, plus 7 here),
+  c\* = 2 ×5, and c\* ≥ 2 ×11, which are still censored, all at LB 2. So
+  **at least 16 of 100 have c\* ≥ 2, and none of those certifies within
+  900 s.**
+- **Censored lower bounds moved little in the extra 2700 s.** Max-2-SAT LB
+  rose by 0–5, and 3-SAT LB by 0–1. The deep cells are far beyond 3600 s,
+  not just past 900 s.
+- **Eligibility is unchanged.** These rows add optima and time profiles
+  beyond the window. They add no memetic instances.
+- **Cost and the decision to keep the 900 s cutoff:** 138.5 CPU-h spent,
+  5.5 CPU-h per certification, 0 new eligible instances (N-2026-10-11-d).

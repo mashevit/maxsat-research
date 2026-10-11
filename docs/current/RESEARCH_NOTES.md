@@ -42,12 +42,264 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Memetic vs multistart on uuf | `docs/UUF_THREE_ARM_ABLATION_READOUT.md` | memetic 118/130, uniform multistart 124/130, JW multistart 127/130 on the 26 uuf instances. |
 | M2 full pool: solver mechanics, ρ, threats to validity | `docs/M2_FULL_POOL_READOUT_AND_STATE.md` | Why 3-SAT and 2-SAT differ; the RC2 time decomposition; memetic reliability. |
 | SATLIB benchmark families: intake, parser pitfalls, c\* expectations, citation | [`SATLIB_BENCH_INTAKE.md`](SATLIB_BENCH_INTAKE.md) | 263 unsat / 16 sat; 209 originals misread by PySAT; what these families can and cannot add. See N-2026-10-07-b…e (e is the required SATLIB citation). RC2 results: §8, N-2026-10-08-a (95 eligible). |
-| RC2 re-run at cap 3600 s, with predictions recorded in advance | [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md) | 148 censored instances (excluding mse16/raw/more_data); 9 groups by sibling evidence, each with a prediction; comparison script. See N-2026-10-08-b. |
+| RC2 re-run at cap 3600 s, with predictions recorded in advance | [`RC2_CAP3600_RERUN.md`](RC2_CAP3600_RERUN.md) | 148 censored instances (excluding mse16/raw/more_data); 9 groups by sibling evidence, each with a prediction; comparison script. See N-2026-10-08-b. Outcome (§6): 25/148 certified; N-2026-10-11-a. |
 | Random k-SAT generation: with vs without replacement; the `ksat_distinct` mode | [`RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md`](RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md) | The existing `weighted_ksat` samples clauses with replacement, so calib_a/b/c contain duplicate clauses. The new mode gives exactly m distinct weight-1 clauses by rejection sampling. Algorithm, seed behaviour, format, validation, and an n = 32000 benchmark. See N-2026-10-08-c. |
-| Large-n, slightly supercritical random Max-2-SAT (`calib_2sat_sc`) | [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md) | The model (BBCKW F_{n,m}, distinct clauses), the near-threshold theory used only as a covariate (n·ε³ = λ³), the measurement conventions (wall-clock 900 s cap, SIGALRM delay, watchdog), pre-registered cell rules, budget and commands. See N-2026-10-08-d…f. |
+| Large-n, slightly supercritical random Max-2-SAT (`calib_2sat_sc`) | [`CALIB_2SAT_SC.md`](CALIB_2SAT_SC.md) | **Readout §10d (2026-10-11): 1 eligible (n 8000, α 1.20, c\* 14), c\* up to 14, N-2026-10-11-h.** The model (BBCKW F_{n,m}, distinct clauses), the near-threshold theory used only as a covariate (n·ε³ = λ³), the measurement conventions (wall-clock 900 s cap, SIGALRM delay, watchdog), pre-registered cell rules, budget and commands. See N-2026-10-08-d…f. |
 | Memetic solver `impl: v2` — why, what, how checked | [`MEMETIC_IMPL_V2.md`](MEMETIC_IMPL_V2.md) | v1's WalkSAT polish is O(m) per flip: measured at n 2000–32 000 (about 300 flips per 3.5 s call at n = 32 000; 120 s left it 2000+ above c\*). v2 makes v1's exact decisions with incremental bookkeeping (57 equivalence tests), 50–1800× faster per flip; v1 stays the default. Seconds are comparable only within one `impl`. N-2026-10-08-h/i. |
+| Hard-clause solver in a new staging tree; multistart-may-be-enough | [`HARD_CLAUSE_SOLVER_PLAN.md`](HARD_CLAUSE_SOLVER_PLAN.md) | The user's intention (2026-10-11): a new staging tree with a copy of the up-to-date solver, Glucose initialisation, and operators that keep hard feasibility. The plan also gives the evidence that most successes came at the first child or in the first generation, and what that does and does not show. Milestones H0–H6. N-2026-10-11-b/c. |
+| MSE 2016/2023/2024: state, best-known costs, EvalMaxSAT 3600 s sample | [`MSE_EVALMAXSAT_3600.md`](MSE_EVALMAXSAT_3600.md) | What exists for each MSE set; best-knowns rechecked (and the cross-year name trap); opinion; the driver fixes (new WCNF dialect, SIGTERM anytime stop); sample s1 (2 × 30, stratified by family); files and commands. N-2026-10-11-f/g. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-11-i — `calib_2sat_sc2` prepared (n 16000 at α 1.15/1.20, n 64000 at α 1.10; 15 tasks); calib_c left out [decision + verified]
+
+> prepare the next batch with n 16000 and 64000, do manifest along with calob_c
+> if you think it is needed
+
+*Source:* user, 2026-10-11.
+
+- **Batch.** Grid `instancegen/grids/calib_2sat_sc2.yaml`, fresh seeds
+  246–260. Same model, measurement and §6 rules as calib_2sat_sc. 15 tasks,
+  ≤ 4.0 CPU-h. Generated, validated, sha-checked and dry-run tested; not
+  submitted. `CALIB_2SAT_SC.md` §13.
+- **[verified, not data]** A workstation pipeline smoke on batch instance
+  s256 (n 64000, α 1.10) reached RC2 lower bound 12 in 60 s, so its
+  c\* ≥ 12.
+- **[decision] calib_c is not included.**
+  - It answers a different question (n = 400 corpus cells plus memetic).
+  - It is nested as prepared and needs a new seed block for α 2.15.
+  - Its stated pass chance is 1–5 %.
+  - R3-a remains open.
+
+### N-2026-10-11-h — `calib_2sat_sc` readout: c\* up to 14 proven (LB up to 18) at large n near α = 1; 1 eligible instance (n 8000, α 1.20, c\* 14, 540 s); 8 cells too_easy, 1 too_hard [verified + proposal]
+
+- Array 22610781: 45/45 rows, 0 failed, 2.04 CPU-h (`CALIB_2SAT_SC.md` §10d).
+- **c\* > 2 is common here.** 17 of 38 certified instances have c\* ≥ 3, the
+  maximum certified is 14, and censored LBs are 13–18. At n = 2000, c\* is
+  0–3. This confirms the user's 2026-10-08 caution against judging the
+  region from n ≤ 400.
+- **One eligible instance:** n = 8000, α 1.20, seed 227, c\* = 14, 539.9 s.
+  No cell is `promising`. Eight are `too_easy`; n = 32000, α 1.20 is
+  `too_hard`.
+- **The RC2 time slope is gentle at n = 8000:** about 0.41 decades per unit
+  c\*, against 2.32 for Max-3-SAT at n = 250. If it holds, the window would
+  admit a range of c\* (roughly 10–14) rather than a single value
+  [inference, 7 points].
+- **The n = 32000 split is wide:** certified c\* 6–8 in ≤ 18 s, censored at
+  LB 13–16, and nothing in between.
+- **Proposed next points (§6 rules, not prepared):** n = 16000 at α 1.15 and
+  1.20; n = 64000 at α 1.10. Optional: an exploratory memetic `impl: v2` run
+  on the one eligible instance.
+
+### N-2026-10-11-g — MSE 2016/2023/2024 state; best-knowns rechecked; EvalMaxSAT 3600 s sample s1 prepared; hard-clause solver starts on MSE 2023/2024 [quote + verified + decision]
+
+> check results for mse instacnses, 2016, and the new, I want to run them for
+> 3600s with solver EvalMaxSat on cluster, give your opinion, later run them with
+> enhanced local for hard clauses, starting from the mse24 and mse23, after
+> enhancing local for hard clauses, with glucoze, I have best knowns for them,
+> recheck in repo, I would like to give on cluster job, sampling, for example
+> first manifest 2*30 jobs array, for evalMaxSat and meanwhile prepare the local
+> search suitable for solving them.
+
+*Source:* user, 2026-10-11.
+
+- **[verified] State.**
+  - MSE 2016 (856 instances, sample of 104) is all-soft and unweighted. Its
+    900 s RC2 screen was never run on the cluster. EvalMaxSAT has 12 rows,
+    all timeouts.
+  - MSE 2023 (75, unweighted, hard clauses): RC2 at 1800 s certified 2.
+  - MSE 2024 (91, weighted, hard clauses, anytime track): no exact-solver
+    row.
+- **[verified] Best-knowns.** Each set's own table matches the raw MSE table
+  on every row.
+  - 5 entries are −1 ("not known").
+  - RC2's lower bound never exceeds the best-known. It equals it on 4 MSE
+    2023 instances, which proves those 4 optimal.
+  - Looking a value up in the other year's table by name is wrong: on
+    several files it gives values below RC2's proven bound.
+  - Detail: `MSE_EVALMAXSAT_3600.md` §3.
+- **[decision] (user):**
+  - EvalMaxSAT at 3600 s on MSE 2023/2024, sampled, with a first array of
+    2 × 30;
+  - then the enhanced hard-clause solver (Glucose initialisation),
+    **starting on MSE 2024 and 2023**.
+  - This answers Q4 of `HARD_CLAUSE_SOLVER_PLAN.md` for the first targets.
+- **[inference] Opinion** (`MSE_EVALMAXSAT_3600.md` §4):
+  - worth running, as a target and reference-effort source for the
+    hard-clause solver, not as an eligibility screen;
+  - expect many unsolved instances, some without any incumbent;
+  - MSE 2016 does not belong in this batch: it is all-soft, and its first
+    step is the RC2 900 s screen.
+- Prepared: sample s1 (60 tasks, stratified by family, seed 20261011),
+  sbatch, a shell-only submit wrapper with a smoke mode, and a readout.
+  Budget ≤ 62 CPU-h. Not submitted.
+
+### N-2026-10-11-f — The EvalMaxSAT driver could not read MSE ≥ 2022 files and discarded the anytime incumbent; fixed [verified + correction]
+
+- **[verified]** `src/cli/oracle_evalmaxsat.py` treated files without a `p`
+  line as plain CNF. `h` lines raised a parse error, and in soft-only files
+  the weight became a literal. Every MSE 2023/2024 task would have ended as
+  `error`.
+- **[verified]** It stopped the solver with SIGKILL (`subprocess.run`
+  timeout). EvalMaxSAT's SIGTERM handler prints the incumbent (`o`,
+  `s SATISFIABLE`, model) and exits 10.
+- **Correction** to `archive/ORACLE_EVALMAXSAT_SLURM.md` ("EvalMaxSAT prints
+  no intermediate `o` lines … a timeout gives no bound"). That was a
+  property of the SIGKILL setup. With SIGTERM, a capped run returns a
+  verified upper bound **once the solver has an incumbent**. At 60 s it had
+  none on two MSE 2023 instances (`s UNKNOWN`).
+- Fixed in the staging copy and covered by 8 tests: dialects, weighted cost,
+  and live optimum / soft-only / SIGTERM runs. On the workstation it proved
+  ja-00000385 = 37 in 109 s with the model verified.
+  `MSE_EVALMAXSAT_3600.md` §5; `cluster_staging_maxsat/DIVERGENCE.md`.
+- **[verified] 600 s probes, 4 run concurrently** (`MSE_EVALMAXSAT_3600.md`
+  §5a): an incumbent (741 against best-known 720, verified) only on the
+  soft-only frb instance. No incumbent on any of the 3 hard-clause
+  instances: im-hit-B-3, ja-00000253 and setcover-135.
+- **[inference]** At 3600 s, expect many `no-ub` rows. EvalMaxSAT supplies
+  proven optima, not upper bounds. A Glucose-initialised hard-clause solver
+  has an incumbent where EvalMaxSAT has none.
+
+### N-2026-10-11-e — `calib_2sat_sc` does not replace `calib_c`; calib_c as prepared is nested across its two α cells [verified + inference]
+
+- **Different questions** [verified from the plans]:
+  - `calib_c` (n = 400, α 2.0 / 2.15, 40 instances) decides two
+    corpus cells under the pre-registered §5.3 rule. Both are one Q2
+    instance short; it needs RC2 and then memetic runs
+    (`CORPUS_FREEZE_PREP.md` §5).
+  - `calib_2sat_sc` (n 2000–32000, α 1.10–1.20) tests the larger-n
+    direction: whether a slightly supercritical α at large n gives
+    c\* > 2 with real RC2 difficulty. `CALIB_2SAT_SC.md` §1 says it "does
+    not replace `calib_c`".
+- **Nesting** [verified 2026-10-11]: calib_c uses the same seeds 101–120 in
+  both α cells. `…sr2.15…_s101` (860 clauses) has `…sr2.00…_s101`
+  (800 clauses) as its exact prefix. The two cells are therefore paired,
+  not independent. This is the effect of N-2026-10-08-e, which decided
+  that **new** batches get one seed block per cell. calib_c was prepared
+  before that decision.
+- **Duplicates** [verified, s101 only]: 0 duplicate clauses at α 2.0 and
+  1 at α 2.15 (`weighted_ksat` samples with replacement, N-2026-10-08-c).
+- **[inference]** If calib_c is kept, the minimal revision is per-cell seed
+  blocks: for example 101–120 for α 2.0 and 121–140 for α 2.15.
+  - Keep `weighted_ksat`, because §5.3 pools calib_c with the calib_a/b
+    instances of the same cells, which used it.
+  - The §5.3 rule is per cell, so pairing does not bias either cell's
+    verdict. It matters only when the cells are compared or pooled.
+- Decision R3-a (keep / revise / replace) is still the user's.
+
+### N-2026-10-11-d — Keep the 900 s cutoff: the one-hour re-run bought few certifications per CPU-hour [verified + decision]
+
+> Keep the 900 s cutoff. The one-hour run bought few certifications for the
+> CPU-hours.
+
+*Source:* recommendation of 2026-10-11, which the user asked to record with
+the numbers (2026-10-11).
+
+**Numbers** [verified]. They are sums of `profile.solve_s` over the rows,
+i.e. wall seconds actually spent on one CPU each; the Slurm allocation is
+larger. Files: `cluster_staging_maxsat/results/profile_{cap3600,calib_a,calib_b,satlib}_all.jsonl`.
+
+| batch | cap | tasks | CPU-h spent | certified | eligible (30 < t ≤ 900 s) | CPU-h per eligible |
+|---|---:|---:|---:|---:|---:|---:|
+| SATLIB screen | 900 s | 263 | 7.9 | 251 | 95 | 0.08 |
+| calib_b | 900 s | 110 | 10.0 | 85 | 53 | 0.19 |
+| calib_a | 900 s | 180 | 24.3 | 92 | 17 | 1.43 |
+| **cap-3600 re-run** | **3600 s** | **148** | **138.5** | **25** | **0** | **—** (5.5 CPU-h per certification) |
+
+- **Where the time went.** The 123 instances that stayed censored used
+  127.0 of the 138.5 CPU-h (92 %). The 25 that certified used 11.5 CPU-h.
+- **Conversion.** 25/148 (17 %) certified with a 4× longer cap. 24 of the
+  25 took 900–3078 s, so they are outside the window by definition.
+  The 25th, uuf250-027 at 844 s, is host or run noise
+  (N-2026-10-11-a) and is not eligible.
+- **Little movement in the rest.** Censored lower bounds rose by only 0–5
+  (Max-2-SAT) and 0–1 (3-SAT) in the extra 2700 s. Another doubling of the
+  cap would convert few more.
+- **Cost of widening the window instead.** Changing the window to
+  (30, 3600] s would add at most these 24 instances. Every RC2 screen would
+  cost up to 4× the worst-case CPU-h (3720 s against 960 s per task), and
+  the memetic Q2 seconds threshold would need re-deriving. The same
+  CPU-hours spent on new 900 s cells produced 0.08–1.43 CPU-h per eligible
+  instance.
+
+*Decision.*
+- **The eligibility window stays (30, 900] s.**
+- The cap-3600 rows are used only as **out-of-window optima and time
+  profiles**: c\* and lower bounds for reporting, e.g. the first c\* = 2 at
+  n = 250.
+- No further long-cap RC2 re-runs unless a specific question needs one.
+
+### N-2026-10-11-c — Attention point: multistart may be enough; most successes came at the first child or in the first generation [quote + verified + inference]
+
+> also emphasize in documents I want to give attention to result that
+> multistart might be enogh, due to result that most answers were achieved
+> in first child or first generation
+
+*Source:* user, 2026-10-11.
+
+- **[verified]** M2 full pool: 28/70 instances were solved by the first
+  polish call in all 6 runs. 55/70 never went past generation 1
+  (`M2_FULL_POOL_READOUT_AND_STATE.md` §6.2). M2 pilot: success within 1–8
+  children on 8/10 instances (`M2_PILOT_READOUT.md` §3).
+- **[verified]** uuf three-arm ablation, successes: JW multistart 127/130,
+  uniform 124/130, memetic 118/130. Kaplan–Meier median TTT: memetic 30 s,
+  JW 90 s (`UUF_THREE_ARM_ABLATION_READOUT.md` §0).
+- **[inference]** Where the EA had no room (first-generation successes), the
+  rows cannot separate memetic from multistart. Where it had room (uuf),
+  multistart was more reliable and memetic was faster in a typical run. So
+  "multistart is enough" is supported on reliability, not on typical speed.
+  A fair test needs Q2 non-trivial instances.
+- **[decision pending]** This conflicts with the 2026-10-06 decision "no
+  multistart on the calibration pool" (`CORPUS_CALIBRATION_LOG.md`
+  Checkpoint 8). It is not lifted; that is open question Q5 in
+  `HARD_CLAUSE_SOLVER_PLAN.md` §7.
+- **Wording rule until tested:** say "on most calibration instances the
+  memetic solver succeeded in its first generation, so these instances do
+  not test the EA". Do not say "the EA adds nothing".
+- Detail: `HARD_CLAUSE_SOLVER_PLAN.md` §5.
+
+### N-2026-10-11-b — Intention: a hard-clause solver in a new staging tree, with Glucose initialisation and feasibility kept through LS and memetic steps [quote + decision: planned, not started]
+
+> do new folder similar to cluster_staging_maxsat, copy there the
+> up-to-date solver, and make solver for hard clauses, with glucouze
+> initialization of hard satisfiebility, and enhancing solver with qualities
+> it will save the hard satisfiebility over local and memtic iterations
+
+*Source:* user, 2026-10-11.
+
+- This matches what the hard-clause reassessment found:
+  - Glucose solves difficulty 1 (the initial feasible assignment);
+  - difficulty 2 (keeping feasibility through crossover and polish) needs
+    operator changes (`CORPUS_FREEZE_PREP.md` §8.4; N-2026-10-07-a).
+  The user's request covers both.
+- The new solver is a **new algorithm**. It never shares a stratum or a
+  table with the current one (§8.5). The existing `cluster_staging_maxsat/`
+  is not edited.
+- Acceptance bar, adopted unchanged from §8.5:
+  - ≥ 95 % feasible children from feasible parents in the operator probe;
+  - feasibility on every seed in 900 s runs.
+- Plan, milestones H0–H6 and open questions:
+  `HARD_CLAUSE_SOLVER_PLAN.md`. Only H0 (the plan) is done.
+
+### N-2026-10-11-a — RC2 cap-3600 re-run: 25/148 certified; sibling evidence ranks correctly, but "majority certify" was over-predicted; first certified c\* = 2 at n = 250, all above 900 s [verified]
+
+- Array 22397120, 148/148 rows, 0 failed, PySAT 1.9.dev3
+  (`RC2_CAP3600_RERUN.md` §6 outcome). Predictions N-2026-10-08-b:
+  - G3, G5 (deep, ≤ 10 %), G7 (uuf250 LB 1, majority) and G9 (hole10)
+    **held**;
+  - G1, G2, G4, G6 **failed**: they certified 3/13, 0/4, 6/16 and 4/11.
+- Groups with sibling evidence certified 24/58. Groups without certified
+  0/80. LB size does not separate them. Rate: 17 % of censored instances
+  certify within a cap 4× longer.
+- **uuf250 family now:** c\* = 1 ×84, c\* = 2 ×5 (1132–3078 s), c\* ≥ 2
+  censored ×11. At least 16/100 have c\* ≥ 2, and none certifies within
+  900 s. This **supports C2** of
+  `RESEARCH_NOTES_MAX3SAT_OPTIMUM_AT_LARGE_N.md`.
+- uuf250-027 certified at 844 s, after a 922 s timeout in its earlier row:
+  run-to-run or host noise of ≥ 9 % near the window edge. Eligibility is
+  unchanged.
+- Censored LBs rose only 0–5 (Max-2-SAT) and 0–1 (3-SAT) in the extra
+  2700 s. The deep cells are far beyond 3600 s.
 
 ### N-2026-10-08-i — Memetic `impl: v2`: incremental WalkSAT with v1's exact decisions; seconds comparable only within one impl [decision + verified]
 

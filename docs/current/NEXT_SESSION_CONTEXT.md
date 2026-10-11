@@ -17,6 +17,72 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000. Update 2026-10-11 (r7): cap-3600 rows read; hard-clause solver planned; multistart attention point — read first
+
+**Project state in one table.**
+
+| thread | state | where |
+|---|---|---|
+| calib_a / calib_b RC2 grids | done (180 + 110 rows) | `CALIB_A_A1_READOUT.md`, `CALIB_B_B1_READOUT.md` |
+| M2 memetic, 70-instance calibration pool | done (420 runs); ρ(RC2, memetic) read out | `M2_FULL_POOL_READOUT_AND_STATE.md` |
+| uuf three-arm ablation (uniform / JW multistart / memetic) | done | `UUF_THREE_ARM_ABLATION_READOUT.md` |
+| SATLIB intake + RC2 screen | done: 95 eligible | `SATLIB_BENCH_INTAKE.md` §8 |
+| **RC2 cap-3600 re-run** | **done, read 2026-10-11**: 25/148 certified | `RC2_CAP3600_RERUN.md` §6, N-2026-10-11-a |
+| `ksat_distinct` generator, memetic `impl: v2` | done, tested | `RESEARCH_NOTES_DISTINCT_CLAUSE_GENERATOR.md`, `MEMETIC_IMPL_V2.md` |
+| `calib_2sat_sc` (45 RC2 tasks, large-n Max-2-SAT) | **done, read 2026-10-11** (array 22610781): 1 eligible (n 8000, α 1.20, c\* 14, 540 s); c\* up to 14, LB up to 18; 8 cells too_easy, 1 too_hard. Follow-up **`calib_2sat_sc2` prepared** (n 16000 at α 1.15/1.20, n 64000 at α 1.10; 15 tasks, ≤ 4 CPU-h; not submitted; calib_c left out) | `CALIB_2SAT_SC.md` §10d, §13; N-2026-10-11-h/i |
+| SATLIB memetic manifest (95 eligible) | not started | intake §8 |
+| `calib_c` | on hold (R3-a) | §0, §4 |
+| MIS / Max-Clique diagnostic | proposed, not prepared | `CORPUS_FREEZE_PREP.md` §8.5 |
+| **Hard-clause solver, new staging tree** | **H0 plan written 2026-10-11; nothing created** | `HARD_CLAUSE_SOLVER_PLAN.md`, N-2026-10-11-b |
+| **EvalMaxSAT 3600 s on MSE 2023/2024** (sample s1, 2 × 30) | **prepared and tested 2026-10-11; not submitted**. Driver fixed (new WCNF dialect, SIGTERM anytime stop) | `MSE_EVALMAXSAT_3600.md`, N-2026-10-11-f/g |
+| MSE 2016 | all-soft; 900 s RC2 screen never run; not part of the EvalMaxSAT batch | `MSE_EVALMAXSAT_3600.md` §2, §4 |
+
+**Cap-3600 in brief** (N-2026-10-11-a).
+- Predictions: G3, G5, G7 and G9 held; G1, G2, G4 and G6 failed (too
+  optimistic). Sibling evidence ranks the groups correctly (24/58 against
+  0/80), but a 4× cap converts only 17 %.
+- First certified c\* = 2 at n = 250 (5 uuf250 + 1 generated), all at
+  1132–3078 s. This supports C2.
+- uuf250: ≥ 16/100 have c\* ≥ 2, and none of them certifies in the window.
+- One certification at 844 s (uuf250-027) that had timed out at 922 s
+  before: host noise of ≥ 9 % at the window edge.
+- Eligibility is unchanged.
+
+**New attention point** (user, N-2026-10-11-c). Most memetic successes came
+at the first child or in the first generation (28/70 first call; 55/70
+within generation 1), so **multistart may be enough**.
+- This is supported on reliability (uuf: JW multistart 127/130 against
+  memetic 118/130).
+- It is not supported on typical speed (median 90 s against 30 s).
+- It conflicts with the 2026-10-06 decision "no multistart on the
+  calibration pool". That decision is **not** lifted; this is open
+  question Q5 of the plan.
+
+**Suggested next steps** (each needs approval; ordered by value per CPU-h):
+1. **`calib_2sat_sc`.** If it ran, rsync the rows back and run
+   `calib_2sat_sc_readout.py`. If not, submit it (≤ 12 CPU-h). It is the
+   only open test of the larger-n direction.
+2. **H1 of the hard-clause plan.** Create `cluster_staging_maxsat_hard/`,
+   copy the solver, write `PROVENANCE.md`, and pass the copied tests.
+   Workstation only.
+3. **A targeted multistart test, if Q5 is lifted.** JW multistart (same
+   polish, same clock) on the 15 calibration instances that went beyond
+   generation 1. 15 × 3 seeds × 900 s ≤ 11.3 CPU-h. These are the only
+   calibration instances where memetic and multistart can differ.
+4. **SATLIB memetic manifest** for the 95 eligible instances (uuf200/225,
+   c\* 1–2). This is the largest Q2 non-trivial pool. Running a multistart
+   arm next to it would answer U4 at scale.
+5. **Keep the window at (30, 900] s** (recorded as a decision 2026-10-11 in
+   N-2026-10-11-d: 138.5 CPU-h for 25 certifications, 0 eligible). The cap-3600 rows show that a longer
+   cap buys few certifications per CPU-h. Optional: the 6 newly certified
+   c\* = 2 n = 250 instances could serve as memetic targets **outside** the
+   eligibility definition, as a reported side table. That is a decision,
+   not a default.
+6. Pending decisions carried over: R3-a (`calib_c`) and R3-b (the larger-n
+   grid, after `calib_2sat_sc`).
+
+---
+
 ## 0000. Update 2026-10-08 (r6): `calib_2sat_sc` prepared; c\*/runtime correction — read first
 
 - **New batch, prepared and not submitted:** `calib_2sat_sc`, large-n,
