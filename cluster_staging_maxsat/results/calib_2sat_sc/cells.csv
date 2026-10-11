@@ -1,0 +1,10 @@
+cell_id,n,alpha,m,n_eps3,instances,eligible,low_cstar,fast,censored,failed,c_star_values,solve_s_completed (min/med/max),censored_lower_bounds,outcome,follow_up
+max2sat_distinct_n2000_a1.1,2000,1.1,2200,2.00,5,0,5,0,0,0,0 0 0 0 1,0.0/0.0/0.0,,too_easy,"same alpha, larger n"
+max2sat_distinct_n2000_a1.15,2000,1.15,2300,6.75,5,0,4,1,0,0,1 2 1 3 1,0.0/0.0/0.0,,too_easy,"same alpha, larger n"
+max2sat_distinct_n2000_a1.2,2000,1.2,2400,16.00,5,0,2,3,0,0,0 3 3 2 3,0.0/0.0/0.0,,too_easy,"same alpha, larger n"
+max2sat_distinct_n8000_a1.1,8000,1.1,8800,8.00,5,0,5,0,0,0,0 2 0 2 0,0.0/0.0/0.1,,too_easy,"same alpha, larger n"
+max2sat_distinct_n8000_a1.15,8000,1.15,9200,27.00,5,0,3,2,0,0,4 5 1 2 1,0.1/0.1/0.1,,too_easy,"same alpha, larger n"
+max2sat_distinct_n8000_a1.2,8000,1.2,9600,64.00,5,1,0,4,0,0,9 14 7 10 8,0.3/5.2/539.9,,too_easy,"same alpha, larger n"
+max2sat_distinct_n32000_a1.1,32000,1.1,35200,32.00,5,0,2,3,0,0,6 2 6 2 7,0.2/2.5/6.7,,too_easy,"same alpha, larger n"
+max2sat_distinct_n32000_a1.15,32000,1.15,36800,108.00,5,0,0,3,2,0,8 8 7,2.4/4.3/18.0,13 16,too_easy,"same alpha, larger n"
+max2sat_distinct_n32000_a1.2,32000,1.2,38400,256.00,5,0,0,0,5,0,,,18 17 13 18 17,too_hard,"report LBs; intermediate points (lower alpha at this n, or smaller n at this alpha)"
