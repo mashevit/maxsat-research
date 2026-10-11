@@ -7,7 +7,8 @@ things:
 - repair `R`;
 - feasible moves `M`.
 
-Its behaviour, especially why repairs stay *near* the given assignment, why
+Its behaviour, especially why repairs are biased toward the given
+assignment (but are not the nearest feasible one), why
 singleton cores are proofs, and why single calls can be slow, follows from
 how a CDCL solver makes decisions. This note collects the explanation given
 in the session of 2026-10-11 (user questions: "explain simply how glucoze4 is
@@ -16,8 +17,9 @@ in glucoze").
 
 **Status labels.** General CDCL / Glucose behaviour is textbook material
 [background]. Statements about our code are [verified] where a test or a
-measurement backs them. One point about PySAT's phase interface is
-[inference] (§5).
+measurement backs them. §5 was corrected on 2026-10-11. It had claimed that
+the returned model differs from the phases only where the hard clauses force
+a change. That claim was too strong, and a probe refutes it.
 
 Related: `HARD_CLAUSE_SOLVER_PLAN.md` §6a–§6b; research notes N-2026-10-11-l
 (H3) and N-2026-10-11-m (singleton cores vs RC2).
@@ -112,20 +114,43 @@ clause can rule out a whole region of the search space.
   that variable. Restarts keep both the saved phases and the learned clauses,
   so progress is not lost.
 - **User phase.** PySAT's `set_phases` is our way in: it sets a preferred
-  value per variable. [inference] As far as we know, in MiniSat-derived
-  solvers this preference takes priority at decision time.
-  - [verified] Our own test agrees: repairing an already-feasible assignment
-    returns it unchanged (`tests/test_hard_h3.py::
-    test_repair_returns_a_feasible_assignment_near_the_input`).
+  value per variable. [background] It is a *starting* preference, not a
+  constraint. Phase saving overwrites it whenever backjumping unassigns the
+  variable, and later decisions follow the saved value.
+  - [verified] A feasible input comes back unchanged
+    (`tests/test_hard_h3.py::
+    test_repair_returns_a_feasible_assignment_near_the_input`). This is a
+    special case. If x satisfies every hard clause, decisions that follow x
+    only propagate literals that are true in x. So there is no conflict and
+    no backjump, and phase saving never fires. The test says nothing about
+    infeasible inputs.
 
 **Consequence for our solver.**
-- When we pass the current assignment x as phases, every decision agrees
-  with x unless a conflict forces otherwise.
-- So the model Glucose returns differs from x only where the hard clauses
-  force a change. That is why repair `R` and moves `M` stay *near* x.
-- [verified] On ja-maxham-00000385 a repair still changed about 940
-  variables on average (the H3 smoke). On that instance the hard clauses
-  force a lot.
+- When we pass the current assignment x as phases, the search *starts out*
+  following x. After the first conflict, the backjumped variables keep
+  whatever value they last had on the trail, which may not be their value
+  in x. Learned clauses and VSIDS scores kept from earlier calls on the
+  reused solver also shape the result.
+- So the model is **biased toward x, not the nearest feasible assignment**.
+  It can differ from x in variables that no hard clause forces. Finding the
+  nearest feasible assignment is itself an optimisation problem (MaxSAT
+  with one unit soft clause per variable). A single SAT call does not solve
+  it. "Repair `R` and moves `M` stay near x" is a heuristic tendency, not a
+  guarantee.
+- [verified] Probe (2026-10-11, PySAT 1.9.dev2 Glucose4). Setup: 40
+  satisfiable random 3-SAT instances (n = 16, m = 60) and 25 random x per
+  instance; every x drawn was infeasible. For each x we compared Glucose's
+  Hamming distance from x with the true minimum, found by brute force over
+  all 2^16 assignments:
+
+  | solver | Glucose = nearest | mean distance (Glucose / minimum) | worst excess |
+  |---|---|---|---|
+  | fresh per call | 31 % | 7.09 / 5.47 | +8 |
+  | reused (as in `HardSAT`) | 56 % | 6.42 / 5.47 | +7 |
+
+- [verified] On ja-maxham-00000385 a repair changed about 940 variables on
+  average (the H3 smoke). We do not know how much of that the hard clauses
+  force and how much is search drift.
 
 ## 6. Assumptions: decisions that cannot be undone
 
