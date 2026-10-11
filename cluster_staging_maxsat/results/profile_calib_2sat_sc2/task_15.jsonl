@@ -1,0 +1,1 @@
+{"instance": "data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s260.wcnf", "size_mb": 1.1723, "profile": {"cap_s": 900.0, "solver": "rc2", "status": "optimal", "solve_s": 9.501, "final_cost": 8, "cost_lower_bound": 8, "completed": true, "error": null}, "ratio": null, "lb_ratio": null, "tier": "T1", "tier_reason": "solve_s<=60.0"}

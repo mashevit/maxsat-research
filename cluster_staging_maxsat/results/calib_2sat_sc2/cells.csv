@@ -1,0 +1,4 @@
+cell_id,n,alpha,m,n_eps3,instances,eligible,low_cstar,fast,censored,failed,c_star_values,solve_s_completed (min/med/max),censored_lower_bounds,outcome,follow_up
+max2sat_distinct_n16000_a1.15,16000,1.15,18400,54.00,5,0,0,5,0,0,6 9 6 4 9,0.2/3.2/14.0,,too_easy,"same alpha, larger n"
+max2sat_distinct_n16000_a1.2,16000,1.2,19200,128.00,5,3,0,1,1,0,12 14 12 13,7.7/118.3/672.9,12,promising,"memetic assessment of the eligible instances (primary arm, seconds); corpus cell only with fresh seeds"
+max2sat_distinct_n64000_a1.1,64000,1.1,70400,64.00,5,3,0,2,0,0,13 10 9 6 8,6.7/49.1/155.4,,promising,"memetic assessment of the eligible instances (primary arm, seconds); corpus cell only with fresh seeds"
