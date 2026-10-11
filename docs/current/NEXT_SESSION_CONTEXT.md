@@ -32,9 +32,10 @@ alias, so every cluster step is a command the user runs on the login node.
 
 **Decisions kept for tomorrow (the user, 2026-10-11: "keep the decisions for
 tomorrow"):**
-1. **Commit today's work.** Nothing is committed (see the file list
-   below). The memetic submit needs `MAXSAT_GIT_SHA`, so it needs a commit
-   first.
+1. ~~Commit today's work.~~ **Done 2026-10-11 16:30:** committed in 4 commits
+   (`7197151`, `8b7d00e`, `a65a789`, `0bda86f`) and pushed. For the memetic
+   submit use `MAXSAT_GIT_SHA=8b7d00e`, the commit holding the batch code.
+   Any later commit also works if the staging tree is unchanged.
 2. **Submit the 36-task memetic batch** (`CALIB_2SAT_SC.md` §13b
    commands). §6's Q2 verdict is taken from the 12.5k arm, with the 200k
    arm reported beside it. That split is my proposal; confirm it.
@@ -55,7 +56,7 @@ tomorrow"):**
 `RESEARCH_NOTES_LLM_SOLVER_DESIGN.md` §7, N-2026-10-11-u). It stays as
 related work only.
 
-**Uncommitted at wrap-up:**
+**Committed at wrap-up (the list below was the uncommitted set, now in the 4 commits above):**
 - **Modified:** `scripts/m2_results.py` (`memetic_impl` and
   `ls_polish_flips` checks; prefixed `pop_idx` sort), `CALIB_2SAT_SC.md`,
   `MSE_EVALMAXSAT_3600.md`, `NEXT_SESSION_CONTEXT.md`, `RESEARCH_NOTES.md`.
