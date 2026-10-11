@@ -112,8 +112,18 @@ def walksat_polish_v2(
     hard_safe: bool = True,
     smooth_every: int = 0,  # accepted for signature parity; a no-op (see module doc)
     rho: float = 0.5,       # idem
+    budget_counts_noops: bool = False,
 ) -> Dict[str, Any]:
-    """Drop-in for walksat.walksat_polish: same arguments, same return keys."""
+    """Drop-in for walksat.walksat_polish: same arguments, same return keys.
+
+    `budget_counts_noops` (hard-clause tree, H2; default False = v2 unchanged):
+    with hard clauses and `hard_safe`, an iteration in which every candidate
+    would break a satisfied hard clause applies no flip. v1/v2 count only
+    applied flips against `max_flips`, so such a call idles until its time
+    limit and its effort depends on the host (CORPUS_FREEZE_PREP.md §8.2). With
+    the flag, every iteration counts against `max_flips`, so the call stops at
+    the step budget. Additive return key `noop_steps` = iterations without a flip.
+    """
     st = _static_for(cnf)
     n, m = st.n, st.m
     lits, cvars, is_hard, w, occ = st.lits, st.cvars, st.is_hard, st.w, st.occ
@@ -195,7 +205,8 @@ def walksat_polish_v2(
     NEG_INF = float("-inf")
     POS_INF = float("inf")
 
-    while applied < max_flips and not (limit is not None and (now() - start_t) >= limit):
+    while (num_flips if budget_counts_noops else applied) < max_flips and not (
+            limit is not None and (now() - start_t) >= limit):
         num_flips += 1
         if unsat_h:
             target = unsat_h[randbelow(len(unsat_h))]
@@ -319,5 +330,6 @@ def walksat_polish_v2(
         "flips_per_sec": float(applied / elapsed),
         "elapsed_sec": float(elapsed),
         "final_assign": [bool(b) for b in final_1based[1:]],
+        "noop_steps": int(num_flips - applied),
         "impl": IMPL_VERSION,
     }

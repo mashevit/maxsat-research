@@ -5,6 +5,8 @@ import time, math, random
 from .population import Population, Individual, evaluate_assignment, build_hard_occurs
 from .operators import tournament, clause_aware_crossover, mutate,mutate1, frozen_hard_unit_vars, short_polish, clause_aware_crossover1
 from .impl_v2 import memetic_impl, select_crossover, select_polish
+from .population import init_hard_satisfied
+from .hard import HardStats, glucose_init, hard_cfg, short_polish_hard
 from llm.advisor import LLMAdvisor, apply_advice
 from llm.providers.noop import NoopProvider
 # or: from llm.providers.ollama import OllamaProvider
@@ -28,6 +30,28 @@ def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
         "ls_polish_flips": int(ls.get("ls_polish_flips", 700)),
         "time_limit_s": float(ls.get("time_limit_s", 0.05)),
         "max_flips": int(ls.get("flip_budget", 2000)),
+    }
+
+
+def _hard_abort(wcnf, hstats: HardStats, elapsed: float) -> Dict[str, Any]:
+    """`impl: hard` without a hard-feasible start: the hard clauses are
+    unsatisfiable (`hard_unsat`) or Glucose found no model within the run
+    budget (`glucose_timeout`). Reported, not hidden: the all-False assignment
+    is returned so the shard's re-derived cost and hard-violation count describe
+    a real assignment, and stop_reason names the cause."""
+    a = [False] * (wcnf.n_vars + 1)
+    soft, hv = evaluate_assignment(wcnf, a)
+    hstats.hard_feasible_final = hv == 0
+    bits = "".join("1" if b else "0" for b in a[1:])
+    return {
+        "best_soft_weight": float(soft), "hard_violations": int(hv),
+        "elapsed_sec": float(max(1e-9, elapsed)), "total_flips": 0, "flips_per_sec": 0.0,
+        "restarts": 0, "final_noise": 0.0, "stop_reason": hstats.status,
+        "time_to_target_s": None, "impl": "hard", "hard": hstats.as_dict(),
+        "meta": {"ea_generations": 0, "children": 0, "assign_bits": bits,
+                 "dimacs": "v " + " ".join(str(-i) for i in range(1, len(a))) + " 0",
+                 "true_vars": []},
+        "satisfied_clauses": None,
     }
 
 
@@ -65,18 +89,37 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
 
     rng = random.Random(rng_seed)
     pop = Population(n_vars=wcnf.n_vars, size=pop_size, rng=rng)
-    pop.init_seeds(wcnf, cfg)
+    # `impl: hard` (src/evo/hard.py): the population is Glucose models of the
+    # hard clauses, and the run clock starts BEFORE them, so Glucose time is
+    # charged to the run. v1/v2 keep the JW seeding outside the clock, as before.
+    hard_mode = memetic_impl(cfg) == "hard"
+    hstats = None
+    if hard_mode:
+        t_run0 = time.time()
+        hc = hard_cfg(cfg)
+        cap0 = float(cfg.get("time_limit_s", cfg.get("ls", {}).get("time_limit_s", 10.0)))
+        assigns, hstats = glucose_init(wcnf, pop_size, rng, hc["phases"], t_run0 + cap0,
+                                       hc["max_tries_per_member"])
+        if hstats.status != "ok":
+            return _hard_abort(wcnf, hstats, time.time() - t_run0)
+        pop.members = [Individual(assign01=a) for a in assigns]
+    else:
+        pop.init_seeds(wcnf, cfg)
 
     # initial evaluation
     for ind in pop.members:
         pop.evaluate(wcnf, ind)
+    if hard_mode:
+        hstats.init_infeasible = sum(1 for ind in pop.members if ind.hard_violations)
+        _tot = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+        hstats.init_best_cost = _tot - max(ind.fitness for ind in pop.members)
 
     #frozen = frozen_hard_unit_vars(wcnf)#not needed
     best = pop.best().copy()
 
     # stop conditions
     time_cap = float(cfg.get("time_limit_s", cfg.get("ls", {}).get("time_limit_s", 10.0)))
-    start_t = time.time()
+    start_t = t_run0 if hard_mode else time.time()
     max_gens = int(cfg.get("ea", {}).get("max_gens", 100))
 
     # --- target-cost stop -----------------------------------------------------
@@ -157,8 +200,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             p2 = tournament(pop.members, k, rng)
             child_bits = crossover(p1, p2, wcnf, rng)
             #mutate(child_bits, pmutate, rng, frozen=frozen)
-            mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, ind.hard_satisfied)
-            if impl == "v2":
+            if hard_mode:
+                # The guard must see the CHILD's hard clauses (v1/v2 pass the
+                # last initial member's vector; kept unchanged there).
+                child_hsat = init_hard_satisfied(hard_clauses, child_bits)
+                mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, child_hsat)
+                if not all(child_hsat):
+                    hstats.children_infeasible_before_polish += 1
+            else:
+                mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, ind.hard_satisfied)
+            if impl in ("v2", "hard"):
                 # v2 skips the block below (a pre-polish evaluation of the child
                 # and a NoopProvider advisor call whose advice is empty) but keeps
                 # its one RNG draw, the advisor's rng_seed, so the stream is v1's.
@@ -192,12 +243,25 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 ls_call = dict(ls_small, time_limit_s=min(ls_small["time_limit_s"], remaining))
             else:
                 ls_call = ls_small
-            child_bits, flips_t1 = polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
+            if hard_mode:
+                child_bits, flips_t1, noops = short_polish_hard(child_bits, wcnf, ls_call,
+                                                                rng_seed=rng.randrange(1 << 30))
+                hstats.polish_calls += 1
+                hstats.polish_steps += flips_t1
+                hstats.polish_noop_steps += noops
+            else:
+                child_bits, flips_t1 = polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
             flips_t += flips_t1
             child = Individual(assign01=child_bits, meta={"gen": gen})
             pop.evaluate(wcnf, child)
             new_members.append(child)
             total_children += 1
+            if hard_mode:
+                hstats.children += 1
+                if child.hard_violations:
+                    hstats.children_infeasible_after_polish += 1
+                    hstats.hv_max_child_after_polish = max(hstats.hv_max_child_after_polish,
+                                                           child.hard_violations)
 
             # Incumbent tracking moved inside the fill loop so the target check
             # can fire after each child's polish rather than only at
@@ -212,6 +276,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             # tie-break (first individual to attain the maximum wins).
             if child.fitness > best.fitness:
                 best = child.copy()
+                if hard_mode and best.hard_violations:
+                    hstats.incumbent_infeasible_events += 1
                 if _at_target(best):
                     stop_reason = "target"
                     time_to_target_s = time.time() - start_t
@@ -271,6 +337,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     elapsed = max(1e-9, time.time() - start_t)
     exports = _assignment_exports(best.assign01)
     soft, hv = evaluate_assignment(wcnf, best.assign01)
+    if hard_mode:
+        hstats.hard_feasible_final = hv == 0
     #print(flips_t)
     return {
         "best_soft_weight": float(soft),
@@ -283,6 +351,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         "stop_reason": stop_reason,
         "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
         "impl": impl,
+        "hard": hstats.as_dict() if hard_mode else None,
         "meta": {"ea_generations": gen, "children": total_children, **exports,},
         "satisfied_clauses": {
             "total": total_clauses,

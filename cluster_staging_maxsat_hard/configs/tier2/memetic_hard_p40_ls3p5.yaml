@@ -1,0 +1,29 @@
+# Hard-clause arm (this tree, milestone H2): memetic_deeppolish_p40_ls3p5_v2.yaml
+# with `impl: hard` (src/evo/hard.py):
+#   - population = Glucose4 models of the hard clauses, with preferred phases
+#     drawn per member from the JW prior over the soft clauses (`hard.phases:
+#     jw`; `random` = fair coins); Glucose time is charged to the run clock;
+#   - mutation's "never break a satisfied hard clause" guard checks the child;
+#   - polish is hard-safe, and a step with no allowed flip counts against the
+#     step budget (no idling to the time limit).
+# Crossover is v2's (it does not yet keep feasibility -- H3), so infeasible
+# children are possible and are counted under the record's `hard` key.
+# Every other key is copied from memetic_deeppolish_p40_ls3p5_v2.yaml.
+# This is a new algorithm: never pooled with v1/v2 rows
+# (docs/current/HARD_CLAUSE_SOLVER_PLAN.md §2).
+impl: hard
+hard:
+  phases: jw
+  max_tries_per_member: 3
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 3.5
+  flip_budget: 12500

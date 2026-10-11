@@ -265,11 +265,72 @@ Seconds stay the primary effort measure. They are comparable only within one
 |---|---|---|---|
 | **H0** ✓ | this plan | `docs/current/HARD_CLAUSE_SOLVER_PLAN.md`; research notes N-2026-10-11-b, -c | none |
 | **H1** ✓ 2026-10-11 | create the tree and copy the solver | `cluster_staging_maxsat_hard/` + `PROVENANCE.md` (source commit `4100ea7`, sha256 of 43 files); identity check: 0 differ; copied tests from inside the tree: 111 passed, 12 skipped (missing data only). N-2026-10-11-j | workstation, seconds |
-| H2 | Glucose init + stale-vector fix + idle no-op fix + feasibility assertions and record fields | code + unit tests (UNSAT hard part, distinct members, hv = 0 invariant) | workstation |
-| H3 | feasibility-preserving crossover (repair) | code + **operator probe** re-run with the §8.5 bar (≥ 95 % feasible children from feasible parents) on the §8.3 instances | workstation, minutes |
+| **H2** ✓ 2026-10-11 | Glucose init + stale-vector fix + idle no-op fix + feasibility assertions and record fields | `impl: hard` (`src/evo/hard.py`, config `memetic_hard_p40_ls3p5.yaml`); 14 new tests, tree total 125 passed / 12 skipped; workstation smoke §6a. N-2026-10-11-k | workstation |
+| H3 | SAT-based repair `R` after crossover/mutation **and** feasible move `M` in the local search (§6a) | code + **operator probe** re-run with the §8.5 bar (≥ 95 % feasible children from feasible parents) on the §8.3 instances | workstation, minutes |
 | H4 | `hard_multistart` arm sharing H2–H3 components; target-hit generation and child index logged on both arms | code + tests | workstation |
 | H5 | small generated hard-clause set and a workstation smoke (both arms, few seeds, short budget) | instances + smoke rows (exploratory, not batch data) | workstation |
 | H6 | RC2 screen + 900 s cluster runs, both arms | manifests, rsync + sbatch commands (user submits) | cluster |
+
+## 6a. H2 result and what it means for H3 (2026-10-11)
+
+**Workstation smoke** of `impl: hard` (config `memetic_hard_p40_ls3p5.yaml`:
+pop 40, 12,500-step polish, 3.5 s). Exploratory, not data.
+
+| instance | budget | Glucose init (40 members) | best initial cost → final | children infeasible before / after polish | polish steps that were no-ops |
+|---|---:|---|---|---|---:|
+| synthetic partial 3-SAT, n 150, hard ratio 3, soft ratio 2 | 20 s | 0.014 s, 40/40 distinct, all feasible | final 15 | 184 / 178 of 194 | 97.4 % |
+| MSE 2023 ja-maxham-00000385 (6,604 vars, 48,294 hard; optimum 37) | 60 s | 0.12 s, 40/40 distinct, all feasible | **61 → 61** | 240 / 240 of 330 | **99.99 %** |
+| MSE 2024 frb40-19-4 (weighted, no hard clauses; best-known 720) | 60 s | 0.03 s | final 753 | 0 / 0 | 0 % |
+
+**Findings [verified on these runs]:**
+1. **Glucose initialisation works and is cheap.**
+   - A hard-feasible, diverse population takes 0.01–0.12 s.
+   - On the same kind of instance, EvalMaxSAT had no incumbent at all after
+     600 s (`MSE_EVALMAXSAT_3600.md` §5a).
+   - The incumbent stayed feasible in every run
+     (`incumbent_infeasible_events` = 0).
+2. **Crossover breaks feasibility, as the §8.3 probe predicted.**
+   - Before polish, 66 % (ja-385) and 95 % (synthetic) of children are
+     infeasible.
+   - The polish repairs almost none: on ja-385, 240 infeasible before polish
+     and 240 after.
+3. **New: from a feasible start, single hard-safe flips almost never exist.**
+   - 99.99 % of polish steps on ja-385 were no-ops.
+   - The feasible region of these instances is rigid under one-variable
+     flips: every soft-improving flip breaks some hard clause.
+   - So the polish cannot improve feasible members either. On ja-385 the run
+     ended exactly at its best Glucose start (61), against the optimum 37.
+   - With the H2 no-op counting, those calls stop at the step budget instead
+     of idling, which is how this became visible.
+
+**Consequence for H3 [inference].** Repairing crossover children (§4.3) is
+needed, but it is not enough: the local search itself needs a move that works
+inside the feasible region. Both can use the same SAT-based operator.
+- **Repair `R(x)`.** Glucose on the hard clauses, with x as preferred phases.
+  It returns a feasible assignment near x. It is used after crossover and
+  mutation, so every child is feasible: by construction whenever the hard
+  part is satisfiable.
+- **Feasible move `M(x)` (a large-neighbourhood step).**
+  1. Pick an unsatisfied soft clause C, weighted by its weight.
+  2. Assume one of its literals true, keep x as preferred phases, and
+     re-solve the hard clauses with Glucose.
+  3. The result x′ is feasible and satisfies C. It may change several
+     variables at once, which is exactly what single flips cannot do.
+  4. Accept x′ if its cost is no worse (with a small noise probability
+     otherwise). Then run the hard-safe flip polish.
+
+  This is the phase-saving SAT-based local search used by anytime MaxSAT
+  solvers. It needs no objective information from the SAT solver, so the
+  "roles" rule of `CORPUS_FREEZE_PREP.md` §8.4 still holds. Every Glucose
+  call is charged to the run clock.
+- **H3 acceptance, kept from §8.5:** ≥ 95 % feasible children from feasible
+  parents in the operator probe; feasibility on every seed.
+- **Added acceptance:** on ja-385 and the synthetic instance, the final cost
+  is below the best Glucose start on every seed within 60 s. That is a
+  minimal check that the search moves, not a performance claim.
+- **The multistart arm (H4)** gets the same `R`/`M` operators. A
+  Glucose-seeded multistart with `M` moves is the natural "multistart may be
+  enough" control (§5).
 
 ## 7. Open questions for the user
 

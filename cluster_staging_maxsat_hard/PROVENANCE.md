@@ -52,7 +52,26 @@ changed since.
 
 ## Changes since creation
 
-*(none yet; H2 starts here)*
+### 2026-10-11 — H2: `impl: hard`
+
+`impl: v1` and `impl: v2` are unchanged in behaviour. All 111 tests copied at
+creation still pass (12 skips, all missing data). Every new behaviour sits
+behind `impl: hard`, or behind a new keyword that defaults off.
+
+| file | change |
+|---|---|
+| `src/evo/hard.py` | **new.** `glucose_init`: the population is Glucose4 models of the hard clauses only. Phases are drawn per member: the JW prior over soft clauses, or coins. The solver is reused across members, duplicates are retried, and every call is interrupted at the run deadline. Status `hard_unsat` / `glucose_timeout`. `short_polish_hard`: v2 polish, hard-safe, with no-op steps counted. `HardStats`: the bookkeeping reported under `hard`. |
+| `src/sat/walksat_v2.py` | keyword `budget_counts_noops=False`: when True, iterations that apply no flip count against `max_flips`, so a hard-clause call cannot idle to its time limit. Additive return key `noop_steps`. With the default, v2 is unchanged; its 57 equivalence tests pass. |
+| `src/evo/impl_v2.py` | `IMPLS` gains `"hard"`; for it the selectors return v2's crossover and polish. memetic.py routes the hard polish itself. |
+| `src/evo/memetic.py` | under `impl: hard`: the run clock starts **before** initialisation, so Glucose time is charged. Glucose init replaces JW seeding. `mutate1` gets the **child's** hard-satisfaction vector, not the stale one of the last initial member. Polish goes through `short_polish_hard`. Children infeasible before polish (after crossover + mutation) and after polish are counted, and so is the best initial cost. Result key `hard`. `_hard_abort` returns a reported result when there is no feasible start. |
+| `src/cli/run_memetic_shard.py` | additive record field `hard` (None for v1/v2). |
+| `configs/tier2/memetic_hard_p40_ls3p5.yaml` | **new.** The v2 primary config with `impl: hard`, `hard.phases: jw`. |
+| `tests/test_hard_h2.py` | **new.** 14 tests: init feasible, distinct and reproducible; soft-only variables take their phase; unsat; deadline; the mutation guard (and the old bug reproduced with a stale vector); no-op counting; the hard polish keeps feasibility; end to end; abort reporting; v1/v2 carry no `hard` block; the shard records it. |
+
+**Not yet (H3):** crossover does not keep feasibility, so infeasible children
+can still occur; they are counted. The incumbent stays feasible: all initial
+members are feasible, elitism keeps them, and an infeasible fitness is below
+any feasible one.
 
 ## sha256 at creation (commit 4100ea7)
 

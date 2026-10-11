@@ -37,7 +37,9 @@ from typing import Any, Callable, Dict, List, Tuple
 from .operators import _soft_proxy_scores, clause_aware_crossover1, short_polish
 from sat.walksat_v2 import walksat_polish_v2  # same import style as operators.py
 
-IMPLS = ("v1", "v2")
+# "hard" (this tree, H2): v2 plus Glucose initialisation, a child-correct
+# mutation guard and a no-op-counting polish -- src/evo/hard.py.
+IMPLS = ("v1", "v2", "hard")
 
 
 def memetic_impl(cfg: Dict[str, Any]) -> str:
@@ -207,8 +209,10 @@ def clause_aware_crossover1_v2(p1, p2, wcnf, rng) -> List[bool]:
 # --- selection -----------------------------------------------------------------
 
 def select_polish(cfg: Dict[str, Any]) -> Callable:
-    return short_polish_v2 if memetic_impl(cfg) == "v2" else short_polish
+    # "hard" polishes through evo/hard.short_polish_hard in memetic.py; this
+    # selector is only consulted for v1/v2.
+    return short_polish_v2 if memetic_impl(cfg) in ("v2", "hard") else short_polish
 
 
 def select_crossover(cfg: Dict[str, Any]) -> Callable:
-    return clause_aware_crossover1_v2 if memetic_impl(cfg) == "v2" else clause_aware_crossover1
+    return clause_aware_crossover1_v2 if memetic_impl(cfg) in ("v2", "hard") else clause_aware_crossover1

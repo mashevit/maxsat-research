@@ -51,6 +51,29 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-11-k — Hard-clause H2 (`impl: hard`): Glucose init feasible and fast; crossover breaks feasibility; single hard-safe flips are almost always impossible (ja-385: 99.99 % no-op steps, 61 → 61 in 60 s) [verified on workstation smoke + inference]
+
+- **Implemented** in `cluster_staging_maxsat_hard/`; logged in its
+  `PROVENANCE.md`.
+  - Glucose4 initialisation with phases drawn per member (JW or coins),
+    charged to the run clock.
+  - The mutation guard uses the child's vector. The stale-vector bug is
+    reproduced in a test.
+  - The v2 polish gains opt-in no-op counting.
+  - `HardStats` is reported under `hard`.
+  - Tests: 14 new; tree total 125 passed, 12 skipped.
+- **Smoke** (`HARD_CLAUSE_SOLVER_PLAN.md` §6a):
+  - init: 40 distinct feasible members in 0.01–0.12 s;
+  - before polish, 66–95 % of children are infeasible, and polish does not
+    repair them;
+  - on ja-maxham-00000385, 99.99 % of polish steps were no-ops and the cost
+    stayed at the best Glucose start (61; optimum 37).
+- **[inference]** Repairing children alone will not make the solver search.
+  The feasible region is rigid under single flips. H3 should add a SAT-based
+  feasible move: assume an unsatisfied soft literal and re-solve the hard
+  clauses with the current assignment as phases. It shares the repair
+  operator. That is a proposal; it needs the user's approval.
+
 ### N-2026-10-11-j — Hard-clause solver H1: `cluster_staging_maxsat_hard/` created from commit 4100ea7 [verified]
 
 > start the hard-clause solver, create the new folder

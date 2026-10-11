@@ -33,7 +33,7 @@ alias, so every cluster step is a command the user runs on the login node.
 | SATLIB memetic manifest (95 eligible) | not started | intake §8 |
 | `calib_c` | on hold (R3-a) | §0, §4 |
 | MIS / Max-Clique diagnostic | proposed, not prepared | `CORPUS_FREEZE_PREP.md` §8.5 |
-| **Hard-clause solver, new staging tree** | H0 plan written; **H1 done 2026-10-11: `cluster_staging_maxsat_hard/` created from commit `4100ea7`** (identity verified, copied tests 111 passed / 12 skipped). Next: H2 (Glucose init, feasibility fixes), awaiting approval | `HARD_CLAUSE_SOLVER_PLAN.md`, `cluster_staging_maxsat_hard/PROVENANCE.md`, N-2026-10-11-b/j |
+| **Hard-clause solver, new staging tree** | H0 plan written; **H1 done 2026-10-11: `cluster_staging_maxsat_hard/` created from commit `4100ea7`** (identity verified, copied tests 111 passed / 12 skipped). **H2 done 2026-10-11** (`impl: hard`: Glucose init, child-correct mutation guard, no-op-counting polish; 125 tests pass). Finding: single hard-safe flips almost never exist (ja-385 99.99 % no-ops, no progress from the Glucose start). Next: H3 = SAT-based repair + feasible move (plan §6a), awaiting approval | `HARD_CLAUSE_SOLVER_PLAN.md`, `cluster_staging_maxsat_hard/PROVENANCE.md`, N-2026-10-11-b/j |
 | **EvalMaxSAT 3600 s on MSE 2023/2024** (sample s1, 2 × 30) | **prepared and tested 2026-10-11; not submitted**. Driver fixed (new WCNF dialect, SIGTERM anytime stop) | `MSE_EVALMAXSAT_3600.md`, N-2026-10-11-f/g |
 | MSE 2016 | all-soft; 900 s RC2 screen never run; not part of the EvalMaxSAT batch | `MSE_EVALMAXSAT_3600.md` §2, §4 |
 

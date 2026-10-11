@@ -373,6 +373,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         "ea_generations": None,
         "children": None,
         "memetic_impl": None,
+        # `impl: hard` only (this tree, H2): Glucose-init and feasibility
+        # bookkeeping from src/evo/hard.HardStats; None for v1/v2.
+        "hard": None,
         # local_multistart-only; stay null on the EA path, where a "restart" has
         # no meaning (run_memetic reports a hard-coded 0).
         "restarts": None,
@@ -478,6 +481,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     rec["time_to_target_s"] = None if ttt is None else round(float(ttt), 3)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["memetic_impl"] = res.get("impl")
+    rec["hard"] = res.get("hard")
     rec["children"] = meta.get("children")
     rec["total_flips"] = int(res.get("total_flips", 0))
     rec["best_assignment_hash"] = "sha256-12:" + hashlib.sha256(bits.encode()).hexdigest()[:12]
