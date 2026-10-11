@@ -6,7 +6,15 @@ Plain `p cnf` files are converted to all-soft WCNF (weight 1, top = m+1)
 before being handed to EvalMaxSAT -- fed a raw `p cnf` file it treats every
 clause as hard and silently answers `s UNSATISFIABLE`
 (see docs/archive/CORPUS_MSE2016_ASSESSMENT.md, "EvalMaxSAT does not accept them").
-`.wcnf` files are passed through unchanged.
+`.wcnf` files are passed through unchanged, in either dialect: the old one
+(`p wcnf n m top`, a weight on every line) or the new MSE >= 2022 one (no
+`p` line; hard clauses start with `h`, soft lines with their weight).
+
+At the cap the solver gets SIGTERM, not SIGKILL. EvalMaxSAT is anytime: on
+SIGTERM it prints its incumbent (`o <cost>`, `s SATISFIABLE`, `v ...`) and
+exits 10. That incumbent is model-checked like an optimum and recorded as
+`best_cost` with `status = timeout`, so a capped run still gives a verified
+upper bound. SIGKILL follows only if the solver outlives `--term-grace`.
 
 Each result is appended as one JSON line; re-running on the same output file
 skips instances already solved (resumable). The reported model is re-checked
@@ -24,6 +32,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -45,13 +54,21 @@ class Formula:
     n_vars: int
     hard: List[List[int]]
     soft: List[Tuple[int, List[int]]]   # (weight, lits)
-    fmt: str                            # "cnf" | "wcnf"
+    fmt: str                            # "cnf" | "wcnf" | "wcnf_new" (no p line, `h` = hard)
 
 
 def read_formula(path: str) -> Formula:
+    """Old `p cnf` / `p wcnf` files, or the new WCNF dialect.
+
+    The dialect is fixed by the first non-comment line: a `p` line means the
+    old dialects; any clause line before a `p` line means the new one (no `p`
+    line at all; `h ...` hard, `<weight> ...` soft). The new dialect is never
+    guessed from the presence of `h` lines, so a new-format file with soft
+    clauses only (17 of the 166 MSE 2023/2024 files) is still read as WCNF.
+    """
     n_vars = 0
     top: Optional[int] = None
-    fmt = "cnf"
+    fmt: Optional[str] = None
     hard: List[List[int]] = []
     soft: List[Tuple[int, List[int]]] = []
     with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -60,28 +77,41 @@ def read_formula(path: str) -> Formula:
             if not line or line[0] in "c%":
                 continue
             if line.startswith("p"):
+                if fmt is not None:
+                    raise ValueError("p line after clause lines")
                 parts = line.split()
                 fmt = parts[1]
                 n_vars = int(parts[2])
                 if fmt == "wcnf" and len(parts) >= 5:
                     top = int(parts[4])
                 continue
+            if fmt is None:
+                fmt = "wcnf_new"
+            if fmt == "wcnf_new" and line[0] == "h":
+                toks = [int(t) for t in line[1:].split()]
+                if toks and toks[-1] == 0:
+                    toks = toks[:-1]
+                hard.append(toks)
+                for lit in toks:
+                    n_vars = max(n_vars, abs(lit))
+                continue
             toks = [int(t) for t in line.split()]
             if not toks:
                 continue
             if toks[-1] == 0:
                 toks = toks[:-1]
-            if fmt == "wcnf":
+            if fmt in ("wcnf", "wcnf_new"):
                 w, lits = toks[0], toks[1:]
-                if top is not None and w >= top:
+                if fmt == "wcnf" and top is not None and w >= top:
                     hard.append(lits)
                 else:
                     soft.append((w, lits))
             else:
-                soft.append((1, toks))
-            for lit in (toks[1:] if fmt == "wcnf" else toks):
+                lits = toks
+                soft.append((1, lits))
+            for lit in lits:
                 n_vars = max(n_vars, abs(lit))
-    return Formula(n_vars=n_vars, hard=hard, soft=soft, fmt=fmt)
+    return Formula(n_vars=n_vars, hard=hard, soft=soft, fmt=fmt or "cnf")
 
 
 def write_all_soft_wcnf(formula: Formula, out_path: str) -> None:
@@ -116,14 +146,19 @@ class OracleResult:
     n_vars: int
     n_hard: int
     n_soft: int
-    status: str                     # optimal | timeout | unsat | error
+    status: str                     # optimal | timeout | unsat | error  (timeout may carry a verified best_cost)
     opt_cost: Optional[int]         # only when status == optimal (and verified)
-    best_cost: Optional[int]        # last `o` line seen (== opt_cost when optimal)
-    verified: Optional[bool]        # model re-evaluated == reported cost
+    best_cost: Optional[int]        # last `o` line seen (== opt_cost when optimal; the incumbent at SIGTERM on timeout)
+    verified: Optional[bool]        # the printed model re-evaluated == best_cost, with no hard clause violated
     time_s: float
     solver_time_s: Optional[float]  # EvalMaxSAT's own "c Total time"
     timeout_s: float
     note: str = ""
+    # added 2026-10-11 (SIGTERM at the cap; all optional, so older rows still load)
+    s_line: Optional[str] = None      # the solver's `s` line, e.g. "OPTIMUM FOUND", "SATISFIABLE", "UNKNOWN"
+    exit_code: Optional[int] = None   # MSE convention: 30 optimum, 20 unsat, 10 incumbent at SIGTERM
+    stopped_by: Optional[str] = None  # None (finished) | "sigterm" | "sigkill"
+    term_grace_s: Optional[float] = None
 
 
 _RE_TOTAL = re.compile(r"c Total time\s*:\s*([0-9.eE+-]+)\s*s")
@@ -157,7 +192,8 @@ def sha256_of(path: str) -> str:
     return h.hexdigest()
 
 
-def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], keep_wcnf: bool) -> OracleResult:
+def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], keep_wcnf: bool,
+              term_grace_s: float = 120.0) -> OracleResult:
     t0 = time.perf_counter()
     rel = os.path.relpath(path, REPO_ROOT) if path.startswith(REPO_ROOT) else path
     base = dict(instance=rel, sha256=sha256_of(path), timeout_s=timeout_s)
@@ -170,7 +206,7 @@ def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], k
     base.update(format=formula.fmt, n_vars=formula.n_vars, n_hard=len(formula.hard), n_soft=len(formula.soft))
 
     tmp_path = None
-    if formula.fmt == "wcnf":
+    if formula.fmt in ("wcnf", "wcnf_new"):
         solver_input = path
     else:
         fd, tmp_path = tempfile.mkstemp(prefix=os.path.basename(path) + ".", suffix=".wcnf")
@@ -180,17 +216,29 @@ def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], k
 
     stdout = ""
     timed_out = False
+    stopped_by: Optional[str] = None
+    exit_code: Optional[int] = None
     note = ""
     try:
-        proc = subprocess.run([binary, *extra_args, solver_input], capture_output=True, text=True, timeout=timeout_s)
-        stdout = proc.stdout
-        if proc.returncode != 0 and "s OPTIMUM FOUND" not in stdout:
-            note = f"rc={proc.returncode} stderr={proc.stderr.strip()[:200]}"
-    except subprocess.TimeoutExpired as e:
-        timed_out = True
-        stdout = (e.stdout or b"")
-        if isinstance(stdout, bytes):
-            stdout = stdout.decode("utf-8", errors="replace")
+        proc = subprocess.Popen([binary, *extra_args, solver_input], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True)
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout_s)
+        except subprocess.TimeoutExpired:
+            # Anytime stop: SIGTERM makes EvalMaxSAT print its incumbent and exit 10.
+            timed_out = True
+            stopped_by = "sigterm"
+            proc.send_signal(signal.SIGTERM)
+            try:
+                stdout, stderr = proc.communicate(timeout=term_grace_s)
+            except subprocess.TimeoutExpired:
+                stopped_by = "sigkill"
+                proc.kill()
+                stdout, stderr = proc.communicate()
+        exit_code = proc.returncode
+        # MSE exit codes: 10 incumbent (SATISFIABLE), 20 UNSATISFIABLE, 30 OPTIMUM FOUND
+        if exit_code not in (0, 10, 20, 30) and "s OPTIMUM FOUND" not in (stdout or ""):
+            note = f"rc={exit_code} stderr={(stderr or '').strip()[:200]}"
     finally:
         if tmp_path and not keep_wcnf:
             try:
@@ -199,6 +247,7 @@ def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], k
                 pass
         elif tmp_path:
             note = (note + f" wcnf={tmp_path}").strip()
+    stdout = stdout or ""
 
     o_vals: List[int] = []
     s_line = ""
@@ -221,10 +270,24 @@ def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], k
 
     best = o_vals[-1] if o_vals else None
     elapsed = time.perf_counter() - t0
+    base.update(s_line=s_line or None, exit_code=exit_code, stopped_by=stopped_by,
+                term_grace_s=term_grace_s if timed_out else None)
+
+    def check_model() -> Tuple[Optional[bool], str]:
+        assign = parse_model(v_lines, formula.n_vars)
+        if assign is None or best is None:
+            return None, ""
+        cost, hard_viol = cost_of_model(formula, assign)
+        ok = hard_viol == 0 and cost == best
+        return ok, ("" if ok else f" model check: cost={cost} hard_viol={hard_viol} reported={best}")
 
     if timed_out:
-        return OracleResult(**base, status="timeout", opt_cost=None, best_cost=best, verified=None,
-                            time_s=elapsed, solver_time_s=solver_time, note=note)
+        verified, msg = check_model()
+        if s_line == "UNKNOWN":
+            msg += " no hard-feasible incumbent at the cap"
+        return OracleResult(**base, status="timeout", opt_cost=None,
+                            best_cost=best if verified is not False else None, verified=verified,
+                            time_s=elapsed, solver_time_s=solver_time, note=(note + msg).strip())
     if s_line == "UNSATISFIABLE":
         return OracleResult(**base, status="unsat", opt_cost=None, best_cost=None, verified=None,
                             time_s=elapsed, solver_time_s=solver_time,
@@ -234,13 +297,8 @@ def solve_one(path: str, binary: str, timeout_s: float, extra_args: List[str], k
                             time_s=elapsed, solver_time_s=solver_time,
                             note=(note + f" s='{s_line}' tail={stdout[-200:]!r}").strip())
 
-    verified: Optional[bool] = None
-    assign = parse_model(v_lines, formula.n_vars)
-    if assign is not None:
-        cost, hard_viol = cost_of_model(formula, assign)
-        verified = (hard_viol == 0 and cost == best)
-        if not verified:
-            note = (note + f" model check: cost={cost} hard_viol={hard_viol} reported={best}").strip()
+    verified, msg = check_model()
+    note = (note + msg).strip()
     return OracleResult(**base, status="optimal", opt_cost=best if verified is not False else None,
                         best_cost=best, verified=verified, time_s=elapsed, solver_time_s=solver_time, note=note)
 
@@ -286,6 +344,8 @@ def main() -> int:
     ap.add_argument("--csv", default=None, help="also write a CSV summary of the whole JSONL at the end")
     ap.add_argument("--bin", default=DEFAULT_BIN, help="EvalMaxSAT_bin path")
     ap.add_argument("--timeout", type=float, default=1800.0, help="per-instance wall-clock cap in seconds")
+    ap.add_argument("--term-grace", type=float, default=120.0,
+                    help="seconds after SIGTERM (sent at --timeout) before SIGKILL")
     ap.add_argument("--jobs", type=int, default=1, help="instances solved concurrently")
     ap.add_argument("--ext", default=".cnf,.wcnf", help="comma-separated extensions when walking dirs")
     ap.add_argument("--keep-wcnf", action="store_true", help="keep the converted WCNF temp files")
@@ -311,13 +371,14 @@ def main() -> int:
 
     counts = {"optimal": 0, "timeout": 0, "unsat": 0, "error": 0}
     with open(args.out, "a", encoding="utf-8") as out_f, ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        futs = {pool.submit(solve_one, p, args.bin, args.timeout, args.solver_arg, args.keep_wcnf): p for p in todo}
+        futs = {pool.submit(solve_one, p, args.bin, args.timeout, args.solver_arg, args.keep_wcnf,
+                            args.term_grace): p for p in todo}
         for i, fut in enumerate(as_completed(futs), 1):
             r = fut.result()
             counts[r.status] += 1
             out_f.write(json.dumps(asdict(r)) + "\n")
             out_f.flush()
-            tag = f"o={r.opt_cost}" if r.status == "optimal" else f"best={r.best_cost}"
+            tag = f"o={r.opt_cost}" if r.status == "optimal" else f"ub={r.best_cost}"
             ver = "" if r.verified is None else (" verified" if r.verified else " MISMATCH")
             print(f"[{i}/{len(todo)}] {r.status:8s} {tag:>10s}{ver} {r.time_s:8.1f}s  {r.instance}"
                   + (f"  ({r.note})" if r.note else ""), file=sys.stderr)

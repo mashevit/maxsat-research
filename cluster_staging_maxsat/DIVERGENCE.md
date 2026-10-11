@@ -448,3 +448,19 @@ and verified IDENTICAL on 2026-10-08. v1 (an absent `impl` key, i.e. every
 existing config) runs exactly the historical code. Documentation:
 `docs/current/MEMETIC_IMPL_V2.md` (why, design, equivalence, speed); tests:
 `tests/test_walksat_v2.py`; benchmark: `scripts/bench_walksat_v1_v2.py`.
+
+## 2026-10-11: EvalMaxSAT oracle driver (staging only)
+
+`src/cli/oracle_evalmaxsat.py` now differs from the repo copy at
+`../src/cli/oracle_evalmaxsat.py`, which is the old version.
+- **New WCNF dialect.** The staging copy reads files with no `p` line
+  (`h` = hard).
+- **SIGTERM at the cap.** The solver gets SIGTERM, then SIGKILL after a
+  grace period. EvalMaxSAT then prints its incumbent, which the driver
+  model-checks.
+- **New row fields:** `s_line`, `exit_code`, `stopped_by`, `term_grace_s`.
+  They are additive.
+
+The memetic closure is untouched. Documentation:
+`docs/current/MSE_EVALMAXSAT_3600.md` §5. Tests:
+`tests/test_oracle_evalmaxsat.py`.
