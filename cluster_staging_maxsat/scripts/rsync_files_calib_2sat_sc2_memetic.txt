@@ -1,0 +1,51 @@
+# rsync --files-from list for the calib_2sat_sc2 memetic assessment, impl v2, two arms (docs/current/CALIB_2SAT_SC.md §13b).
+# Paths relative to cluster_staging_maxsat/. Destination: ~/cluster_staging_maxsat_evo/.
+#
+# 1. Solver code: every module a run imports (traced on the workstation, 2026-10-11).
+# 1a. UPDATED relative to the cluster (the cluster copies date from the M2 submit of 2026-10-04,
+#     provenance results/m2_full_p40/provenance/submit_20261004T114233Z.txt; changed by the v2 commit 182d348):
+src/cli/run_memetic_shard.py
+src/evo/memetic.py
+src/evo/impl_v2.py
+src/sat/walksat_v2.py
+# 1b. Unchanged since then (sha256 equal to that provenance); re-sent only for completeness.
+src/__init__.py
+src/cli/__init__.py
+src/evo/__init__.py
+src/evo/multistart.py
+src/evo/operators.py
+src/evo/population.py
+src/llm/__init__.py
+src/llm/advisor.py
+src/llm/providers/__init__.py
+src/llm/providers/noop.py
+src/sat/__init__.py
+src/sat/cnf.py
+src/sat/state.py
+src/sat/walksat.py
+# 2. The rest of src/ (not imported by these runs; uploaded so that src_tree_sha256 in the submit provenance matches the workstation tree).
+src/cli/oracle_evalmaxsat.py
+src/cli/profile_hardness.py
+src/cli/run_opt_rc2.py
+src/cli/solve_rc2_anytime.py
+src/llm/prompt.py
+src/llm/providers/ollama.py
+# 3. Configs: the two arms, and the pre-registered v1 arm that the build compares them with.
+configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml
+configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml
+configs/tier2/memetic_deeppolish_p40_ls3p5.yaml
+# 4. Driver, submit script, results tool, manifest (36 tasks) and this list.
+scripts/tier2_memetic_array.sbatch
+scripts/submit_m2_memetic.sh
+scripts/m2_results.py
+scripts/manifest_calib_2sat_sc2_m2v2.tsv
+scripts/manifest_calib_2sat_sc2_m2v2.tasks.csv
+scripts/manifest_calib_2sat_sc2_m2v2.sha256
+scripts/rsync_files_calib_2sat_sc2_memetic.txt
+# 5. The 6 instances (already on the cluster from the RC2 run; re-sent so sha256sum -c is certain).
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s251.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s253.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s255.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s256.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s257.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s258.wcnf

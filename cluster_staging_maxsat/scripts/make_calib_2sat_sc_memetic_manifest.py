@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Build the memetic-assessment manifest for the `promising` cells of calib_2sat_sc2.
+
+Plan: docs/current/CALIB_2SAT_SC.md §6 (pre-registered follow-up) and §13b (repo).
+
+SELECTION (§6, unchanged): the `eligible` instances of every `promising` cell,
+read from the readout CSVs that scripts/calib_2sat_sc_readout.py writes
+(results/<batch>/{instances,cells}.csv). The readout is re-run with --check first,
+so stale CSVs stop the build. Instances of other cells are not run; this
+script lists them with their class in the .not_run.csv sidecar.
+
+ARMS (user decisions 2026-10-11), paired line by line on the same instances and
+seeds:
+  p40_ls3p5_v2       the pre-registered primary arm with `impl: v2`
+                     (configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml)
+  p40_ls3p5_f200k_v2 the same with the per-call flip limit 12,500 -> 200,000
+                     (configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml)
+The build checks that each config equals memetic_deeppolish_p40_ls3p5.yaml key
+for key except `impl: v2` and, for the second arm, ls.ls_polish_flips and
+ls.flip_budget. Solver seeds 1-3, 900 s budget, stop at the RC2 optimum,
+grace 60.
+
+OUTPUTS (scripts/, the M2 formats plus `memetic_impl` and `ls_polish_flips`
+sidecar columns that m2_results.py checks against each shard;
+submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
+
+    manifest_<batch>_m2v2.tsv          9 columns read by tier2_memetic_array.sbatch
+    manifest_<batch>_m2v2.tasks.csv    sidecar
+    manifest_<batch>_m2v2.sha256       `sha256sum -c` list of its instances
+    manifest_<batch>_m2v2.not_run.csv  every other instance of the batch + reason
+
+    python3 scripts/make_calib_2sat_sc_memetic_manifest.py          # write
+    python3 scripts/make_calib_2sat_sc_memetic_manifest.py --check  # rebuild, diff, exit 3 on drift
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import io
+import os
+import subprocess
+import sys
+from typing import Any, Dict, List, Tuple
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import make_m2_manifests as m2  # noqa: E402  (ARMS, BUDGET_S, render, sha256_file, group_of)
+
+BATCH = "calib_2sat_sc2"
+BASE_ARM = "p40_ls3p5"
+IMPL = "v2"
+# arm -> (config path, config_id, job-id tag, per-call flip limit)
+ARMS = {
+    "p40_ls3p5_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml",
+                     "memetic_deeppolish_p40_ls3p5_v2", "p40ls3p5v2", 12500),
+    "p40_ls3p5_f200k_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml",
+                           "memetic_deeppolish_p40_ls3p5_f200k_v2", "p40ls3p5f200kv2", 200000),
+}
+EXTRA_COLS = ["memetic_impl", "ls_polish_flips"]
+SOLVER_SEEDS = (1, 2, 3)
+STEM = f"manifest_{BATCH}_m2v2"
+NOT_RUN_COLS = ["instance", "instance_sha256", "cell_id", "gen_seed", "cell_outcome", "class",
+                "rc2_status", "solve_s", "c_star", "lower_bound"]
+
+
+def check_arm() -> None:
+    """Each config is the pre-registered arm plus `impl: v2` and its flip limit, nothing else."""
+    m2.check_arms()
+    base_path = m2.ARMS[BASE_ARM][0]
+    for path, _cid, _tag, flips in ARMS.values():
+        want = m2.load_config(base_path)
+        want["impl"] = IMPL
+        want["ls"] = dict(want["ls"], ls_polish_flips=flips, flip_budget=flips)
+        if m2.load_config(path) != want:
+            raise m2.BuildError(f"{path} differs from {base_path} beyond impl {IMPL} "
+                                f"and the flip limit {flips}")
+
+
+def read_csv(path: str) -> List[Dict[str, str]]:
+    with open(path, encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def select(inst_rows: List[Dict[str, str]], cell_rows: List[Dict[str, str]]
+           ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Pure selection: (eligible instances of promising cells, every other instance)."""
+    outcome = {c["cell_id"]: c["outcome"] for c in cell_rows}
+    if any(c["outcome"] == "incomplete" or int(c["failed"]) for c in cell_rows):
+        raise m2.BuildError("a cell is incomplete or has failed rows -- re-run RC2 first")
+    elig, not_run = [], []
+    for r in inst_rows:
+        out = outcome.get(r["cell_id"])
+        if out is None:
+            raise m2.BuildError(f"{r['instance']}: cell {r['cell_id']} not in cells.csv")
+        if out == "promising" and r["class"] == "eligible":
+            s = float(r["solve_s"])
+            elig.append({"instance": r["instance"], "instance_sha256": r["instance_sha256"],
+                         "batch": BATCH, "cell_id": r["cell_id"], "gen_seed": int(r["gen_seed"]),
+                         "m": int(r["m"]), "oracle_cost": int(r["c_star"]), "rc2_solve_s": s,
+                         "rc2_tier": "", "analysis_group": m2.group_of(s)})
+        else:
+            not_run.append({"instance": r["instance"], "instance_sha256": r["instance_sha256"],
+                            "cell_id": r["cell_id"], "gen_seed": r["gen_seed"], "cell_outcome": out,
+                            "class": r["class"], "rc2_status": r["rc2_status"], "solve_s": r["solve_s"],
+                            "c_star": r["c_star"], "lower_bound": r["lower_bound"]})
+    elig.sort(key=lambda e: (e["cell_id"], e["gen_seed"]))
+    for i, e in enumerate(elig, 1):
+        e["pop_idx"] = f"sc{i:02d}"
+    return elig, not_run
+
+
+def tasks_for(elig: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Both arms adjacent for every (instance, seed): paired line by line."""
+    _path, _cid, pop, ls_t, dmode = m2.ARMS[BASE_ARM]
+    out = []
+    for e in elig:
+        for seed in SOLVER_SEEDS:
+            for arm, (path, cid, tag, flips) in ARMS.items():
+                out.append({
+                    "job_id": f"sc2_{tag}_{e['pop_idx'][2:]}_s{seed}", "stage": BATCH, "arm": arm,
+                    "config_id": cid, "config": path, "pop_size": pop, "ls_time_limit_s": ls_t,
+                    "deadline_mode": dmode, "solver_seed": seed, "budget_s": m2.BUDGET_S, "pilot_idx": "",
+                    "memetic_impl": IMPL, "ls_polish_flips": flips,
+                    **{k: e[k] for k in ("pop_idx", "instance", "instance_sha256", "batch", "cell_id",
+                                         "gen_seed", "m", "oracle_cost", "rc2_solve_s", "rc2_tier",
+                                         "analysis_group")},
+                })
+    return out
+
+
+def render(tasks: List[Dict[str, Any]]) -> Dict[str, str]:
+    """m2.render plus the EXTRA_COLS sidecar columns."""
+    files = m2.render(tasks)
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=m2.TASK_COLS + EXTRA_COLS, lineterminator="\n")
+    w.writeheader()
+    for t in tasks:
+        w.writerow({k: t[k] for k in m2.TASK_COLS + EXTRA_COLS})
+    files[".tasks.csv"] = buf.getvalue()
+    return files
+
+
+def build() -> Dict[str, str]:
+    check_arm()
+    rc = subprocess.run([sys.executable, "scripts/calib_2sat_sc_readout.py", "--batch", BATCH, "--check"],
+                        capture_output=True, text=True)
+    if rc.returncode != 0:
+        raise m2.BuildError(f"readout CSVs are stale or missing (calib_2sat_sc_readout.py --batch {BATCH} "
+                            f"--check exit {rc.returncode}): {rc.stderr.strip()[-300:]}")
+    elig, not_run = select(read_csv(os.path.join("results", BATCH, "instances.csv")),
+                           read_csv(os.path.join("results", BATCH, "cells.csv")))
+    if not elig:
+        raise m2.BuildError("no eligible instance in a promising cell")
+    tier = {r["instance"]: r.get("tier") or "" for r in
+            m2.read_jsonl(os.path.join("results", f"profile_{BATCH}_all.jsonl"))}
+    for e in elig:  # a stale rsync fails the build, not the run
+        e["rc2_tier"] = tier.get(e["instance"], "")
+        if not e["rc2_tier"]:
+            raise m2.BuildError(f"{e['instance']}: no RC2 tier in results/profile_{BATCH}_all.jsonl")
+        sha = m2.sha256_file(e["instance"])
+        if sha != e["instance_sha256"]:
+            raise m2.BuildError(f"{e['instance']}: sha256 {sha} != readout")
+    files = {STEM + suf: text for suf, text in render(tasks_for(elig)).items()}
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=NOT_RUN_COLS, lineterminator="\n")
+    w.writeheader()
+    w.writerows(not_run)
+    files[STEM + ".not_run.csv"] = buf.getvalue()
+    return files
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--check", action="store_true")
+    a = ap.parse_args(argv)
+    files = build()
+    if a.check:
+        bad = [n for n, t in files.items()
+               if not os.path.isfile(os.path.join("scripts", n))
+               or open(os.path.join("scripts", n), encoding="utf-8").read() != t]
+        if bad:
+            print("DRIFT: " + ", ".join(bad), file=sys.stderr)
+            return 3
+        print("CHECK OK")
+        return 0
+    for n, t in files.items():
+        with open(os.path.join("scripts", n), "w", encoding="utf-8", newline="\n") as f:
+            f.write(t)
+    n_tasks = files[STEM + ".tsv"].count("\n")
+    n_nr = files[STEM + ".not_run.csv"].count("\n") - 1
+    print(f"{STEM}: {n_tasks} tasks ({n_tasks // len(SOLVER_SEEDS) // len(ARMS)} eligible x "
+          f"{len(SOLVER_SEEDS)} seeds x {len(ARMS)} arms), "
+          f"{n_nr} not run (see {STEM}.not_run.csv)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -26,7 +26,7 @@ Every task gets exactly one class:
     invalid_submission   shard exists but does not match its manifest row
                          (job_id, config_id, seed, instance sha, budget, grace,
                          stop-at-oracle, pop_size, ls.time_limit_s,
-                         ea.deadline_mode)
+                         ea.deadline_mode, memetic_impl, ls_polish_flips)
     infra_error          status error / parse_error / missing_instance / other
     infra_missing        no shard (Slurm kill, node failure, never ran) or an
                          unreadable one
@@ -104,9 +104,14 @@ def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
         ("oracle_cost", r.get("oracle_cost"), int(t["oracle_cost"])),
         ("ea.pop_size", (cfg.get("ea") or {}).get("pop_size"), int(t["pop_size"])),
         ("ls.time_limit_s", (cfg.get("ls") or {}).get("time_limit_s"), float(t["ls_time_limit_s"])),
-        ("ls.ls_polish_flips", (cfg.get("ls") or {}).get("ls_polish_flips"), 12500),
+        ("ls.ls_polish_flips", (cfg.get("ls") or {}).get("ls_polish_flips"),
+         int(t.get("ls_polish_flips") or 12500)),  # sidecar column only where an arm differs
         ("ea.deadline_mode", (cfg.get("ea") or {}).get("deadline_mode", ""),
          t.get("deadline_mode", "")),
+        # The EA implementation (shard schema 3). Manifests and shards from
+        # before `impl` existed have neither, and both default to v1.
+        ("memetic_impl", r.get("memetic_impl") or cfg.get("impl") or "v1",
+         t.get("memetic_impl") or "v1"),
     ]
     for name, got, want in checks:
         if got != want:
@@ -229,7 +234,9 @@ def paired(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     for r in rows:
         g[(r["pop_idx"], r["instance"], r["analysis_group"], r["solver_seed"])][r["arm"]] = r
     out = []
-    for (pi, inst, grp, seed), by in sorted(g.items(), key=lambda kv: (int(kv[0][0]), int(kv[0][3]))):
+    def idx(pi: str):  # M2 pop_idx is numeric; later batches use a prefix ("cc001", "sc01")
+        return (0, int(pi), "") if pi.isdigit() else (1, 0, pi)
+    for (pi, inst, grp, seed), by in sorted(g.items(), key=lambda kv: (idx(kv[0][0]), int(kv[0][3]))):
         row = {"pop_idx": pi, "instance": inst, "analysis_group": grp, "solver_seed": seed}
         for a in arms:
             r = by.get(a)

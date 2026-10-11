@@ -1,0 +1,21 @@
+# The calib_2sat_sc2 v2 arm (memetic_deeppolish_p40_ls3p5_v2.yaml) with the
+# per-call local-search flip limit raised from 12,500 to 200,000 (user,
+# 2026-10-11). At n = 16000-64000 every 12,500-flip polish call ran to its
+# flip limit in well under the 3.5 s time limit, so the flip limit, not the
+# time limit, ended each call. `ls_polish_flips` is the limit the polish reads; `flip_budget`
+# is its fallback and is kept equal. Every other key is unchanged, including
+# ls.time_limit_s 3.5, which may now bind first on slow nodes.
+# Reference: docs/current/CALIB_2SAT_SC.md §13b (repo).
+impl: v2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 200000
+  time_limit_s: 3.5
+  flip_budget: 200000

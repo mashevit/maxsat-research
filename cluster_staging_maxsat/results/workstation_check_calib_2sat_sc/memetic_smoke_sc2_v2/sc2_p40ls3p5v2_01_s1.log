@@ -1,0 +1,24 @@
+[shard] sc2_p40ls3p5v2_01_s1 ksat_distinct_v16000_k2_m19200_s251.wcnf solver=memetic_ea cfg=memetic_deeppolish_p40_ls3p5_v2 seed=1 budget=120s -> status=ok cost=19 hv=0 opt=12 wall=120.259 stop=time_cap t_target=None restarts=None flips=21722984
+	Command being timed: "/home/mashe/.venvs/maxsat/bin/python -m src.cli.run_memetic_shard --instance data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s251.wcnf --config configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml --config-id memetic_deeppolish_p40_ls3p5_v2 --seed 1 --budget-s 120 --grace-s 60 --oracle-cost 12 --tier T2a --rc2-run calib_2sat_sc2 --job-id sc2_p40ls3p5v2_01_s1 --out results/workstation_check_calib_2sat_sc/memetic_smoke_sc2_v2/sc2_p40ls3p5v2_01_s1.jsonl --stop-at-oracle"
+	User time (seconds): 119.77
+	System time (seconds): 0.06
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:00.42
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 54932
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1
+	Minor (reclaiming a frame) page faults: 12236
+	Voluntary context switches: 25
+	Involuntary context switches: 53
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 16
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
