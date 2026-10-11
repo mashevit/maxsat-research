@@ -266,7 +266,7 @@ Seconds stay the primary effort measure. They are comparable only within one
 | **H0** ✓ | this plan | `docs/current/HARD_CLAUSE_SOLVER_PLAN.md`; research notes N-2026-10-11-b, -c | none |
 | **H1** ✓ 2026-10-11 | create the tree and copy the solver | `cluster_staging_maxsat_hard/` + `PROVENANCE.md` (source commit `4100ea7`, sha256 of 43 files); identity check: 0 differ; copied tests from inside the tree: 111 passed, 12 skipped (missing data only). N-2026-10-11-j | workstation, seconds |
 | **H2** ✓ 2026-10-11 | Glucose init + stale-vector fix + idle no-op fix + feasibility assertions and record fields | `impl: hard` (`src/evo/hard.py`, config `memetic_hard_p40_ls3p5.yaml`); 14 new tests, tree total 125 passed / 12 skipped; workstation smoke §6a. N-2026-10-11-k | workstation |
-| H3 | SAT-based repair `R` after crossover/mutation **and** feasible move `M` in the local search (§6a) | code + **operator probe** re-run with the §8.5 bar (≥ 95 % feasible children from feasible parents) on the §8.3 instances | workstation, minutes |
+| **H3** ✓ 2026-10-11 | SAT-based repair `R` after crossover/mutation **and** feasible move `M` in the local search (§6a) | `src/evo/hard.py` (`HardSAT`, `repair`, `feasible_moves`); 8 new tests, tree 133 passed / 12 skipped. **Acceptance met** (§6b): 100 % feasible children; final < Glucose start on 6/6 runs; ja-385 reached its optimum 37 on 1 of 3 seeds. N-2026-10-11-l | workstation |
 | H4 | `hard_multistart` arm sharing H2–H3 components; target-hit generation and child index logged on both arms | code + tests | workstation |
 | H5 | small generated hard-clause set and a workstation smoke (both arms, few seeds, short budget) | instances + smoke rows (exploratory, not batch data) | workstation |
 | H6 | RC2 screen + 900 s cluster runs, both arms | manifests, rsync + sbatch commands (user submits) | cluster |
@@ -331,6 +331,57 @@ inside the feasible region. Both can use the same SAT-based operator.
 - **The multistart arm (H4)** gets the same `R`/`M` operators. A
   Glucose-seeded multistart with `M` moves is the natural "multistart may be
   enough" control (§5).
+
+## 6b. H3 result (2026-10-11)
+
+**What H3 adds** (`impl: hard`, config `memetic_hard_p40_ls3p5.yaml`):
+- **One Glucose4 per run** (`HardSAT`), shared by initialisation, repair and
+  moves.
+- **Repair `R`** for every child left infeasible by crossover + mutation.
+- **Feasible moves `M`** inside each polish slot:
+  - each move assumes a literal of a weight-drawn unsatisfied soft clause
+    and re-solves with the current assignment as phases;
+  - a move is accepted if the cost is not worse, or with noise 0.05;
+  - each move call is capped at 5,000 Glucose conflicts.
+- **Singleton cores** (called "hopeless clauses" until the rename of
+  2026-10-11, N-2026-10-11-m). A soft clause whose literals are all refuted is
+  proven unsatisfiable with the hard part: an unsatisfiable core of size one.
+  It is never drawn again. Its weight counts toward `singleton_core_lb`, a
+  proven but **weak, diagnostic** lower bound: cores of two or more soft
+  clauses are never detected. That bound is never compared with RC2's.
+- **Set-aside clauses.** A clause that misses the conflict budget 3 times is
+  set aside for the run. This gives no bound.
+
+**Acceptance** (workstation; 6 runs of 60 s, all in parallel; exploratory,
+not data):
+
+| instance | seed | best Glucose start → final | children | infeasible before repair → after | moves (improving) | singleton-core LB |
+|---|---:|---|---:|---|---|---:|
+| ja-maxham-00000385 (optimum 37) | 1 | 61 → 38 | 48 | 47 → 0 | 233 (164) | 31 |
+| | 2 | 44 → 38 | 49 | 50 → 0 | 242 (177) | 33 |
+| | 3 | 64 → **37** | 21 | 19 → 0 | 139 (72) | 33 |
+| synthetic partial 3-SAT (n 150, hard ratio 3) | 1 | 27 → 7 | 121 | 111 → 0 | 24,166 (3,557) | 0 |
+| | 2 | 22 → 8 | 120 | 119 → 0 | 23,886 (3,651) | 0 |
+| | 3 | 26 → 7 | 122 | 115 → 0 | 24,268 (3,631) | 0 |
+
+- **Both bars are met:**
+  - feasible children 100 % (bar ≥ 95 %; the §8.5 operator bar);
+  - final below the Glucose start on 6/6.
+- **Compared with H2** (§6a, ja-385: 61 → 61 with 99.99 % no-op steps): the
+  feasible move is what makes the search move.
+- **Extra single runs (60 s, one seed):**
+  - frb40-19-4 (MSE 2024, weighted, no hard clauses): 36,500 → **738**,
+    against EvalMaxSAT's incumbent of 741 at 600 s and a best-known of 720;
+  - ja-385 without the conflict budget: 61 → 37.
+- **Caveats [inference]:**
+  - **Move cost has a heavy tail:** the median call takes 7–63 ms, but
+    single calls took 5–30 s. That is why the conflict budget exists.
+  - **On ja-385 a 60 s run is about 1–2 generations**, so these runs are
+    almost all moves inside generation 1. They do not yet say whether the EA
+    adds anything over a Glucose-seeded multistart with the same moves. H4
+    tests exactly that (§5).
+  - **3 seeds on 2 instances is a functional check, not a performance
+    estimate.**
 
 ## 7. Open questions for the user
 

@@ -6,7 +6,8 @@ from .population import Population, Individual, evaluate_assignment, build_hard_
 from .operators import tournament, clause_aware_crossover, mutate,mutate1, frozen_hard_unit_vars, short_polish, clause_aware_crossover1
 from .impl_v2 import memetic_impl, select_crossover, select_polish
 from .population import init_hard_satisfied
-from .hard import HardStats, glucose_init, hard_cfg, short_polish_hard
+from .hard import (HardSAT, HardStats, SoftView, feasible_moves, glucose_init, hard_cfg,
+                   repair, short_polish_hard)
 from llm.advisor import LLMAdvisor, apply_advice
 from llm.providers.noop import NoopProvider
 # or: from llm.providers.ollama import OllamaProvider
@@ -98,9 +99,14 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         t_run0 = time.time()
         hc = hard_cfg(cfg)
         cap0 = float(cfg.get("time_limit_s", cfg.get("ls", {}).get("time_limit_s", 10.0)))
+        # One Glucose for the whole run: initialisation, repair R and moves M
+        # share it, so learned clauses carry over (src/evo/hard.HardSAT).
+        sat = HardSAT(wcnf)
+        soft_view = SoftView(wcnf)
         assigns, hstats = glucose_init(wcnf, pop_size, rng, hc["phases"], t_run0 + cap0,
-                                       hc["max_tries_per_member"])
+                                       hc["max_tries_per_member"], sat=sat)
         if hstats.status != "ok":
+            sat.close()
             return _hard_abort(wcnf, hstats, time.time() - t_run0)
         pop.members = [Individual(assign01=a) for a in assigns]
     else:
@@ -207,6 +213,12 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, child_hsat)
                 if not all(child_hsat):
                     hstats.children_infeasible_before_polish += 1
+                    if hc["repair"]:
+                        # H3 repair R: Glucose with the child as phases. A
+                        # feasible child is left as it is (no call needed).
+                        fixed = repair(child_bits, sat, start_t + time_cap, hstats)
+                        if fixed is not None:
+                            child_bits = fixed
             else:
                 mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, ind.hard_satisfied)
             if impl in ("v2", "hard"):
@@ -244,7 +256,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             else:
                 ls_call = ls_small
             if hard_mode:
-                child_bits, flips_t1, noops = short_polish_hard(child_bits, wcnf, ls_call,
+                # H3: feasible moves M inside the call's time slot, then the
+                # hard-safe flip polish on what remains of it.
+                slot_end = min(time.time() + float(ls_call["time_limit_s"]), start_t + time_cap)
+                if hc["moves_per_polish"] > 0 and not evaluate_assignment(wcnf, child_bits)[1]:
+                    child_bits = feasible_moves(child_bits, soft_view, sat, rng,
+                                                hc["moves_per_polish"], hc["move_noise"],
+                                                slot_end, hstats, hc["move_conf_budget"],
+                                                hc["move_max_budget_misses"])
+                ls_rest = dict(ls_call, time_limit_s=max(0.0, slot_end - time.time()))
+                child_bits, flips_t1, noops = short_polish_hard(child_bits, wcnf, ls_rest,
                                                                 rng_seed=rng.randrange(1 << 30))
                 hstats.polish_calls += 1
                 hstats.polish_steps += flips_t1
@@ -339,6 +360,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     soft, hv = evaluate_assignment(wcnf, best.assign01)
     if hard_mode:
         hstats.hard_feasible_final = hv == 0
+        sat.close()
     #print(flips_t)
     return {
         "best_soft_weight": float(soft),

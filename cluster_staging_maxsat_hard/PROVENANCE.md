@@ -73,6 +73,29 @@ can still occur; they are counted. The incumbent stays feasible: all initial
 members are feasible, elitism keeps them, and an infeasible fitness is below
 any feasible one.
 
+### 2026-10-11 — H3: SAT-based repair R and feasible move M
+
+| file | change |
+|---|---|
+| `src/evo/hard.py` | `HardSAT`: one Glucose4 per run, shared by initialisation, repair and moves. Interrupted at the deadline; optional per-call conflict budget. `repair` (R). `SoftView` (soft cost; singleton-core and set-aside clause sets). `feasible_moves` (M). `hard_cfg` gains `repair`, `moves.{per_polish, noise, conf_budget, max_budget_misses}`. `HardStats` gains repair, move, singleton-core and budget counters. `glucose_init` takes an optional shared `sat`. |
+| `src/evo/memetic.py` | under `impl: hard`: one shared `HardSAT`. Repair of children that are infeasible after crossover + mutation. In each polish slot, moves M first, then the hard-safe flip polish on the remaining time. The solver is closed at the end. |
+| `configs/tier2/memetic_hard_p40_ls3p5.yaml` | H3 keys written out (repair on, 200 moves per slot, noise 0.05, 5000 conflicts per move call, 3 misses). |
+| `tests/test_hard_h3.py` | **new.** 8 tests: defaults; repair is feasible and phase-steered; deadline; moves keep feasibility and never return a worse state; a singleton core is proven and becomes a bound; a budget miss sets a clause aside without a bound; end to end; switches off. Tree total: 133 passed, 12 skipped. |
+
+**Acceptance** (plan §6a; workstation, 6 parallel runs of 60 s each, config
+above). Feasible children after repair: **100 %** on every run (bar ≥ 95 %).
+Final cost below the best Glucose start on **every** seed:
+- ja-maxham-00000385: 61 → 38, 44 → 38, 64 → **37** (proven optimum 37),
+  with singleton-core lower bounds 31–33;
+- synthetic partial 3-SAT: 27 → 7, 22 → 8, 26 → 7.
+
+### 2026-10-11 — H3 rename (user decision)
+
+"Hopeless clause" → **singleton core**: the fields `hopeless_clauses` /
+`hopeless_weight_lb` become `singleton_cores` / `singleton_core_lb`, and
+`SoftView.hopeless` becomes `SoftView.singleton_cores`. The behaviour is
+unchanged. Reason: research note N-2026-10-11-m.
+
 ## sha256 at creation (commit 4100ea7)
 
 ```

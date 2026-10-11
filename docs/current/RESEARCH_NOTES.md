@@ -51,6 +51,65 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-11-m — "Hopeless clauses" are singleton cores: an RC2-type proof found as a by-product of search; renamed, and a wording rule [decision + inference]
+
+*Source:* user's question and decision, 2026-10-11: "is this … different from
+rc2? is it closer to local search or rc2 proving" → "yes rename".
+
+- **[inference] What it is.** A move assumes one literal of a soft clause C
+  and asks Glucose for a model of the hard clauses. If every literal of C is
+  refuted, then hard ∧ C is UNSAT: C is an **unsatisfiable core of size
+  one**. This is the same kind of object RC2 finds, and RC2 handles a
+  singleton core the same way: it adds the weight to the lower bound and
+  drops the clause. For a unit soft clause (x), it means ¬x is implied by the
+  hard clauses.
+- **Difference from RC2.**
+  - RC2 assumes all remaining soft clauses at once, and so finds cores of any
+    size. Its bound rises to the optimum.
+  - The H3 moves assume one literal at a time, so they find singleton cores
+    only.
+  - The refutation is a side effect of search, not its goal.
+  - On ja-maxham-00000385 the singleton-core bound reached 31–33 against the
+    optimum 37. The missing 4–6 units come from cores of ≥ 2 soft clauses.
+- **[decision] Rename** (code, config, `PROVENANCE.md`):
+  - `hopeless_clauses` → `singleton_cores`;
+  - `hopeless_weight_lb` → `singleton_core_lb`;
+  - `SoftView.hopeless` → `SoftView.singleton_cores`.
+  - No behaviour change. N-2026-10-11-l keeps its original wording (the
+    notes are append-only).
+- **Wording rule:**
+  - Describe the solver as **SAT-assisted local search** (memetic plus
+    SAT-based repair and large-neighbourhood moves), not as plain local
+    search.
+  - Call the bound a "singleton-core lower bound" and report it as a
+    diagnostic. Never compare it with RC2's lower bound.
+  - Its one strong use: when a run's best cost equals it, that run has
+    proven its own optimum.
+  - The roles rule still holds: Glucose sees only the hard clauses plus one
+    assumption, never the objective.
+
+### N-2026-10-11-l — Hard-clause H3: SAT-based repair + feasible moves make the search move; ja-385 reaches its optimum 37 in 60 s on 1 of 3 seeds; 100 % feasible children [verified on workstation acceptance runs + inference]
+
+- **Implemented** in `cluster_staging_maxsat_hard/` (`PROVENANCE.md` H3):
+  - one shared Glucose4 per run;
+  - repair `R`;
+  - feasible move `M` (assume a soft literal, re-solve with phases), with a
+    per-call conflict budget;
+  - hopeless-clause proofs, which give a proven lower bound.
+  - Tests: 8 new; tree total 133 passed, 12 skipped.
+- **Acceptance** (`HARD_CLAUSE_SOLVER_PLAN.md` §6b, 60 s, 3 seeds, 2
+  instances):
+  - feasible children 100 %;
+  - final below the Glucose start on 6/6 runs;
+  - ja-maxham-00000385: 61/44/64 → 38/38/**37**, LB 31–33;
+  - synthetic: 27/22/26 → 7/8/7.
+- **For reference, not compared as data:** on ja-385, EvalMaxSAT proved 37 in
+  109 s and RC2 in 71 s on the workstation. On frb40-19-4, H3 reached 738 in
+  60 s, while EvalMaxSAT's incumbent at 600 s was 741.
+- **[inference]** On ja-385 a 60 s run is about 1–2 generations, so the
+  result is mostly the moves, not the EA. The multistart arm H4 with the same
+  `R`/`M` is the test of N-2026-10-11-c.
+
 ### N-2026-10-11-k — Hard-clause H2 (`impl: hard`): Glucose init feasible and fast; crossover breaks feasibility; single hard-safe flips are almost always impossible (ja-385: 99.99 % no-op steps, 61 → 61 in 60 s) [verified on workstation smoke + inference]
 
 - **Implemented** in `cluster_staging_maxsat_hard/`; logged in its
