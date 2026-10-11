@@ -94,6 +94,35 @@ def test_earlier_grids_still_weighted_ksat() -> None:
         assert load_grid(str(GRIDS / f"{name}.yaml")).generator == GENERATOR_NAME
 
 
+# --- calib_2sat_sc2 (follow-up points, CALIB_2SAT_SC.md §13) as data ------------
+
+SC2 = GRIDS / "calib_2sat_sc2.yaml"
+
+
+def test_sc2_grid_cells_m_and_seeds() -> None:
+    g = load_grid(str(SC2))
+    assert g.batch == "calib_2sat_sc2"
+    assert g.generator == DISTINCT_GENERATOR_NAME and g.dialect == "old" and g.seeds == []
+    got = {(c.k, c.n, c.alpha): g.gen_params(c, 246).m for c in g.cells}
+    assert got == {(2, 16000, 1.15): 18400, (2, 16000, 1.20): 19200, (2, 64000, 1.10): 70400}
+    seeds = [s for _, s in g.items()]
+    assert sorted(seeds) == list(range(246, 261))  # one fresh block of 5 per cell
+    assert all(len(g.cell_seeds(c)) == 5 for c in g.cells)
+
+
+def test_sc2_seeds_and_ids_disjoint_from_every_earlier_grid() -> None:
+    sc2 = load_grid(str(SC2))
+    seeds = {s for _, s in sc2.items()}
+    ids = {c.cell_id for c in sc2.cells}
+    names = {render(sc2, c, s)[2] for c, s in sc2.items()}
+    for name in ("calib_a", "calib_b", "calib_c", "calib_2sat_sc", "calib_2sat_sc_smoke"):
+        g = load_grid(str(GRIDS / f"{name}.yaml"))
+        assert seeds & {s for c in g.cells for s in g.cell_seeds(c)} == set(), name
+        assert ids & {c.cell_id for c in g.cells} == set(), name
+        assert names & {render(g, c, s)[2] for c, s in g.items()} == set(), name
+    assert max(seeds) < 1001
+
+
 # --- end to end ---------------------------------------------------------------
 
 def test_distinct_grid_end_to_end(tmp_path: Path) -> None:

@@ -54,6 +54,7 @@ FOLLOW-UP (proposals the readout prints; nothing is generated automatically):
 
     python3 scripts/calib_2sat_sc_readout.py
     python3 scripts/calib_2sat_sc_readout.py --check     # rebuild in memory, diff, exit 3 on drift
+    python3 scripts/calib_2sat_sc_readout.py --batch calib_2sat_sc2   # the follow-up batch, same rules
 
 stdlib only; run from the staging tree root.
 """
@@ -73,6 +74,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from candidate_cells import rc2_class  # noqa: E402  (window convention, shared)
 
 BATCH = "calib_2sat_sc"
+# Batches read with these same rules, and their fixed instance counts. calib_2sat_sc2
+# (2026-10-11) holds the follow-up points that the calib_2sat_sc readout proposed
+# (docs/current/CALIB_2SAT_SC.md §10d, §13); the rules are unchanged.
+EXPECTED = {"calib_2sat_sc": 45, "calib_2sat_sc2": 15}
 MIN_CSTAR = 3
 NEED = 3  # of 5
 
@@ -143,10 +148,10 @@ def _fmt(x: Optional[float]) -> str:
     return "" if x is None else f"{x:.3f}"
 
 
-def build(manifest_path: str, rows_path: str) -> Dict[str, str]:
+def build(manifest_path: str, rows_path: str, expect: int = EXPECTED[BATCH]) -> Dict[str, str]:
     gen = read_jsonl(manifest_path)
-    if len(gen) != 45:
-        raise Fatal(f"{manifest_path}: {len(gen)} rows, expected 45")
+    if len(gen) != expect:
+        raise Fatal(f"{manifest_path}: {len(gen)} rows, expected {expect}")
     prof_by_inst = {}
     envs = Counter()
     if os.path.isfile(rows_path):
@@ -218,13 +223,18 @@ def build(manifest_path: str, rows_path: str) -> Dict[str, str]:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--manifest", default=os.path.join("data", "generated", BATCH, "manifest.jsonl"))
-    ap.add_argument("--rows", default=os.path.join("results", f"profile_{BATCH}_all.jsonl"))
-    ap.add_argument("--out-dir", default=os.path.join("results", BATCH))
+    ap.add_argument("--batch", default=BATCH, choices=sorted(EXPECTED),
+                    help="which batch (sets the default paths and instance count)")
+    ap.add_argument("--manifest", default=None)
+    ap.add_argument("--rows", default=None)
+    ap.add_argument("--out-dir", default=None)
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args(argv)
+    args.manifest = args.manifest or os.path.join("data", "generated", args.batch, "manifest.jsonl")
+    args.rows = args.rows or os.path.join("results", f"profile_{args.batch}_all.jsonl")
+    args.out_dir = args.out_dir or os.path.join("results", args.batch)
     try:
-        out = build(args.manifest, args.rows)
+        out = build(args.manifest, args.rows, EXPECTED[args.batch])
     except Fatal as e:
         print(f"FATAL: {e}", file=sys.stderr)
         return 2

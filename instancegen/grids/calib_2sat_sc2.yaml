@@ -1,0 +1,30 @@
+# Calibration batch `calib_2sat_sc2` -- the follow-up points of calib_2sat_sc.
+# Same model, generator, measurement and pre-registered cell rules as
+# calib_2sat_sc (docs/current/CALIB_2SAT_SC.md §6); readout §10d proposed the
+# cells, and §13 records this batch.
+#
+# 3 cells x 5 generator seeds = 15 instances. m = round(alpha * n):
+#
+#   n       alpha   m       n*(alpha-1)^3   why (calib_2sat_sc readout, §6 rules)
+#   16000   1.15    18400    54.0           alpha 1.15: n 32000 split 3 fast / 2 censored
+#                                           (c* 7-8 vs LB 13-16); intermediate n
+#   16000   1.20    19200   128.0           alpha 1.20: n 8000 too_easy (1 eligible, c* 14),
+#                                           n 32000 too_hard -> an n between them
+#   64000   1.10    70400    64.0           alpha 1.10: n 32000 too_easy (c* 2-7, <= 7 s)
+#                                           -> the same alpha at larger n
+#
+# Model: uniform random 2-CNF with exactly m distinct clauses (BBCKW F_{n,m}),
+# all soft, weight 1; generator `ksat_distinct` 1.0.0. n*(alpha-1)^3 is a
+# descriptive covariate, not a prediction of c* or of RC2 time.
+#
+# Seeds: one fresh block of 5 per cell, 246-260. Disjoint from calib_a/b (1-10),
+# calib_c (101-120), calib_2sat_sc (201-245), the smoke and workstation checks
+# (9001-9002, 9101-9126) and every final-corpus seed (>= 1001). One block per
+# cell, so no two cells are nested (N-2026-10-08-e).
+batch: calib_2sat_sc2
+generator: ksat_distinct
+dialect: old
+families:
+  - {family: max2sat_distinct, k: 2, n: [16000], alpha: [1.15], seeds: [246, 247, 248, 249, 250]}
+  - {family: max2sat_distinct, k: 2, n: [16000], alpha: [1.20], seeds: [251, 252, 253, 254, 255]}
+  - {family: max2sat_distinct, k: 2, n: [64000], alpha: [1.10], seeds: [256, 257, 258, 259, 260]}

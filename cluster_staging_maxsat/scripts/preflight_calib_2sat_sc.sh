@@ -48,6 +48,10 @@ FAILS=0
 ok()   { echo "  ok    $*"; }
 bad()  { echo "  FAIL  $*"; FAILS=$((FAILS + 1)); }
 stage(){ echo; echo "== $*"; }
+# The job id from `sbatch --parsable` output captured with 2>&1. The cluster's
+# sbatch prints notices first ("sbatch: GPU Parameter Not Set ! Using CPU
+# Partition."), so take the last line that is an id ("123" or "123;cluster").
+jobid_from(){ printf '%s\n' "$1" | grep -E '^[0-9]+(;.*)?$' | tail -n 1 | cut -d';' -f1; }
 finish() {
     echo
     if (( FAILS > 0 )); then
@@ -123,17 +127,18 @@ if [[ "${SUBMIT_SMOKE:-0}" == "1" && $FAILS -eq 0 ]]; then
         CAP=60 GRACE=30 THROTTLE=2 EXPECT_PYSAT=1.9.dev3 \
         bash submit_rc2_profile.sh -- --time=00:05:00 --job-name=rc2-2sat-sc-smoke --parsable 2>&1)
     echo "$sub_out" | sed 's/^/  | /'
-    job=$(echo "$sub_out" | tail -n 1 | cut -d';' -f1)
+    job=$(jobid_from "$sub_out")
     if [[ "$job" =~ ^[0-9]+$ ]]; then
         ok "smoke array job ${job}"
-        vjob=$(cd scripts && sbatch --parsable --dependency="afterany:${job}" \
+        vout=$(cd scripts && sbatch --parsable --dependency="afterany:${job}" \
             --export=ALL,NODE_OUT="${NODE_OUT}",EXPECT_PYSAT=1.9.dev3 \
             preflight_calib_2sat_sc_verify.sbatch 2>&1)
-        vjob="${vjob%%;*}"
+        echo "$vout" | sed 's/^/  | /'
+        vjob=$(jobid_from "$vout")
         if [[ "$vjob" =~ ^[0-9]+$ ]]; then
             ok "verify job ${vjob} (runs after ${job}); then: CHECK_SMOKE=1 bash preflight_calib_2sat_sc.sh"
         else
-            bad "verify job submission failed: ${vjob}"
+            bad "verify job submission failed (no job id in the sbatch output above)"
         fi
     else
         bad "smoke array submission failed"
