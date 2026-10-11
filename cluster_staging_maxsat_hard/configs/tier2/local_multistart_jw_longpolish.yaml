@@ -1,0 +1,54 @@
+# Tier-2 pure-local-search arm, Jeroslow-Wang seeded, FLIP-BOUND per restart.
+#
+# This is the config `src/evo/multistart.py`'s docstring calls for and does not
+# ship: "Set `ls.time_limit_s` high enough for the flip cap to bind if
+# bit-reproducibility or a true flip-budget comparison is wanted -- that is a
+# different config id." This is that config id.
+#
+# Difference from configs/tier2/local_multistart_jw_deeppolish.yaml: the `ls:`
+# block only. `init: jw` and `solver: local_multistart` are identical, so the
+# pair isolates the per-restart polish budget and nothing else.
+#
+#   jw_deeppolish  0.5 s / 12,500 flips  -- the CLOCK binds (~5,300 iters
+#                                           measured on uuf250-03), so the arm
+#                                           is not bit-reproducible across
+#                                           machines and the flip cap is
+#                                           nominal.
+#   jw_longpolish  60 s / 1,000,000      -- the FLIP CAP is intended to bind.
+#                                           Each restart is a deep dive rather
+#                                           than a shallow one; at a 1800 s
+#                                           budget that is >= 30 restarts, not
+#                                           thousands.
+#
+# WHY BOTH `ls_polish_flips` AND `flip_budget` ARE 1000000. They are not
+# redundant, and they are not interchangeable. `evo.memetic._ls_budget` maps
+# `ls.ls_polish_flips` -> `ls_polish_flips` (default 700) and
+# `ls.flip_budget` -> `max_flips` (default 2000). `evo.operators.short_polish`
+# then resolves WalkSAT's flip cap as
+# `ls_cfg.get("ls_polish_flips", ls_cfg.get("max_flips"))` -- the first key
+# always exists, so the second is never consulted and `flip_budget` alone would
+# leave the polish capped at the 700 default. `ls_polish_flips` is the knob that
+# actually binds `sat.walksat.walksat_polish`; `flip_budget` is carried at the
+# same value so this file stays readable next to the deeppolish presets (which
+# set both) and so a future switch to `sat.walksat.run_satlike` -- the one entry
+# point that does read `flip_budget` (walksat.py:348) -- does not silently
+# change the budget.
+#
+# TWO TIME LIMITS, DIFFERENT SCOPES. `ls.time_limit_s: 60` below is the cap on a
+# SINGLE restart's polish. The cap on the WHOLE run is the top-level
+# `time_limit_s`, which is NOT set here: `run_memetic_shard.py` injects it from
+# `--budget-s`, and `run_multistart_ls` prefers it over the `ls:` value
+# (multistart.py:212). A run can overshoot the total budget by at most one
+# polish -- now up to 60 s rather than 0.5 s, so size `--grace-s` accordingly.
+solver: local_multistart
+multistart:
+  # 'jw' -- each restart is drawn from the Jeroslow-Wang prior via
+  # `Population._new_assign_from_priors`, the same function `Population.init_seeds`
+  # builds the EA's initial population with. Stochastic per restart, not one
+  # deterministic JW point; priors are clipped into [0.05, 0.95] so no variable
+  # is ever pinned. See local_multistart_jw_deeppolish.yaml for the full note.
+  init: jw
+ls:
+  ls_polish_flips: 1000000
+  time_limit_s: 60
+  flip_budget: 1000000

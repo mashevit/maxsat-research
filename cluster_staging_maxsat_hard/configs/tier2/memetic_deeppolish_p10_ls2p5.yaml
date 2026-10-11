@@ -1,0 +1,22 @@
+# M2 arm: memetic_deeppolish with pop_size 10 and a 2.5 s per-call local-search
+# allowance, with opt-in deadline clipping (docs/
+# M2_DEEPPOLISH_RUN_PREPARATION.md in the repo). Every other key is copied from
+# memetic_deeppolish.yaml. `deadline_mode: clip` gives each polish call
+# min(ls.time_limit_s, remaining budget) and ends the run when the budget is
+# spent, instead of only at a generation boundary (src/evo/memetic.py); the
+# watchdog and its grace are unchanged. The 900 s run budget is
+# injected by run_memetic_shard.py --budget-s; do NOT set a top-level
+# time_limit_s here (memetic.py would fall back to ls.time_limit_s).
+# Elites stay max(1, ceil(0.05 * pop_size)) in code: 1 elite + 9 children per generation.
+ea:
+  enabled: true
+  pop_size: 10
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 2.5
+  flip_budget: 12500

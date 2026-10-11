@@ -1,0 +1,33 @@
+# Tier-2 pure-local-search ablation baseline for `memetic_deeppolish`.
+#
+# The control for "does the memetic solver need its evolutionary component?".
+# There is deliberately NO `ea:` block here -- no population, no tournament, no
+# crossover, no pmutate, no max_gens -- and `src/cli/run_memetic_shard.py` only
+# injects EA defaults on the memetic code path, so the resolved config recorded
+# in the shard carries no evolutionary knob at all.
+#
+# `solver: local_multistart` is what dispatches the runner to
+# `src/evo/multistart.py::run_multistart_ls`: independent random restarts, each
+# polished by `evo.operators.short_polish` -- the exact operator, with the exact
+# budget, that `run_memetic` applies to every child.
+#
+# The `ls:` block below is copied verbatim from
+# configs/tier2/memetic_deeppolish.yaml. Keep the two in sync: the whole
+# comparison rests on the per-restart polish being identical to the per-child
+# polish. 12500 is the deep-polish flip limit under test.
+#
+# The wall-clock budget is NOT set here: `run_memetic_shard.py` injects the
+# top-level `time_limit_s` from the manifest's budget_s column, as it does for
+# the EA presets. See configs/tier2/memetic_base.yaml for that rationale.
+solver: local_multistart
+multistart:
+  # 'uniform' -- an unbiased random assignment per restart, using no instance
+  # structure, so whatever this baseline achieves is attributable to the polish
+  # alone. Set to 'jw' to seed each restart from the same Jeroslow-Wang prior
+  # `Population.init_seeds` uses, which isolates the EA *operators* from the EA
+  # *seeding*; that is a different ablation and needs its own config id.
+  init: uniform
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 0.5
+  flip_budget: 12500

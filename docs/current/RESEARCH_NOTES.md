@@ -51,6 +51,31 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-11-j — Hard-clause solver H1: `cluster_staging_maxsat_hard/` created from commit 4100ea7 [verified]
+
+> start the hard-clause solver, create the new folder
+
+*Source:* user, 2026-10-11.
+
+- **Copied from `cluster_staging_maxsat/` at commit `4100ea7`:** `src/`
+  (all), `configs/tier2/`, the solver and parser tests, and the memetic
+  runner array and its submit wrapper.
+- **Not copied:** data, results, or calibration scripts.
+- **Checks:**
+  - all 43 copied files are byte-identical to their sources;
+  - the copied tests, run from inside the new tree, give 111 passed and
+    12 skipped, all skips being missing data or manifests;
+  - imports resolve to the new tree.
+- Provenance and checksums: `cluster_staging_maxsat_hard/PROVENANCE.md`.
+  Every later change is logged there.
+- `.gitignore`: the new tree's `data/**` is ignored, except manifests.
+- **Next (H2, needs approval):**
+  - Glucose initialisation on the hard clauses;
+  - fix the stale `hard_satisfied` vector in `mutate1`;
+  - make hard-unsafe no-op iterations count as steps;
+  - assert hv = 0 in the population, and add the new record fields;
+  - unit tests for all of these.
+
 ### N-2026-10-11-i — `calib_2sat_sc2` prepared (n 16000 at α 1.15/1.20, n 64000 at α 1.10; 15 tasks); calib_c left out [decision + verified]
 
 > prepare the next batch with n 16000 and 64000, do manifest along with calob_c

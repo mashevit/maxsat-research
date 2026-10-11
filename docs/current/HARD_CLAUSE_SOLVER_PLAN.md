@@ -263,8 +263,8 @@ Seconds stay the primary effort measure. They are comparable only within one
 
 | id | milestone | output | compute |
 |---|---|---|---|
-| **H0** | this plan | `docs/current/HARD_CLAUSE_SOLVER_PLAN.md`; research notes N-2026-10-11-b, -c | none |
-| H1 | create the tree and copy the solver | `cluster_staging_maxsat_hard/` + `PROVENANCE.md`; identity diff; copied tests pass unchanged | workstation, seconds |
+| **H0** ✓ | this plan | `docs/current/HARD_CLAUSE_SOLVER_PLAN.md`; research notes N-2026-10-11-b, -c | none |
+| **H1** ✓ 2026-10-11 | create the tree and copy the solver | `cluster_staging_maxsat_hard/` + `PROVENANCE.md` (source commit `4100ea7`, sha256 of 43 files); identity check: 0 differ; copied tests from inside the tree: 111 passed, 12 skipped (missing data only). N-2026-10-11-j | workstation, seconds |
 | H2 | Glucose init + stale-vector fix + idle no-op fix + feasibility assertions and record fields | code + unit tests (UNSAT hard part, distinct members, hv = 0 invariant) | workstation |
 | H3 | feasibility-preserving crossover (repair) | code + **operator probe** re-run with the §8.5 bar (≥ 95 % feasible children from feasible parents) on the §8.3 instances | workstation, minutes |
 | H4 | `hard_multistart` arm sharing H2–H3 components; target-hit generation and child index logged on both arms | code + tests | workstation |
@@ -273,7 +273,7 @@ Seconds stay the primary effort measure. They are comparable only within one
 
 ## 7. Open questions for the user
 
-- **Q1** Folder name: `cluster_staging_maxsat_hard/`?
+- **Q1** ~~Folder name~~ — `cluster_staging_maxsat_hard/` (created 2026-10-11 at the user's "create the new folder").
 - **Q2** SAT solver: Glucose4 (as stated) through PySAT. CaDiCaL is also
   available in PySAT; keep Glucose unless there is a reason to change.
 - **Q3** Crossover feasibility: SAT-based repair guided by the child (§4.3

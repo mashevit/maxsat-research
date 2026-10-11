@@ -75,6 +75,13 @@ cluster_staging_maxsat/data/**
 !cluster_staging_maxsat/data/satlib_bench/manifest.jsonl
 cluster_staging_maxsat/folder_tree.txt
 
+# Hard-clause solver staging tree (docs/current/HARD_CLAUSE_SOLVER_PLAN.md):
+# the same convention -- instances out, manifests in.
+cluster_staging_maxsat_hard/data/**
+!cluster_staging_maxsat_hard/data/**/
+!cluster_staging_maxsat_hard/data/.gitkeep
+!cluster_staging_maxsat_hard/data/**/manifest.jsonl
+
 # MSE-2016 ms_random / ms_crafted benchmark (more_data/): 856 instances, 32 MB,
 # downloaded not generated. Same convention as data/generated above -- instances
 # out, documentation and manifests in. The sampled subset that experiments

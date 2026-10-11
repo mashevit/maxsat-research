@@ -26,6 +26,7 @@ Read in this order. Paths are relative to the repository root.
 | 6 | `docs/CALIB_B_B1_READOUT.md` | The RC2 calibration boundary per (n, k) row, and the slope finding (a row's yield is set by d log10(t)/dc\*). **Needed for the larger-n grid plan (Max-2-SAT and Max-3-SAT).** | §0, §2, §5, §7 |
 | 7 | `docs/CORPUS_GENERATOR_PLAN.md` | The generator specifications for the next milestone: the MaxCut module interface and encoding (Step 1a), the verification harness (Step 2), and the family and stratum table with the 2026-10-06 amendments (torus as ±J, hard clauses) | §3.1, §3.2, §4 Steps 1–2 |
 | 8 | `cluster_staging_maxsat/DIVERGENCE.md` | Which staging `src/` files intentionally differ from repo `src/` (target stop, deadline clipping, new-format parsing, multistart), and the identity check to run before any staging code change | before editing code |
+| 8a | `cluster_staging_maxsat_hard/PROVENANCE.md` | Where the hard-clause tree came from (commit `4100ea7`, sha256 of every copied file) and every change made to it since | before editing the hard-clause solver |
 | 9 | `docs/CORPUS_CALIBRATION_LOG.md` | Provenance only: job ids, submission records, the PySAT history, and run anomalies (A1 tasks 39/40, negative `solve_s`) that no other document keeps | Checkpoints 2, 6, 8, 9 as needed |
 
 ## Key data (not documents)

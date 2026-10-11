@@ -1,0 +1,22 @@
+# M2 primary arm (memetic_deeppolish_p40_ls3p5.yaml) with `impl: v2`: the same
+# algorithm, parameters and random decisions, with faster bookkeeping
+# (src/evo/impl_v2.py): incremental WalkSAT polish (O(occ) per flip instead of
+# O(m)), cached crossover statics, no no-op advisor round trip. With
+# flip-limited polish calls a v2 run reproduces the v1 run exactly
+# (tests/test_walksat_v2.py); under the 3.5 s per-call limit it does far more
+# work per second, so seconds-based results are comparable only within one impl.
+# Every other key is copied unchanged from memetic_deeppolish_p40_ls3p5.yaml.
+# Reference: docs/current/MEMETIC_IMPL_V2.md (in the repo, not the staging tree).
+impl: v2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 3.5
+  flip_budget: 12500

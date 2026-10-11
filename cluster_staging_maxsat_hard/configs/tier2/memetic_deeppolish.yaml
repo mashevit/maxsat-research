@@ -1,0 +1,15 @@
+# Tier-2 memetic EA — exploitation-heavy preset.
+# Small population, long WalkSAT polish per child (the hard3.yaml shape).
+# This is the arm closest to "plain SATLike with a GA restart policy".
+# See configs/tier2/memetic_base.yaml for the max_gens rationale.
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 0.5
+  flip_budget: 12500
