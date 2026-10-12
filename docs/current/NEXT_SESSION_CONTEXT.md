@@ -40,9 +40,6 @@ alias, so every cluster step is a command the user runs on the login node.
 
 **Next session, in order (the user: "first make grid to calibrate
 coefficient"):**
-0. **Give the user the web-LLM task** (user, 2026-10-12: "remember to give
-   me mission to ask web LLM if there was work about coefficient"). The
-   prompt is ready in `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`; show it in chat.
 1. **Answer §0b.7:**
    - re-run all 90 or reuse 18;
    - include the tcap reference arm;
@@ -52,7 +49,10 @@ coefficient"):**
    before the upload list.**
 2. **Multistart:** (1) v2 polish in `run_multistart_ls`, plus the arms on
    the 6 instances; (2) H4. Each needs approval.
-3. **Older items unchanged:** the rest of HP-1 (S/M bands), calib_c
+3. **To-do, not a session opener** (user, 2026-10-12: "just keep it in
+   todo"): ask a web LLM whether there is published work on the
+   coefficient c. The prompt is ready in `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`.
+4. **Older items unchanged:** the rest of HP-1 (S/M bands), calib_c
    (R3-a), MaxCut, MIS / Max-Clique, the SATLIB memetic manifest, the
    MSE 2016 RC2 screen.
 

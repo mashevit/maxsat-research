@@ -2,9 +2,10 @@
 
 **Created:** 2026-10-12, at the user's request: "remember to give me
 mission to ask web LLM if there was work about coefficient".
-**Status:** to hand to the user at the start of the next session. The user
-pastes the prompt below into a web LLM with search or deep research, and
-brings the answer back.
+**Status:** a to-do item. It is *not* to be raised at the start of a
+session (user, 2026-10-12: "just keep it in todo"). When the user takes it
+up, they paste the prompt below into a web LLM with search or deep research,
+and bring the answer back.
 **Our own search so far:** N-2026-10-12-b,
 `RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`, which found no published c.
 
