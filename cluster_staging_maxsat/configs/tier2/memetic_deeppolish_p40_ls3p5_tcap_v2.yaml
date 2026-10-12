@@ -1,0 +1,23 @@
+# The calib_2sat_sc2 v2 arm (memetic_deeppolish_p40_ls3p5_v2.yaml) with every
+# polish call capped by time only (user, 2026-10-12: "make optional version of
+# solver, where the cap is by the 3.5 seconds from config, ignoring the flip
+# budget"). `ls.polish_cap: time` makes src/evo/memetic.py ignore
+# ls_polish_flips and flip_budget; they are kept at the primary arm's 12,500
+# only so the key-by-key comparison with the pre-registered arm stays one key.
+# Each call runs the full ls.time_limit_s = 3.5 s (or the remaining run budget,
+# with deadline clipping) unless every clause becomes satisfied.
+# Reference: docs/current/RESEARCH_NOTES.md N-2026-10-12-d (repo).
+impl: v2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 3.5
+  flip_budget: 12500
+  polish_cap: time

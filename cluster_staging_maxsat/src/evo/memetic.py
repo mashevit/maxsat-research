@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Any, List
-import time, math, random
+import time, math, random, sys
 
 from .population import Population, Individual, evaluate_assignment, build_hard_occurs
 from .operators import tournament, clause_aware_crossover, mutate,mutate1, frozen_hard_unit_vars, short_polish, clause_aware_crossover1
@@ -21,14 +21,26 @@ def _ea_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+POLISH_CAPS = ("flips", "time")
+
+
 def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
     # Small polishing budget by default
     ls = cfg.get("ls", {})
-    return {
+    budget = {
         "ls_polish_flips": int(ls.get("ls_polish_flips", 700)),
         "time_limit_s": float(ls.get("time_limit_s", 0.05)),
         "max_flips": int(ls.get("flip_budget", 2000)),
     }
+    # Opt-in `ls.polish_cap: time` (2026-10-12): each polish call ends only on
+    # ls.time_limit_s; ls_polish_flips / flip_budget are ignored. Absent or
+    # "flips" (every earlier config): unchanged, the first of the two limits ends it.
+    cap = str(ls.get("polish_cap", "flips")).lower()
+    if cap not in POLISH_CAPS:
+        raise ValueError(f"ls.polish_cap must be one of {POLISH_CAPS}, got {cap!r}")
+    if cap == "time":
+        budget["ls_polish_flips"] = budget["max_flips"] = sys.maxsize
+    return budget
 
 
 def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
