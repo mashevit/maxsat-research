@@ -56,8 +56,9 @@ coefficient"):**
    (R3-a), MaxCut, MIS / Max-Clique, the SATLIB memetic manifest, the
    MSE 2016 RC2 screen.
 
-**Git:** today's work is uncommitted at the time of writing (see the
-commit at wrap-up, if made).
+**Git:** committed and pushed at wrap-up 2026-10-12: `cc4550e` (results +
+hash snapshot), `5fd74c1` (`ls.polish_cap`), `1821043` (docs). The tcap arm
+needs `5fd74c1`'s `memetic.py` on the cluster; the grid arms do not.
 
 ## 000000. Wrap-up 2026-10-11 (r8): read first — state, and the decisions kept for tomorrow
 
