@@ -1,0 +1,7 @@
+config_id,analysis_group,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+memetic_deeppolish_p40_ls3p5_f200k_v2,lower_ext,3,0,0.0,>900,0,0,3,0,0,0,0,0,0,23.0,844.0,200000.0,1.068,1.709,0.995
+memetic_deeppolish_p40_ls3p5_f200k_v2,tier2,12,0,0.0,>900,0,0,12,0,0,0,0,0,0,23.0,846.0,199877.15,1.066,1.998,0.994
+memetic_deeppolish_p40_ls3p5_f200k_v2,upper_ext,3,0,0.0,>900,0,0,3,0,0,0,0,0,0,35.0,1317.0,199965.9,0.684,0.604,0.997
+memetic_deeppolish_p40_ls3p5_v2,lower_ext,3,0,0.0,>900,0,0,3,0,0,0,0,0,0,179.0,6791.0,12500.0,0.133,1.932,0.995
+memetic_deeppolish_p40_ls3p5_v2,tier2,12,0,0.0,>900,0,0,12,0,0,0,0,0,0,209.5,7945.5,12499.8,0.115,1.991,0.994
+memetic_deeppolish_p40_ls3p5_v2,upper_ext,3,0,0.0,>900,0,0,3,0,0,0,0,0,0,405.0,15384.0,12499.7,0.059,0.671,0.995
