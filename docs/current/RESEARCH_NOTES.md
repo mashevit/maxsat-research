@@ -51,9 +51,122 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | How Glucose (CDCL) works: decisions, conflicts, phases, assumptions | [`RESEARCH_NOTES_GLUCOSE_CDCL.md`](RESEARCH_NOTES_GLUCOSE_CDCL.md) | Decisions and decision levels, the trail, conflict analysis and backjumping, VSIDS and phases, `set_phases`, assumptions and cores. Why repair and moves are biased toward the given assignment but not nearest to it (probe-checked), why singleton cores are proofs but weak bounds, and why single calls can be slow (the conflict budget). N-2026-10-11-m. |
 | Hyperparameter setting: frameworks, algorithms, what is influential (2026) | [`RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`](RESEARCH_NOTES_HYPERPARAMETER_TUNING.md) | AC tools (irace 4.5, SMAC 2.4.1, Optuna 5.0.0; ParamILS, GGA, Hyperband/BOHB/DEHB), per-instance configuration (ISAC, ISAC+ MaxSAT, Hydra), configuring for scaling (Styles et al. 2012; Mascia et al. 2013; Mu et al. 2016), DAC, LLM-driven design. Recommendation for HP-1: batch racing per size band, held-out large instances. N-2026-10-11-s. |
 | HP-1 calibration plan; instance-size inventory | [`HYPERPARAMETER_CALIBRATION_PLAN.md`](HYPERPARAMETER_CALIBRATION_PLAN.md) | 1,947 instance files, m from 48 to 276,705; proven c\* per size band (S 465, M 144, L 22 all-soft). Plan: flip-limit grid per band (S/M/L by m-decade), size-scaled budgets, racing, held-out test of categorical vs continuous rules. Not run. N-2026-10-11-s. |
+| Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-12-e — HP-1 Stage L1 planned: a c grid at n 16,000 and 64,000 [quote + decision: planned, not prepared]
+
+> "I want first make grid to calibrate coefficient for the 16000, and 64000 memetic, write it in plan then i want to wrap up" (user, 2026-10-12)
+
+- **Grid:** c ∈ {3.125, 6.25, 12.5, 25, 50} flips per variable, at both
+  sizes. That is 50k–800k flips per call at n 16,000 and 200k–3.2M at
+  n 64,000.
+- **Runs:** the 6 calib_2sat_sc2 instances × seeds 1–3, 900 s.
+- **Per-call cap raised to 60 s,** so the flip limit binds.
+- **Choice rule:** most successes, then the lowest mean of median
+  best / c\*, then the smaller c within 0.05.
+- **Size:** 90 tasks (+18 time-capped reference), ≤ 28.8 CPU-h.
+- `HYPERPARAMETER_CALIBRATION_PLAN.md` §0b; open questions in §0b.7.
+- **Revised the same day (user):** "I want start for both 16000, and 64000
+  from 200k". The grid is now flips per call {200k, 400k, 800k, 1.6M,
+  3.2M}, shared by both sizes: c 12.5–200 at n 16,000 and 3.125–50 at
+  n 64,000. That is 5 configs, with the same task count and cost.
+
+### N-2026-10-12-d — calib_2sat_sc2 memetic readout: Q2 on all 6 instances under both arms; 200k better in 18/18 pairs; opt-in time-only polish cap added [verified + inference]
+
+> "both, copied results from cluster, analyze, make optional version of solver, where the cap is by the 3.5 seconds from config, ignoring the flip budget" (user, 2026-10-12)
+
+- **Readout** (`CALIB_2SAT_SC.md` §13c): 36/36 shards; no run reached c\* in
+  900 s; Q2 on all 6 instances under both arms.
+  - The 200k arm beats the 12.5k arm in 18/18 pairs. Mean gap at n 16000:
+    2.2 vs 5.0; at n 64000: 9.6 vs 18.3.
+- **Fixed cost per child [inference]:** about 0.02 s (n 16000) and 0.07 s
+  (n 64000). That is half the time of the 12.5k arm at n 64000.
+- **Cluster flip rate:** about 190k–235k flips/s.
+- **c = 15 correction:** at n 64000 it is about 5 s per call on the
+  cluster, so the 3.5 s cap would always bind. This replaces the
+  1.9–3.6 s estimate in N-2026-10-12-b.
+- **The new option `ls.polish_cap`** (`src/evo/memetic.py::_ls_budget`):
+  - `flips`, or an absent key: unchanged.
+  - `time`: ls_polish_flips and flip_budget are ignored; each call runs to
+    ls.time_limit_s.
+  - It applies to v1 and v2 and to multistart, which shares `_ls_budget`.
+  - Tests: `tests/test_polish_cap.py` (7 pass). Staging suite: 261 passed,
+    3 skipped, 1 failure that predates today (SATLIB/PySAT).
+  - Config: `memetic_deeppolish_p40_ls3p5_tcap_v2.yaml`.
+- **Smoke [verified, 60 s, seed 1]:** 1.08M flips per 3.5 s call at
+  n 16000 and 1.00M at n 64000, on the workstation.
+- **[inference] Caveat:** a time-only cap makes the flips per call depend
+  on the hardware. Runs are comparable only on similar nodes, and shards
+  should be compared by total flips as well as seconds.
+
+### N-2026-10-12-c — User intentions 2026-10-12: hard-clause memetic to be tested next; multistart first where the memetic struggles; c = 15 proposed [quote]
+
+> "i want hard clause memetic tested sometime next, meanwhile the memetic struggles that is submitted, all first 30 parallel jobs after 12 min, didnt get to oracle. if unweighted memetic strugles, I want first maybe get it to multistart phase. , for first big instances we might use c =15" (user, 2026-10-12)
+
+- **Observation (user):** in the calib_2sat_sc2 memetic batch, none of the
+  first 30 tasks had reached c\* after 12 min. This is consistent with the
+  smoke: neither arm reached c\* in 120 s (`CALIB_2SAT_SC.md` §13b).
+  Nothing is read until the rows are back.
+- **The hard-clause memetic is wanted next.** A multistart phase comes
+  first where the (unweighted) memetic struggles. The exact scope of
+  "multistart phase" is being confirmed with the user.
+- **c = 15 is proposed** for the first large instances
+  (`HYPERPARAMETER_CALIBRATION_PLAN.md` §0a).
+
+### N-2026-10-12-b — Literature: no published c for a size-aware flip limit c · n [read + abstract + inference]
+
+See [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md).
+- **No source gives a constant for a per-call flip budget c · n.**
+- **Flips ∝ n holds only on satisfiable random formulas below a density
+  threshold.** Proven for 2-SAT: E[flips] ≤ C·n/(1−α)² for α < 1
+  (Berenbrink et al. 2024). Observed for 3-SAT (Seitz et al. 2005).
+- **At the 3-SAT threshold, the optimal WSAT Maxflips grows as ~0.02·n^2.39**
+  (Parkes & Walser 1996): m\*/n is 21 at n = 100 and 109 at n = 400.
+- **IRoTS uses n-scaled defaults,** including a stall window of n²/4.
+- **Our regime (α > 1 Max-2-SAT, n ≥ 16,000) has no result.** c = 15 is a
+  calibration point, not a derived one. At n = 64,000 it hits the 3.5 s
+  per-call cap.
+
+### N-2026-10-12-a — calib_2sat_sc2 memetic batch: Q2 verdict from both arms; upload set checked file by file [quote + decision + verified]
+
+> "consider verdict also from 200k arm, give me list of all files that should be new or to be updated on cluster" (user, 2026-10-12)
+
+- **Decision.** §6's Q2 rule (success < 3/3 or median TTT ≥ 45 s) is applied
+  to each arm separately. The 12.5k arm gives the pre-registered verdict and
+  the 200k arm a second one, paired per (instance, seed). Disagreements are
+  flagged. Which verdict a corpus decision uses is settled at the readout,
+  with the reason written down. This replaces "the verdict from the 12.5k arm
+  only" (N-2026-10-11-q). `CALIB_2SAT_SC.md` §13b.
+- **Upload set [verified].** Each of the 40 paths was hashed and compared
+  with the cluster's last known copy: the M2 submit provenance of 2026-10-04,
+  the `rsync_files_*` lists of later uploads, and `git log`.
+  - 14 files are new or changed on the cluster: `impl_v2.py`,
+    `walksat_v2.py`, `memetic.py`, `run_memetic_shard.py`,
+    `submit_m2_memetic.sh` (changed 2026-10-08, never uploaded since),
+    `m2_results.py`, the two arm configs, the 3 manifest files, and the list.
+  - `oracle_evalmaxsat.py` differs from the 10-04 record but went up with the
+    EvalMaxSAT s1 upload. The 6 instances went up with the sc2 RC2 run.
+- No code change is needed for the second verdict: it is computed on the
+  workstation at the readout.
+- **Correction, same day [verified]: the reconstruction above was out of
+  date.** A hash snapshot of the cluster tree was taken on the login node
+  (`sha256sum` only; 146 files; saved as
+  `cluster_staging_maxsat/results/cluster_state/cluster_hashes_20261012.txt`).
+  - **39 of the 40 upload paths match the workstation byte for byte**,
+    including all 14 listed above. Only the list file itself is missing, and
+    the runs do not use it. **No upload is needed for this batch.**
+  - Elsewhere, 2 cluster files differ: `calib_2sat_sc_readout.py` and
+    `preflight_calib_2sat_sc.sh` (workstation commit `00c6026`, 2026-10-11).
+    Neither is used by the memetic batch.
+  - Files on the workstation only are workstation tools (readouts, manifest
+    builders, upload lists). Files on the cluster only are older manifests
+    (calib_a/b, multistart JW) and archived scripts.
+  - From now on, use a fresh snapshot instead of provenance records to check
+    the cluster's state.
+- **Submitted 2026-10-12** by the user (36 tasks, `MAXSAT_GIT_SHA=8b7d00e`).
 
 ### N-2026-10-11-u — LLM-driven solver design: study design sketched, direction not pursued [decision + inference]
 

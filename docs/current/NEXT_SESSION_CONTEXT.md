@@ -17,6 +17,48 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000. Wrap-up 2026-10-12 (r9): read first
+
+**Done today:**
+
+| thread | state | where |
+|---|---|---|
+| cluster state | **hash snapshot of the cluster tree** (146 files) taken; every file the memetic batch needed was already there. The method: login-node `sha256sum` snapshot, rsync back, compare | `cluster_staging_maxsat/results/cluster_state/cluster_hashes_20261012.txt`, N-2026-10-12-a |
+| calib_2sat_sc2 memetic batch (36 tasks) | **submitted and read**. No run reached c\* in 900 s: Q2 on all 6 instances under both arms (verdict per arm, user decision). The 200k arm beat 12.5k in 18/18 pairs (mean gap 2.2 vs 5.0 at n 16k; 9.6 vs 18.3 at n 64k). Cluster ≈ 190k–235k flips/s | `CALIB_2SAT_SC.md` §13c, N-2026-10-12-d |
+| literature: is there a known c for c · n? | **No.** Flips ∝ n only for satisfiable formulas below a density threshold. WSAT's optimal Maxflips grows as ~n^2.4. IRoTS scales its parameters with n | `RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`, N-2026-10-12-b |
+| opt-in time-only polish cap | `ls.polish_cap: time` in `src/evo/memetic.py`; config `memetic_deeppolish_p40_ls3p5_tcap_v2.yaml`; 7 tests; suite 261 passed / 3 skipped / 1 failure that predates today. **Not on the cluster yet** | N-2026-10-12-d |
+| HP-1 Stage L1 | **c grid planned**: flips per call {200k, 400k, 800k, 1.6M, 3.2M} at both n 16k and 64k (c 12.5–200 / 3.125–50; user: "start … from 200k"), 6 instances × 3 seeds, per-call cap 60 s; 90 tasks (+18 tcap reference) ≤ 28.8 CPU-h; pre-registered choice rule. Not prepared | `HYPERPARAMETER_CALIBRATION_PLAN.md` §0b, N-2026-10-12-e |
+
+**User intentions (2026-10-12; N-2026-10-12-c):**
+- **c = 15** proposed for the first large instances (§0a). It always hits
+  the 3.5 s cap on the cluster at n 64k.
+- **Multistart on both tracks:**
+  - (1) large Max-2-SAT: `run_multistart_ls` needs the v2 polish first;
+  - (2) hard-clause H4: Glucose-seeded multistart on the 18 MSE optima.
+  - Plan outline given in chat; nothing built.
+- **The hard-clause memetic** is wanted after H4.
+
+**Next session, in order (the user: "first make grid to calibrate
+coefficient"):**
+0. **Give the user the web-LLM task** (user, 2026-10-12: "remember to give
+   me mission to ask web LLM if there was work about coefficient"). The
+   prompt is ready in `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`; show it in chat.
+1. **Answer §0b.7:**
+   - re-run all 90 or reuse 18;
+   - include the tcap reference arm;
+   - the 60 s cap;
+   Then build: 7 configs, manifest builder, `m2_results` check for
+   `polish_cap`, tests, upload list. **Take a fresh cluster hash snapshot
+   before the upload list.**
+2. **Multistart:** (1) v2 polish in `run_multistart_ls`, plus the arms on
+   the 6 instances; (2) H4. Each needs approval.
+3. **Older items unchanged:** the rest of HP-1 (S/M bands), calib_c
+   (R3-a), MaxCut, MIS / Max-Clique, the SATLIB memetic manifest, the
+   MSE 2016 RC2 screen.
+
+**Git:** today's work is uncommitted at the time of writing (see the
+commit at wrap-up, if made).
+
 ## 000000. Wrap-up 2026-10-11 (r8): read first — state, and the decisions kept for tomorrow
 
 **Done today, after r7 (all on the workstation; nothing submitted by me):**
@@ -37,8 +79,14 @@ tomorrow"):**
    submit use `MAXSAT_GIT_SHA=8b7d00e`, the commit holding the batch code.
    Any later commit also works if the staging tree is unchanged.
 2. **Submit the 36-task memetic batch** (`CALIB_2SAT_SC.md` §13b
-   commands). §6's Q2 verdict is taken from the 12.5k arm, with the 200k
-   arm reported beside it. That split is my proposal; confirm it.
+   commands). **Decided 2026-10-12:** §6's Q2 verdict is computed for both
+   arms, 12.5k (pre-registered) and 200k, paired (N-2026-10-12-a). A
+   cluster hash snapshot (2026-10-12) shows every file the batch needs is
+   already on the cluster, so no rsync is needed before the submit.
+   **Submitted 2026-10-12 and read the same day** (`CALIB_2SAT_SC.md` §13c,
+   N-2026-10-12-d): Q2 on all 6 instances under both arms; 200k better in
+   18/18 pairs. The opt-in `ls.polish_cap: time` and the tcap config were
+   added. Next: multistart on both tracks (plan awaiting approval).
 3. **HP-1 plan** (`HYPERPARAMETER_CALIBRATION_PLAN.md` §0 and §7):
    - the c grid;
    - an upper cap on flips or none;

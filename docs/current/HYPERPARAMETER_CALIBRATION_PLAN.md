@@ -1,6 +1,7 @@
 # HP-1 calibration plan: size-aware hyperparameters for the memetic solver
 
-**Date:** 2026-10-11. **Decision §0: continuous flips per variable with floor 12,500 (no categories).** **Status: plan only. Nothing has been run or prepared
+**Date:** 2026-10-11. **Decision §0: continuous flips per variable with floor 12,500 (no categories).**
+**2026-10-12: §0b Stage L1 (c grid at n 16,000 and 64,000) planned, not prepared.** **Status: plan only. Nothing has been run or prepared
 for the cluster. Each stage needs approval.**
 
 **Request (user, 2026-10-11)** [quote]: "do some calibration for
@@ -55,6 +56,159 @@ flips per var, but in lower bound stay with 12500".
 - **P4 module shape (when built):** `ls.ls_polish_flips: {per_var: c,
   min: 12500}`. The resolved value is recorded in the shard. A plain number
   keeps today's behaviour.
+
+## 0a. Proposal 2026-10-12: c = 15 for the first large instances
+
+**The user** [quote]: "for first big instances we might use c =15".
+
+- **Values:** at n = 16,000 that is 240,000 flips per call; at n = 64,000 it
+  is 960,000.
+- **Literature** (N-2026-10-12-b,
+  [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md)):
+  - no published c exists, so c = 15 is a first point to calibrate around,
+    not a derived value;
+  - the best budget may grow faster than n, so c = 15 is more likely low
+    than high at n = 64,000.
+- **The time cap binds at n = 64,000 [inference]:** 960,000 flips at
+  270k–500k flips/s is 1.9–3.6 s, against `ls.time_limit_s` = 3.5 s. A
+  c = 15 run must record which limit ended each call, or raise the cap.
+- *Correction 2026-10-12 (N-2026-10-12-d): on the cluster (about 190k
+  flips/s at n 64,000), 960k flips take about 5 s, so the 3.5 s cap
+  always binds. The time-capped arm is about c ≈ 10 there.*
+- **Status:** a proposal ("might"). No config has been prepared. It waits
+  for the 12.5k / 200k readout (`CALIB_2SAT_SC.md` §13b).
+
+## 0b. Stage L1: a c grid for the memetic at n 16,000 and 64,000 (plan 2026-10-12; not prepared, not submitted)
+
+**Request (user, 2026-10-12)** [quote]: "I want first make grid to
+calibrate coefficient for the 16000, and 64000 memetic, write it in plan".
+
+**Starting evidence** (`CALIB_2SAT_SC.md` §13c, N-2026-10-12-d):
+- c = 0.78 / 12.5 at n 16,000 and c = 0.2 / 3.1 at n 64,000 (the 12.5k /
+  200k arms).
+- The larger c won 18/18 pairs; no run reached c\*.
+- No literature value of c exists (N-2026-10-12-b), and the best value may
+  grow with n.
+
+### 0b.1 Instances and seeds
+
+- The same 6 eligible calib_2sat_sc2 instances (sc01–sc03 at n 16,000,
+  α 1.20; sc04–sc06 at n 64,000, α 1.10) with the RC2 optima as targets.
+- Solver seeds 1–3, 900 s, stop at c\*, grace 60 s, as in §13b.
+- No new instances, so no new RC2 work.
+
+### 0b.2 The grid
+
+**Revised 2026-10-12 (user)** [quote]: "I want start for both 16000, and
+64000 from 200k". **Both sizes use one grid of flips per call, starting at
+the 200k arm and doubling.** The first draft's c grid, which went down to
+50k at n 16,000, is dropped: below 200k nothing is tested, since 200k
+already beat 12.5k in 18/18 pairs.
+
+| flips per call | c at n 16,000 | c at n 64,000 |
+|---:|---:|---:|
+| 200,000 (= the 200k arm) | 12.5 | 3.125 |
+| 400,000 | 25 | 6.25 |
+| 800,000 | 50 | 12.5 |
+| 1,600,000 | 100 | 25 |
+| 3,200,000 | 200 | 50 |
+
+- **3.2M is the top at both sizes.** One call then takes about 14 s at
+  n 16,000 (≈ 233k flips/s on the cluster) and about 17 s at n 64,000
+  (≈ 190k flips/s). That is about 55–65 children in 900 s, barely more than
+  one generation of 40. Beyond that the EA no longer acts.
+- **c is still the quantity reported.** The two sizes overlap at c = 12.5,
+  25 and 50 (200k–800k at n 16,000, 800k–3.2M at n 64,000), so a
+  common c can be compared on 3 points.
+- **Reference arm (not part of the grid):** the time-capped arm
+  `memetic_deeppolish_p40_ls3p5_tcap_v2` (§13c). On the cluster it sits at
+  about c ≈ 50 (n 16,000) and c ≈ 10 (n 64,000), depending on the node.
+
+### 0b.3 What changes in the configs, and nothing else
+
+- `ls.ls_polish_flips` = `ls.flip_budget` = the value in the table. One
+  fixed-flip config per value: **5 configs** (200k, 400k, 800k, 1.6M, 3.2M),
+  shared by both sizes. Each instance has one n, so a fixed value is
+  exactly c · n for that instance. **No solver change is needed** for the grid
+  arms.
+- **`ls.time_limit_s` raised from 3.5 to 60 s in every grid arm**, so the
+  flip limit, not the clock, ends each call.
+  - Without this, every value from 800k up would be cut by the 3.5 s cap
+    (and 400k at n 64,000 on slow nodes).
+  - 60 s is about 3.5× the slowest expected call (3.2M at n 64,000).
+  - `ea.deadline_mode: clip` still keeps every run inside its 900 s.
+- Everything else as in the pre-registered arm. The manifest builder
+  checks key by key that only these two keys (plus `impl: v2`) differ.
+- **Recording:** shards already carry `total_flips` and `children`.
+  Flips per child = total_flips / children shows whether the flip limit
+  bound, which it should for every call.
+
+### 0b.4 Measures and the pre-registered choice rule (per size)
+
+**Per (c, instance):** successes out of 3, median TTT if any, and the
+median best cost and gap to c\* at 900 s.
+
+**The chosen c for a size** is decided in this order:
+1. the most successes, summed over the 3 instances (out of 9);
+2. then the lowest mean, over instances, of median best / c\*;
+3. **ties:** values whose mean ratio differs by less than 0.05 count as
+   tied, and the smaller c wins (cheaper children, more generations).
+
+**Reporting:**
+- the c curve (gap against c) per instance and per size;
+- the tcap reference beside it;
+- whether the best c differs between the two sizes. If it does, that is
+  evidence for a c that grows with n (Parkes & Walser's
+  superlinear scaling). The rule `max(12500, c·n)` then needs a decision.
+
+**[inference] Caveats:**
+- 3 instances × 3 seeds per size. Gap differences of about 1 are within
+  seed noise at n 16,000 (§13c: seeds differ by up to 1 at 200k, and by up
+  to 11 at 64,000 / 12.5k).
+- c is chosen on these 6 instances only. Checking it on held-out
+  instances is a separate stage.
+- 900 s only. A c that wins at 900 s may lose at a longer budget.
+
+### 0b.5 Size and cost
+
+| arm set | tasks | worst case |
+|---|---:|---:|
+| grid, 5 flip values × 6 instances × 3 seeds | 90 | 90 × 960 s = **24 CPU-h** |
+| of which already run (the 200k arm, both sizes, §13c) | 18 | — |
+| tcap reference arm, 6 × 3 | 18 | 4.8 CPU-h |
+
+- **Recommended: re-run all 90.** They are cheap, and re-running keeps one
+  commit, one time cap and one date for the whole grid.
+  - Reusing the 18 rows from §13c saves 4.8 CPU-h. Those rows ran with
+    `time_limit_s` 3.5, which did not bind there (flips per child about
+    199.9k), so reuse is defensible. It is the user's choice.
+- With the tcap reference: 108 tasks, **≤ 28.8 CPU-h**, 4 waves at %30,
+  about 64 min of compute plus queue time.
+- Memory per task ≤ 150 MB (n 64,000, §13b smoke). 8 GB as before;
+  `--time 00:20:00`.
+
+### 0b.6 What has to be built (after approval)
+
+1. The 7 grid configs, e.g. `memetic_deeppolish_p40_c{3p125,6p25,…}_n{16k,64k}_v2.yaml`, or one per flip value.
+2. The manifest builder: a generalised `make_calib_2sat_sc_memetic_manifest.py`
+   arm list (per-size arms), the key-by-key check allowing
+   `ls.time_limit_s`, and a `--check` rebuild. Tests.
+3. `m2_results.py`:
+   - already checks `ls_polish_flips` against the sidecar;
+   - add the same check for `ls.polish_cap`, so a tcap row cannot be
+     mistaken for a flip-capped one.
+4. **Upload list.** The grid itself needs no `src/` change. The tcap
+   reference arm needs the new `src/evo/memetic.py` on the cluster.
+   Before listing, take a fresh cluster hash snapshot (N-2026-10-12-a).
+5. A readout script applying §0b.4.
+
+### 0b.7 Open for the user
+
+1. Re-run all 90, or reuse the 18 rows?
+2. Include the tcap reference arm (18 tasks)?
+3. Keep the 60 s per-call cap for the grid, or another value?
+4. ~~Is c = 50 a high enough top?~~ Settled by the revision: the top is
+   3.2M flips, i.e. c = 200 at n 16,000 and c = 50 at n 64,000.
 
 ## 1. What instance sizes the solver can meet [verified]
 

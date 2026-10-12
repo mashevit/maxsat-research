@@ -870,7 +870,7 @@ solver seeds 1–3, 900 s, effort in seconds (median TTT, ERT_s; Q2 = success
 assessment uses v1 as pre-registered, `impl: v2`, or both is a decision
 before preparing it. A corpus cell only follows that, with fresh seeds.
 
-## 13b. Memetic assessment of the promising cells, `impl: v2`, two arms (prepared 2026-10-11; not submitted)
+## 13b. Memetic assessment of the promising cells, `impl: v2`, two arms (prepared 2026-10-11; submitted 2026-10-12 by the user, `MAXSAT_GIT_SHA=8b7d00e`, no rsync needed: a cluster hash snapshot showed every file already in place, N-2026-10-12-a)
 
 **The user's decisions (2026-10-11)** [quote]:
 - "use v2 for the memetic assessment";
@@ -913,12 +913,15 @@ before preparing it. A corpus cell only follows that, with fresh seeds.
 
 **Measures (§6):** per instance and arm, the success count out of 3, median
 TTT and ERT_s. Q2 = success < 3/3 or median TTT ≥ 45 s.
-- **The §6 Q2 verdict is taken from `p40_ls3p5_v2`**, the pre-registered
-  arm.
-- `p40_ls3p5_f200k_v2` is reported next to it, paired per (instance, seed).
-  It shows how much of any Q2 outcome is due to the 12,500 flip limit.
-  Using it for corpus decisions is a separate decision after the readout
-  [decision, mine; open to the user].
+- **The §6 Q2 verdict is computed for both arms** (user, 2026-10-12:
+  "consider verdict also from 200k arm"), with the same rule, per instance:
+  - `p40_ls3p5_v2`: the pre-registered arm's verdict;
+  - `p40_ls3p5_f200k_v2`: a second verdict, written beside it, paired per
+    (instance, seed).
+  - Both are reported. An instance where the two disagree is flagged; the
+    difference shows how much of the Q2 outcome is due to the 12,500 flip
+    limit. Which verdict a corpus decision uses is settled at the readout
+    and written down with the reason.
 - Seconds are v2 seconds. They are not comparable with any v1 result
   (N-2026-10-08-i).
 
@@ -1013,6 +1016,80 @@ rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/calib_2sat_sc2_m
 python3 scripts/m2_results.py pending   --manifest scripts/manifest_calib_2sat_sc2_m2v2.tsv --outdir results/calib_2sat_sc2_memetic/tasks --summary
 python3 scripts/m2_results.py aggregate --manifest scripts/manifest_calib_2sat_sc2_m2v2.tsv --outdir results/calib_2sat_sc2_memetic/tasks
 ```
+
+## 13c. Memetic assessment readout (2026-10-12) [verified unless marked]
+
+**Run:** 36/36 shards, array `calib_2sat_sc2_m2v2`, submitted 2026-10-12
+11:15 UTC, `MAXSAT_GIT_SHA=8b7d00e`. `m2_results.py pending`: 0 pending.
+Every shard is `budget_exhausted` (status ok, stop `time_cap`, no target),
+hv 0, cpu/wall 0.99–1.0. Aggregates are in
+`results/calib_2sat_sc2_memetic/agg/`.
+
+**§6 Q2 verdict, per arm (N-2026-10-12-a):**
+- **Both arms: 0/3 successes on all 6 instances**, so median TTT > 900 s.
+- **All 6 instances are Q2 under both arms.** The two verdicts agree; no
+  instance is flagged.
+
+**Best cost after 900 s** (c\* = RC2 optimum; seeds 1, 2, 3):
+
+| pop_idx | n | c\* | 12.5k arm | 200k arm |
+|---|---:|---:|---|---|
+| sc01 | 16000 | 12 | 17, 18, 16 | 14, 14, 14 |
+| sc02 | 16000 | 14 | 19, 19, 20 | 18, 18, 17 |
+| sc03 | 16000 | 13 | 17, 18, 18 | 14, 14, 14 |
+| sc04 | 64000 | 13 | 37, 42, 31 | 25, 28, 23 |
+| sc05 | 64000 | 10 | 30, 29, 32 | 17, 22, 20 |
+| sc06 | 64000 | 9 | 19, 20, 21 | 16, 14, 17 |
+
+**Paired comparison:**
+- **The 200k arm is strictly better in 18 of 18 (instance, seed) pairs**,
+  on 6 of 6 instances.
+- **Mean gap to c\*:**
+  - n 16000: 5.0 (12.5k) vs 2.2 (200k); best/c\* 1.39 vs 1.17.
+  - n 64000: 18.3 vs 9.6; best/c\* 2.69 vs 1.89.
+- The closest runs are sc03 under 200k (14 vs 13, all 3 seeds) and sc01
+  (14 vs 12).
+
+**Where the time goes:**
+
+| n | arm | children | generations | s / child | flips / s |
+|---:|---|---:|---:|---:|---:|
+| 16000 | 12.5k | 12,648 | 333 | 0.073 | 176k |
+| 16000 | 200k | 1,078 | 28 | 0.878 | 240k |
+| 64000 | 12.5k | 6,523 | 172 | 0.140 | 90k |
+| 64000 | 200k | 828 | 22 | 1.131 | 184k |
+
+- **[inference] Fixed cost per child.** Fitting s/child = o + flips/r to
+  the two arms gives r ≈ 233k flips/s and o ≈ 0.019 s at n 16000, and
+  r ≈ 189k flips/s and o ≈ 0.074 s at n 64000. The fixed cost covers
+  crossover, the O(m) polish set-up and evaluation.
+  - In the 12.5k arm it is about 26 % (n 16000) and 53 % (n 64000) of all
+    time. In the 200k arm it is under 7 %.
+- **The cluster flips about 190k–235k per second.** The workstation
+  smokes ran at about 300k.
+
+**What this means [inference]:**
+1. **Both arms struggle on these instances at 900 s.** The memetic did not
+   reach c\* on any run. The 200k arm gets within 1–4 at n 16000.
+2. **A larger per-call flip budget helps consistently at this size.** This
+   is the first L-band evidence for HP-1: c = 12.5 (n 16000) and c = 3.1
+   (n 64000) both beat c ≤ 0.8.
+3. **The 3.5 s cap and c = 15 (HP-1 §0a).** At the cluster's ~190k flips/s,
+   a 3.5 s call holds about 0.66M flips at n 64000, which is c ≈ 10. So
+   c = 15 (960k flips) would always be ended by the time cap on the
+   cluster, not just sometimes (correcting the 1.9–3.6 s estimate made
+   from workstation rates).
+
+**Follow-ups:**
+- **The time-capped arm** (`ls.polish_cap: time`, user 2026-10-12).
+  Config: `configs/tier2/memetic_deeppolish_p40_ls3p5_tcap_v2.yaml`.
+  - Workstation smoke, 60 s, seed 1: 1.08M flips per call at n 16000
+    (c ≈ 67) and 1.00M at n 64000 (c ≈ 15.6).
+  - On the cluster, expect about 0.66–0.82M flips per call.
+  - At 3.5 s per child, a 900 s run makes only about 250 children, about 6
+    generations of 40.
+- **A multistart arm** on the same instances (user 2026-10-12: "both").
+  It needs `run_multistart_ls` to use the v2 polish first. Not prepared.
 
 ## 11. Open risks
 
