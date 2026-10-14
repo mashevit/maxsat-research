@@ -26,7 +26,7 @@ Every task gets exactly one class:
     invalid_submission   shard exists but does not match its manifest row
                          (job_id, config_id, seed, instance sha, budget, grace,
                          stop-at-oracle, pop_size, ls.time_limit_s,
-                         ea.deadline_mode, memetic_impl, ls_polish_flips)
+                         ea.deadline_mode, memetic_impl, ls_polish_flips, ls.polish_cap)
     infra_error          status error / parse_error / missing_instance / other
     infra_missing        no shard (Slurm kill, node failure, never ran) or an
                          unreadable one
@@ -112,6 +112,10 @@ def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
         # before `impl` existed have neither, and both default to v1.
         ("memetic_impl", r.get("memetic_impl") or cfg.get("impl") or "v1",
          t.get("memetic_impl") or "v1"),
+        # Which limit ends a polish call (src/evo/memetic.py). Absent on both sides
+        # before 2026-10-12, and both default to "flips".
+        ("ls.polish_cap", str((cfg.get("ls") or {}).get("polish_cap", "flips")).lower(),
+         t.get("ls_polish_cap") or "flips"),
     ]
     for name, got, want in checks:
         if got != want:

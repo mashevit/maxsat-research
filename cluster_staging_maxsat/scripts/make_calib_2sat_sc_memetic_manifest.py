@@ -20,10 +20,20 @@ for key except `impl: v2` and, for the second arm, ls.ls_polish_flips and
 ls.flip_budget. Solver seeds 1-3, 900 s budget, stop at the RC2 optimum,
 grace 60.
 
+PLAN `cgrid` (--plan cgrid; HP-1 Stage L1, docs/current/HYPERPARAMETER_CALIBRATION_PLAN.md
+§0b/§0c; user decisions 2026-10-14: flips_only, re-run all 90, include tcap): the same
+instances and seeds, 6 arms paired line by line:
+  p40_f{200k,400k,800k,1p6m,3p2m}_fonly_v2  per-call flip limit 200k ... 3.2M with
+                     `ls.polish_cap: flips_only` (the flip limit alone ends a call)
+  p40_ls3p5_tcap_v2  reference: `ls.polish_cap: time` (3.5 s per call, no flip limit)
+Each config is checked equal to the pre-registered arm except `impl: v2`, the flip
+limit and ls.polish_cap. The sidecar adds `ls_polish_cap`. 108 tasks.
+
 OUTPUTS (scripts/, the M2 formats plus `memetic_impl` and `ls_polish_flips`
 sidecar columns that m2_results.py checks against each shard;
 submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
 
+    (stem manifest_<batch>_m2v2, or manifest_<batch>_cgrid for --plan cgrid)
     manifest_<batch>_m2v2.tsv          9 columns read by tier2_memetic_array.sbatch
     manifest_<batch>_m2v2.tasks.csv    sidecar
     manifest_<batch>_m2v2.sha256       `sha256sum -c` list of its instances
@@ -31,6 +41,7 @@ submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
 
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py          # write
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --check  # rebuild, diff, exit 3 on drift
+    python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan cgrid [--check]
 """
 from __future__ import annotations
 
@@ -48,31 +59,48 @@ import make_m2_manifests as m2  # noqa: E402  (ARMS, BUDGET_S, render, sha256_fi
 BATCH = "calib_2sat_sc2"
 BASE_ARM = "p40_ls3p5"
 IMPL = "v2"
-# arm -> (config path, config_id, job-id tag, per-call flip limit)
+# arm -> (config path, config_id, job-id tag, per-call flip limit, ls.polish_cap)
 ARMS = {
     "p40_ls3p5_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml",
-                     "memetic_deeppolish_p40_ls3p5_v2", "p40ls3p5v2", 12500),
+                     "memetic_deeppolish_p40_ls3p5_v2", "p40ls3p5v2", 12500, "flips"),
     "p40_ls3p5_f200k_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml",
-                           "memetic_deeppolish_p40_ls3p5_f200k_v2", "p40ls3p5f200kv2", 200000),
+                           "memetic_deeppolish_p40_ls3p5_f200k_v2", "p40ls3p5f200kv2", 200000, "flips"),
 }
 EXTRA_COLS = ["memetic_impl", "ls_polish_flips"]
 SOLVER_SEEDS = (1, 2, 3)
 STEM = f"manifest_{BATCH}_m2v2"
+
+CGRID_FLIPS = (("200k", 200000), ("400k", 400000), ("800k", 800000), ("1p6m", 1600000), ("3p2m", 3200000))
+CGRID_ARMS = {
+    **{f"p40_f{t}_fonly_v2": (f"configs/tier2/memetic_deeppolish_p40_f{t}_fonly_v2.yaml",
+                              f"memetic_deeppolish_p40_f{t}_fonly_v2", f"f{t}fo", f, "flips_only")
+       for t, f in CGRID_FLIPS},
+    "p40_ls3p5_tcap_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_tcap_v2.yaml",
+                          "memetic_deeppolish_p40_ls3p5_tcap_v2", "tcap", 12500, "time"),
+}
+# plan -> (stem, arms, sidecar extra columns, job-id prefix)
+PLANS = {
+    "m2v2": (STEM, ARMS, EXTRA_COLS, "sc2"),
+    "cgrid": (f"manifest_{BATCH}_cgrid", CGRID_ARMS, EXTRA_COLS + ["ls_polish_cap"], "sc2cg"),
+}
 NOT_RUN_COLS = ["instance", "instance_sha256", "cell_id", "gen_seed", "cell_outcome", "class",
                 "rc2_status", "solve_s", "c_star", "lower_bound"]
 
 
-def check_arm() -> None:
-    """Each config is the pre-registered arm plus `impl: v2` and its flip limit, nothing else."""
+def check_arm(arms=ARMS) -> None:
+    """Each config is the pre-registered arm plus `impl: v2`, its flip limit and (if not
+    the default "flips") its ls.polish_cap, nothing else."""
     m2.check_arms()
     base_path = m2.ARMS[BASE_ARM][0]
-    for path, _cid, _tag, flips in ARMS.values():
+    for path, _cid, _tag, flips, cap in arms.values():
         want = m2.load_config(base_path)
         want["impl"] = IMPL
         want["ls"] = dict(want["ls"], ls_polish_flips=flips, flip_budget=flips)
+        if cap != "flips":
+            want["ls"]["polish_cap"] = cap
         if m2.load_config(path) != want:
-            raise m2.BuildError(f"{path} differs from {base_path} beyond impl {IMPL} "
-                                f"and the flip limit {flips}")
+            raise m2.BuildError(f"{path} differs from {base_path} beyond impl {IMPL}, "
+                                f"the flip limit {flips} and polish_cap {cap}")
 
 
 def read_csv(path: str) -> List[Dict[str, str]]:
@@ -108,18 +136,18 @@ def select(inst_rows: List[Dict[str, str]], cell_rows: List[Dict[str, str]]
     return elig, not_run
 
 
-def tasks_for(elig: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Both arms adjacent for every (instance, seed): paired line by line."""
+def tasks_for(elig: List[Dict[str, Any]], arms=ARMS, prefix: str = "sc2") -> List[Dict[str, Any]]:
+    """All arms adjacent for every (instance, seed): paired line by line."""
     _path, _cid, pop, ls_t, dmode = m2.ARMS[BASE_ARM]
     out = []
     for e in elig:
         for seed in SOLVER_SEEDS:
-            for arm, (path, cid, tag, flips) in ARMS.items():
+            for arm, (path, cid, tag, flips, cap) in arms.items():
                 out.append({
-                    "job_id": f"sc2_{tag}_{e['pop_idx'][2:]}_s{seed}", "stage": BATCH, "arm": arm,
+                    "job_id": f"{prefix}_{tag}_{e['pop_idx'][2:]}_s{seed}", "stage": BATCH, "arm": arm,
                     "config_id": cid, "config": path, "pop_size": pop, "ls_time_limit_s": ls_t,
                     "deadline_mode": dmode, "solver_seed": seed, "budget_s": m2.BUDGET_S, "pilot_idx": "",
-                    "memetic_impl": IMPL, "ls_polish_flips": flips,
+                    "memetic_impl": IMPL, "ls_polish_flips": flips, "ls_polish_cap": cap,
                     **{k: e[k] for k in ("pop_idx", "instance", "instance_sha256", "batch", "cell_id",
                                          "gen_seed", "m", "oracle_cost", "rc2_solve_s", "rc2_tier",
                                          "analysis_group")},
@@ -127,20 +155,21 @@ def tasks_for(elig: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def render(tasks: List[Dict[str, Any]]) -> Dict[str, str]:
-    """m2.render plus the EXTRA_COLS sidecar columns."""
+def render(tasks: List[Dict[str, Any]], extra_cols=EXTRA_COLS) -> Dict[str, str]:
+    """m2.render plus the extra sidecar columns."""
     files = m2.render(tasks)
     buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=m2.TASK_COLS + EXTRA_COLS, lineterminator="\n")
+    w = csv.DictWriter(buf, fieldnames=m2.TASK_COLS + extra_cols, lineterminator="\n")
     w.writeheader()
     for t in tasks:
-        w.writerow({k: t[k] for k in m2.TASK_COLS + EXTRA_COLS})
+        w.writerow({k: t[k] for k in m2.TASK_COLS + extra_cols})
     files[".tasks.csv"] = buf.getvalue()
     return files
 
 
-def build() -> Dict[str, str]:
-    check_arm()
+def build(plan: str = "m2v2") -> Dict[str, str]:
+    stem, arms, extra_cols, prefix = PLANS[plan]
+    check_arm(arms)
     rc = subprocess.run([sys.executable, "scripts/calib_2sat_sc_readout.py", "--batch", BATCH, "--check"],
                         capture_output=True, text=True)
     if rc.returncode != 0:
@@ -159,20 +188,22 @@ def build() -> Dict[str, str]:
         sha = m2.sha256_file(e["instance"])
         if sha != e["instance_sha256"]:
             raise m2.BuildError(f"{e['instance']}: sha256 {sha} != readout")
-    files = {STEM + suf: text for suf, text in render(tasks_for(elig)).items()}
+    files = {stem + suf: text for suf, text in render(tasks_for(elig, arms, prefix), extra_cols).items()}
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=NOT_RUN_COLS, lineterminator="\n")
     w.writeheader()
     w.writerows(not_run)
-    files[STEM + ".not_run.csv"] = buf.getvalue()
+    files[stem + ".not_run.csv"] = buf.getvalue()
     return files
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--plan", choices=sorted(PLANS), default="m2v2")
     a = ap.parse_args(argv)
-    files = build()
+    stem, arms, _extra, _prefix = PLANS[a.plan]
+    files = build(a.plan)
     if a.check:
         bad = [n for n, t in files.items()
                if not os.path.isfile(os.path.join("scripts", n))
@@ -185,11 +216,11 @@ def main(argv=None) -> int:
     for n, t in files.items():
         with open(os.path.join("scripts", n), "w", encoding="utf-8", newline="\n") as f:
             f.write(t)
-    n_tasks = files[STEM + ".tsv"].count("\n")
-    n_nr = files[STEM + ".not_run.csv"].count("\n") - 1
-    print(f"{STEM}: {n_tasks} tasks ({n_tasks // len(SOLVER_SEEDS) // len(ARMS)} eligible x "
-          f"{len(SOLVER_SEEDS)} seeds x {len(ARMS)} arms), "
-          f"{n_nr} not run (see {STEM}.not_run.csv)")
+    n_tasks = files[stem + ".tsv"].count("\n")
+    n_nr = files[stem + ".not_run.csv"].count("\n") - 1
+    print(f"{stem}: {n_tasks} tasks ({n_tasks // len(SOLVER_SEEDS) // len(arms)} eligible x "
+          f"{len(SOLVER_SEEDS)} seeds x {len(arms)} arms), "
+          f"{n_nr} not run (see {stem}.not_run.csv)")
     return 0
 
 

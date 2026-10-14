@@ -1,0 +1,22 @@
+# HP-1 Stage L1 c grid (docs/current/HYPERPARAMETER_CALIBRATION_PLAN.md §0b, §0c; repo):
+# the calib_2sat_sc2 v2 arm (memetic_deeppolish_p40_ls3p5_v2.yaml) with the per-call
+# local-search flip limit set to 1600000 and `ls.polish_cap: flips_only` (user,
+# 2026-10-14), so each polish call ends only on that flip limit. ls.time_limit_s is
+# ignored under flips_only; it is kept at the primary arm's 3.5 only so the key-by-key
+# comparison with the pre-registered arm stays minimal. With ea.deadline_mode: clip the
+# remaining run budget still ends a call, so a run stays inside its 900 s.
+# c = 1600000 / n: 100 at n 16,000, 25 at n 64,000.
+impl: v2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 1600000
+  time_limit_s: 3.5
+  flip_budget: 1600000
+  polish_cap: flips_only

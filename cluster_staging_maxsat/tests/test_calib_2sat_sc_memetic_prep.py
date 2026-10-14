@@ -127,3 +127,63 @@ def test_written_manifest_is_reproducible(monkeypatch):
     if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
         pytest.skip("calib_2sat_sc2 readout not present")
     assert sc.main(["--check"]) == 0
+
+
+# --- HP-1 Stage L1 c grid (--plan cgrid; HYPERPARAMETER_CALIBRATION_PLAN.md §0b/§0c) ---
+
+def test_cgrid_arms_differ_only_in_flips_and_polish_cap(monkeypatch):
+    sc.check_arm(sc.CGRID_ARMS)  # the real configs
+    real = m2.load_config
+    f800k = sc.CGRID_ARMS["p40_f800k_fonly_v2"][0]
+
+    def fake(bad):
+        def load(path):
+            cfg = real(path)
+            if path == f800k:
+                cfg = dict(cfg, ls={k: v for k, v in dict(cfg["ls"], **bad).items() if v is not None})
+            return cfg
+        return load
+    for bad in ({"polish_cap": None}, {"polish_cap": "time"}, {"time_limit_s": 60.0}, {"flip_budget": 12500}):
+        monkeypatch.setattr(m2, "load_config", fake(bad))
+        with pytest.raises(SystemExit):
+            sc.check_arm(sc.CGRID_ARMS)
+
+
+def test_cgrid_tasks_pair_six_arms():
+    elig, _ = sc.select([_inst("B", 11, "eligible", "65.0")], [_cell("B", "promising")])
+    for e in elig:
+        e["rc2_tier"] = "T2a"
+    stem, arms, extra, prefix = sc.PLANS["cgrid"]
+    tasks = sc.tasks_for(elig, arms, prefix)
+    assert len(tasks) == 18 and len({t["job_id"] for t in tasks}) == 18
+    assert [(t["ls_polish_flips"], t["ls_polish_cap"]) for t in tasks[:6]] == [
+        (200000, "flips_only"), (400000, "flips_only"), (800000, "flips_only"),
+        (1600000, "flips_only"), (3200000, "flips_only"), (12500, "time")]
+    assert {t["solver_seed"] for t in tasks[:6]} == {1}
+    side = sc.render(tasks, extra)[".tasks.csv"].splitlines()
+    assert side[0].endswith(",memetic_impl,ls_polish_flips,ls_polish_cap")
+    assert side[6].endswith(",v2,12500,time")
+
+
+@pytest.mark.parametrize("cap_task,cap_cfg,ok", [
+    (None, None, True),               # every earlier manifest and shard
+    ("flips_only", "flips_only", True),
+    ("time", "TIME", True),
+    ("flips_only", None, False),      # a default-cap run under a flips_only arm
+    (None, "flips_only", False),      # a flips_only run under a historical manifest
+    ("time", "flips_only", False),
+])
+def test_m2_results_checks_polish_cap(cap_task, cap_cfg, ok):
+    t, r = _task("v2"), _shard("v2", "v2")
+    if cap_task:
+        t["ls_polish_cap"] = cap_task
+    if cap_cfg:
+        r["config"]["ls"]["polish_cap"] = cap_cfg
+    assert (m2_results.mismatch(t, r) is None) == ok
+
+
+def test_written_cgrid_manifest_is_reproducible(monkeypatch):
+    monkeypatch.chdir(STAGING)
+    if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
+        pytest.skip("calib_2sat_sc2 readout not present")
+    assert sc.main(["--plan", "cgrid", "--check"]) == 0
