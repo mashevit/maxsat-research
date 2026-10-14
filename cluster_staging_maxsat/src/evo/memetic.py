@@ -21,7 +21,7 @@ def _ea_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-POLISH_CAPS = ("flips", "time")
+POLISH_CAPS = ("flips", "time", "flips_only")
 
 
 def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -35,11 +35,16 @@ def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
     # Opt-in `ls.polish_cap: time` (2026-10-12): each polish call ends only on
     # ls.time_limit_s; ls_polish_flips / flip_budget are ignored. Absent or
     # "flips" (every earlier config): unchanged, the first of the two limits ends it.
+    # Opt-in `ls.polish_cap: flips_only` (2026-10-14): each polish call ends only on
+    # ls_polish_flips; ls.time_limit_s is ignored. With `ea.deadline_mode: clip` the
+    # remaining run budget still ends a call, so the run stays inside its time cap.
     cap = str(ls.get("polish_cap", "flips")).lower()
     if cap not in POLISH_CAPS:
         raise ValueError(f"ls.polish_cap must be one of {POLISH_CAPS}, got {cap!r}")
     if cap == "time":
         budget["ls_polish_flips"] = budget["max_flips"] = sys.maxsize
+    elif cap == "flips_only":
+        budget["time_limit_s"] = math.inf
     return budget
 
 
