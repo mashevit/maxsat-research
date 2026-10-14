@@ -1,7 +1,7 @@
 # HP-1 calibration plan: size-aware hyperparameters for the memetic solver
 
 **Date:** 2026-10-11. **Decision §0: continuous flips per variable with floor 12,500 (no categories).**
-**2026-10-12: §0b Stage L1 (c grid at n 16,000 and 64,000) planned, not prepared.** **Status: plan only. Nothing has been run or prepared
+**2026-10-12: §0b Stage L1 (c grid at n 16,000 and 64,000) planned, not prepared.** **2026-10-14: Stage L1 prepared, 108 tasks, not submitted (§0c.4).** **2026-10-14: §0c: the user's method stance (empirical c, not a framework's automatic setting), c as part of the orthogonality flow, and the flip-only polish mode for the grid.** **Status: plan only. Nothing has been run or prepared
 for the cluster. Each stage needs approval.**
 
 **Request (user, 2026-10-11)** [quote]: "do some calibration for
@@ -209,6 +209,181 @@ median best cost and gap to c\* at 900 s.
 3. Keep the 60 s per-call cap for the grid, or another value?
 4. ~~Is c = 50 a high enough top?~~ Settled by the revision: the top is
    3.2M flips, i.e. c = 200 at n 16,000 and c = 50 at n 64,000.
+
+## 0c. 2026-10-14: method stance, place in the orthogonality flow, flip-only polish
+
+**The user's notes** [quote]: "for coefficient - check if there are
+relevant hyperparameter frameworks, and write in to do I will check with
+external llm. moreover, state that in frameworks they set automatically,
+and i want to get result empirically concretly. I do want to use the
+coeficient research flow as part of orthogonality research flow. implement
+if there is no - solver version that will do constraint only number of
+flips without constraint of seconds per local search."
+
+### 0c.1 Frameworks exist; c is still calibrated empirically, by our own grid [decision]
+
+- **Relevant frameworks exist** and are surveyed in
+  [`RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`](RESEARCH_NOTES_HYPERPARAMETER_TUNING.md)
+  §2–§4:
+  - general configurators: irace, SMAC3, ParamILS, GGA, Optuna;
+  - per-instance configuration: ISAC, Hydra;
+  - configuring for scaling: Styles et al. 2012; Mascia, Birattari and
+    Stützle 2013, who fit a scaling law of the parameters in instance size;
+    Mu, Hoos and Stützle 2016.
+  - Seen 2026-10-14 [web search, abstract level]: Ye, Luo and Cai (AAAI
+    2025) tune MaxSAT local-search solvers with SMAC, using anytime
+    performance as the cost.
+- **In those frameworks the parameter is set automatically:** a
+  configurator searches the space and returns a setting, or a fitted
+  setting-versus-size model. Their output is the chosen value, not a
+  measured curve.
+- **The user wants the result empirical and concrete:** a pre-registered
+  grid of c values, run on instances with a proven c\*, and reported as
+  the full measured curve (successes, TTT, gap to c\* against c, per
+  size), with the choice rule of §0b.4 applied to it. That is the method
+  of §0b. **No configurator is put in the loop.** The frameworks are
+  related work, and a source of protocol (held-out large instances,
+  size-scaled budgets).
+- **To-do for the user, with an external (web) LLM:** check whether a
+  framework or paper already gives a size-dependent flip limit, and how
+  frameworks treat a parameter that should scale with n. The prompt is
+  Prompt 2 in
+  [`WEB_LLM_QUERY_FLIP_COEFFICIENT.md`](WEB_LLM_QUERY_FLIP_COEFFICIENT.md).
+  Not a session opener.
+
+### 0c.2 c belongs to the orthogonality flow [decision + inference]
+
+**The user wants the coefficient flow to be part of the orthogonality
+research flow.** The orthogonality question is whether difficulty for RC2
+(seconds to a proven c\*) and difficulty for the memetic solver (success
+and TTT to the same c\*) are related (`CORPUS_V1_PROTOCOL_DRAFT.md` §5.2,
+§8.3).
+
+**[inference] Why c is a step in that flow, not a side study:**
+- The memetic side of every ρ is measured with one configuration. With
+  the fixed 12,500 flips, the configuration changes in effect with n:
+  30–250 flips per variable at n ≤ 400, 0.2 at n 64,000. A large-n
+  instance can then look memetic-hard because the polish is too short,
+  not because the instance is hard. That would bias ρ by size.
+- So the flip rule `max(12500, c·n)` with a calibrated c is what makes the
+  memetic difficulty comparable across sizes. The Q2 labels from §13c
+  (all 6 instances Q2 under 12.5k and 200k) are re-read under the chosen c.
+
+**[inference] Rules this implies:**
+1. **Report ρ under the calibrated rule as primary,** and under the fixed
+   12,500 as a sensitivity arm, so the effect of the calibration on ρ is
+   visible.
+2. **Selection effect:** c is chosen on the 6 calib_2sat_sc2 instances.
+   Those instances are not used as evidence in the ρ estimate that is
+   reported under that c, or they are reported separately. The ρ sample
+   comes from instances not used in calibration (the held-out stage).
+3. **c is chosen by memetic performance only,** never by its effect on ρ.
+4. The flip-only polish (§0c.3) makes "c" mean flips per variable on any
+   host. With a time cap the effective c depends on the node
+   (N-2026-10-12-d).
+
+### 0c.3 Flip-only polish: `ls.polish_cap: flips_only` [verified: tests]
+
+- **Not present before today:**
+  - `flips` (the default) ends a call on the first of the flip limit and
+    `ls.time_limit_s`;
+  - `time` ends it on the time limit only.
+- **Added (staging `src/evo/memetic.py`, `_ls_budget`):**
+  `ls.polish_cap: flips_only` ends each polish call only on
+  `ls.ls_polish_flips` (`ls.time_limit_s` becomes infinite).
+  - With `ea.deadline_mode: clip`, the remaining run budget still ends a
+    call, so a run stays inside its 900 s. **Grid configs must keep
+    `deadline_mode: clip`.**
+  - Absent or `flips`: every earlier config is unchanged (tested: same
+    assignment and flips).
+- **Tests:** `tests/test_polish_cap.py`, 5 new (12 in the file):
+  - flips_only runs every call to its full flip limit past a time limit
+    that would have ended it;
+  - an endless flip limit is still ended by the run budget
+    (`stop_reason: time_cap`);
+  - both for `impl` v1 and v2.
+  - Staging suite: 266 passed, 3 skipped, 1 failure that predates this
+    change (the SATLIB PySAT test).
+- **Consequence for §0b:** the grid arms can use `polish_cap: flips_only`
+  instead of raising `ls.time_limit_s` to 60 s (§0b.3). §0b.7 Q3 becomes:
+  flips_only (recommended: the flip limit is then the only per-call
+  limit, by construction), or the 60 s cap.
+- **Not on the cluster.** `memetic.py` must be uploaded (with the
+  `polish_cap: time` change of 5fd74c1). Take a fresh cluster hash
+  snapshot before writing the upload list.
+- ~~**Not done yet:** the grid configs, and the `m2_results.py` check that a
+  row's `polish_cap` matches its config.~~ Done the same day (§0c.4).
+
+### 0c.4 Stage L1 prepared (2026-10-14; not submitted) [verified]
+
+**§0b.7 answered (user, 2026-10-14):**
+1. per-call limit: **flips_only**;
+2. **re-run all 90** (the 200k arm too);
+3. **include the tcap reference** arm.
+
+**Built** (all in `cluster_staging_maxsat/`):
+- **Configs:** `configs/tier2/memetic_deeppolish_p40_f{200k,400k,800k,1p6m,3p2m}_fonly_v2.yaml`.
+  Each is the pre-registered arm plus `impl: v2`, the flip limit and
+  `polish_cap: flips_only`, checked key by key. The reference is the
+  existing `memetic_deeppolish_p40_ls3p5_tcap_v2.yaml`.
+- **Manifest:** `scripts/manifest_calib_2sat_sc2_cgrid.{tsv,tasks.csv,sha256,not_run.csv}`.
+  - 108 tasks: 6 instances × seeds 1–3 × 6 arms, with all 6 arms adjacent
+    per (instance, seed).
+  - Job ids `sc2cg_<arm>_<NN>_s<seed>`; 900 s, stop at c\*, grace 60.
+  - Built by `make_calib_2sat_sc_memetic_manifest.py --plan cgrid`. The
+    existing m2v2 manifest still rebuilds byte-identical (`--check`).
+- **`m2_results.py`:** checks `ls.polish_cap` of every shard against the
+  sidecar column `ls_polish_cap`. Absent on both sides means `flips`, so
+  every earlier manifest is unchanged.
+- **Tests:** 9 new in `tests/test_calib_2sat_sc_memetic_prep.py`. Staging
+  suite: 275 passed, 3 skipped, 1 old failure.
+- **Smoke on the workstation** (20–25 s budgets, seed 1):
+  - n 16,000 at 200k: 62 children, 61 calls of exactly 200k flips, the
+    last one clipped by the run budget;
+  - n 64,000 at 3.2M: 3 children (2 full calls + 1 clipped).
+- **Upload:** `scripts/rsync_files_calib_2sat_sc2_cgrid.txt`, 44 paths.
+  - Against the 2026-10-12 cluster snapshot: changed `src/evo/memetic.py`
+    and `scripts/m2_results.py`; new the 5 grid configs, the tcap config
+    and the manifest files.
+  - After the rsync,
+    `sha256sum -c scripts/manifest_calib_2sat_sc2_cgrid.upload.sha256`
+    (42 files: code, configs, manifest, instances) proves the cluster
+    copy. So no fresh snapshot is needed first.
+  - The login-node steps were tested with `python`/`python3` tripwires on
+    PATH: hash check OK, DRY_RUN OK.
+- **Cost:** ≤ 108 × 960 s = 28.8 CPU-h; 4 waves at %30, about 64 min of
+  compute plus queue. 8 GB, 1 CPU, `--time 00:20:00` (the driver's
+  defaults).
+- **Not built yet:** the readout applying §0b.4. It comes after the
+  results; `m2_results.py aggregate` gives the per-arm tables meanwhile.
+
+**Commands.** On the workstation:
+
+```bash
+cd /home/mashe/maxsat-lab_new/maxsat-lab/cluster_staging_maxsat
+rsync -av --files-from=<(grep -v '^#' scripts/rsync_files_calib_2sat_sc2_cgrid.txt) ./ <user>@<cluster>:~/cluster_staging_maxsat_evo/
+```
+
+On the login node (shell only):
+
+```bash
+cd ~/cluster_staging_maxsat_evo
+sha256sum -c --quiet scripts/manifest_calib_2sat_sc2_cgrid.upload.sha256 && echo UPLOAD_OK
+cd scripts && mkdir -p logs
+DRY_RUN=1 MANIFEST=manifest_calib_2sat_sc2_cgrid.tsv OUTDIR=results/calib_2sat_sc2_cgrid/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_cgrid.tsv OUTDIR=results/calib_2sat_sc2_cgrid/tasks bash submit_m2_memetic.sh
+```
+
+Back on the workstation, after the array:
+
+```bash
+rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/calib_2sat_sc2_cgrid/ results/calib_2sat_sc2_cgrid/
+~/.venvs/maxsat/bin/python scripts/m2_results.py pending --manifest scripts/manifest_calib_2sat_sc2_cgrid.tsv --outdir results/calib_2sat_sc2_cgrid/tasks --summary
+# resume only infra/invalid ids, if any (login node):
+IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_cgrid.tsv OUTDIR=results/calib_2sat_sc2_cgrid/tasks bash submit_m2_memetic.sh
+```
+
+`<commit>` is the commit that holds these files. Commit before submitting.
 
 ## 1. What instance sizes the solver can meet [verified]
 

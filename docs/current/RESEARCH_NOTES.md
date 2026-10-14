@@ -51,10 +51,53 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | How Glucose (CDCL) works: decisions, conflicts, phases, assumptions | [`RESEARCH_NOTES_GLUCOSE_CDCL.md`](RESEARCH_NOTES_GLUCOSE_CDCL.md) | Decisions and decision levels, the trail, conflict analysis and backjumping, VSIDS and phases, `set_phases`, assumptions and cores. Why repair and moves are biased toward the given assignment but not nearest to it (probe-checked), why singleton cores are proofs but weak bounds, and why single calls can be slow (the conflict budget). N-2026-10-11-m. |
 | Hyperparameter setting: frameworks, algorithms, what is influential (2026) | [`RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`](RESEARCH_NOTES_HYPERPARAMETER_TUNING.md) | AC tools (irace 4.5, SMAC 2.4.1, Optuna 5.0.0; ParamILS, GGA, Hyperband/BOHB/DEHB), per-instance configuration (ISAC, ISAC+ MaxSAT, Hydra), configuring for scaling (Styles et al. 2012; Mascia et al. 2013; Mu et al. 2016), DAC, LLM-driven design. Recommendation for HP-1: batch racing per size band, held-out large instances. N-2026-10-11-s. |
 | HP-1 calibration plan; instance-size inventory | [`HYPERPARAMETER_CALIBRATION_PLAN.md`](HYPERPARAMETER_CALIBRATION_PLAN.md) | 1,947 instance files, m from 48 to 276,705; proven c\* per size band (S 465, M 144, L 22 all-soft). Plan: flip-limit grid per band (S/M/L by m-decade), size-scaled budgets, racing, held-out test of categorical vs continuous rules. Not run. N-2026-10-11-s. |
-| Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. |
+| Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. Stance 2026-10-14: c is calibrated empirically by our grid, not by a framework; it is part of the orthogonality flow (plan §0c, N-2026-10-14-a). |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-14-b — HP-1 Stage L1 prepared: 108-task c grid with flip-only polish [decision + verified: prepared, not submitted]
+
+- **§0b.7 answered (user, 2026-10-14):** flips_only; re-run all 90;
+  include the tcap reference arm.
+- **Prepared:** 5 grid configs (200k–3.2M, `polish_cap: flips_only`) plus
+  tcap, and the manifest `manifest_calib_2sat_sc2_cgrid` (108 tasks,
+  ≤ 28.8 CPU-h).
+- **Checks:** `m2_results.py` now checks `polish_cap`; 9 tests.
+- **Smoke:** flip limits bind exactly, and the run budget clips the last
+  call.
+- **Upload:** an upload list with a `sha256sum -c` file.
+- `HYPERPARAMETER_CALIBRATION_PLAN.md` §0c.4 (commands there).
+
+### N-2026-10-14-a — c is calibrated empirically, not by a framework; c is part of the orthogonality flow; flip-only polish added [quote + decision + verified]
+
+> "for coefficient - check if there are relevant hyperparameter frameworks, and write in to do I will check with external llm. moreover, state that in frameworks they set automatically, and i want to get result empirically concretly. I do want to use the coeficient research flow as part of orthogonality research flow. implement if there is no - solver version that will do constraint only number of flips without constraint of seconds per local search." (user's notes, read 2026-10-14)
+
+- **Frameworks:** relevant ones exist (irace, SMAC3, ParamILS, GGA,
+  Optuna; ISAC, Hydra; scaling-law tuning by Mascia et al. 2013 and
+  others), surveyed in `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`. New
+  2026-10-14, abstract level: Ye, Luo and Cai (AAAI 2025) tune MaxSAT
+  local search with SMAC. A search hit mentions linear, piecewise and
+  log-log models of a parameter against instance size (about 2021); it is
+  **not verified** and goes to the web-LLM query.
+- **[decision] Stance:** frameworks set the parameter automatically. We
+  calibrate c empirically and concretely with the pre-registered grid
+  (plan §0b) and report the measured curve. The frameworks are related
+  work and a protocol source.
+- **To-do (user, external LLM):** Prompt 2 in
+  `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`. Not a session opener.
+- **[decision + inference] Orthogonality:** the c calibration is a step of
+  the orthogonality flow. A size-blind flip limit can make large-n
+  instances memetic-hard through a short polish and bias ρ by size. Rules
+  (plan §0c.2): ρ under the calibrated rule is primary and under 12,500 a
+  sensitivity arm; calibration instances stay out of the reported ρ
+  sample; c is chosen by memetic performance only.
+- **[verified] `ls.polish_cap: flips_only`** (staging `src/evo/memetic.py`):
+  each polish call ends only on its flip limit; the run budget still ends
+  it under `deadline_mode: clip`. 5 new tests; staging suite 266 passed,
+  3 skipped, 1 old failure. Not on the cluster. It can replace the 60 s
+  per-call cap in the §0b grid.
+- Where: `HYPERPARAMETER_CALIBRATION_PLAN.md` §0c.
 
 ### N-2026-10-12-e — HP-1 Stage L1 planned: a c grid at n 16,000 and 64,000 [quote + decision: planned, not prepared]
 

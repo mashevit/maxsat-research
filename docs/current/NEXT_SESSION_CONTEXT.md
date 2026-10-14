@@ -17,6 +17,36 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000000. Update 2026-10-14 (r10): read first
+
+**Done today** (from the user's notes; N-2026-10-14-a):
+- **Flip-only polish:** `ls.polish_cap: flips_only` in staging
+  `src/evo/memetic.py`. Each polish call ends only on its flip limit; the
+  run budget still ends it under `deadline_mode: clip`. 5 new tests; suite
+  266 passed / 3 skipped / 1 old failure. **Not on the cluster; not
+  committed.**
+- **Method stance** (`HYPERPARAMETER_CALIBRATION_PLAN.md` §0c.1): the
+  frameworks (irace, SMAC3, …) set parameters automatically; c is
+  calibrated empirically with our own grid and reported as a measured
+  curve.
+- **c belongs to the orthogonality flow** (§0c.2): ρ under the
+  calibrated rule is primary, with 12,500 as a sensitivity arm;
+  calibration instances stay out of the reported ρ sample.
+- **To-do (user, external LLM):** Prompt 2 (frameworks) added to
+  `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`, beside Prompt 1 (published c).
+  Not a session opener.
+
+**Later the same day: Stage L1 prepared** (§0b.7 answered: flips_only,
+re-run all 90, include tcap). It is 108 tasks, `manifest_calib_2sat_sc2_cgrid`,
+≤ 28.8 CPU-h, not submitted. The commands are in plan §0c.4; commit first
+for `MAXSAT_GIT_SHA`. Next: the user submits, then the readout (a §0b.4
+choice-rule script, still to write). N-2026-10-14-b.
+
+**Superseded (kept for the record):** answer §0b.7. Q3 is now "flips_only
+(recommended) or the 60 s cap". Then build the grid (configs, manifest,
+`m2_results` polish_cap check, upload list after a fresh cluster hash
+snapshot). Then multistart on both tracks.
+
 ## 0000000. Wrap-up 2026-10-12 (r9): read first
 
 **Done today:**
