@@ -1,0 +1,55 @@
+# rsync --files-from list for HP-1 Stage L1b, the time grid on calib_2sat_sc2 (72 tasks;
+# docs/current/HYPERPARAMETER_CALIBRATION_PLAN.md §0d; repo).
+# Paths relative to cluster_staging_maxsat/. Destination: ~/cluster_staging_maxsat_evo/.
+# Compared with the cluster tree proven by the Stage L1 upload (manifest_calib_2sat_sc2_cgrid.upload.sha256,
+# checked on the login node 2026-10-14; the L1 provenance src_tree_sha256 matches the workstation).
+# After the rsync, `sha256sum -c scripts/manifest_calib_2sat_sc2_tgrid.upload.sha256` on the
+# login node proves every file below is the workstation's, whatever the cluster held before.
+#
+# 1. src (unchanged since d11f731 = the Stage L1 run); sent so the src tree is certain.
+src/evo/memetic.py
+src/__init__.py
+src/cli/__init__.py
+src/cli/oracle_evalmaxsat.py
+src/cli/profile_hardness.py
+src/cli/run_memetic_shard.py
+src/cli/run_opt_rc2.py
+src/cli/solve_rc2_anytime.py
+src/evo/__init__.py
+src/evo/impl_v2.py
+src/evo/multistart.py
+src/evo/operators.py
+src/evo/population.py
+src/llm/__init__.py
+src/llm/advisor.py
+src/llm/prompt.py
+src/llm/providers/__init__.py
+src/llm/providers/noop.py
+src/llm/providers/ollama.py
+src/sat/__init__.py
+src/sat/cnf.py
+src/sat/state.py
+src/sat/walksat.py
+src/sat/walksat_v2.py
+# 2. Configs. NEW: the 4 time-cap arms (ls.polish_cap: time, 6 / 8 / 10 / 15 s).
+configs/tier2/memetic_deeppolish_p40_ls6_tcap_v2.yaml
+configs/tier2/memetic_deeppolish_p40_ls8_tcap_v2.yaml
+configs/tier2/memetic_deeppolish_p40_ls10_tcap_v2.yaml
+configs/tier2/memetic_deeppolish_p40_ls15_tcap_v2.yaml
+# 3. Driver and submit script (unchanged); results tool (unchanged; workstation use, sent for completeness).
+scripts/tier2_memetic_array.sbatch
+scripts/submit_m2_memetic.sh
+scripts/m2_results.py
+# 4. NEW: the manifest (72 tasks), its sidecar, its instance hashes, the upload hashes and this list.
+scripts/manifest_calib_2sat_sc2_tgrid.tsv
+scripts/manifest_calib_2sat_sc2_tgrid.tasks.csv
+scripts/manifest_calib_2sat_sc2_tgrid.sha256
+scripts/manifest_calib_2sat_sc2_tgrid.upload.sha256
+scripts/rsync_files_calib_2sat_sc2_tgrid.txt
+# 5. The 6 instances (unchanged on the cluster; listed so the check is complete).
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s251.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s253.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s255.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s256.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s257.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s258.wcnf

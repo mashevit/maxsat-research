@@ -187,3 +187,55 @@ def test_written_cgrid_manifest_is_reproducible(monkeypatch):
     if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
         pytest.skip("calib_2sat_sc2 readout not present")
     assert sc.main(["--plan", "cgrid", "--check"]) == 0
+
+
+# --- HP-1 Stage L1b time grid (--plan tgrid; HYPERPARAMETER_CALIBRATION_PLAN.md §0d) ---
+
+def test_tgrid_arms_differ_only_in_time_limit(monkeypatch):
+    sc.check_arm(sc.TGRID_ARMS)  # the real configs
+    real = m2.load_config
+    ls10 = sc.TGRID_ARMS["p40_ls10_tcap_v2"][0]
+
+    def fake(bad):
+        def load(path):
+            cfg = real(path)
+            if path == ls10:
+                cfg = dict(cfg, ls={k: v for k, v in dict(cfg["ls"], **bad).items() if v is not None})
+            return cfg
+        return load
+    for bad in ({"polish_cap": None}, {"polish_cap": "flips"}, {"time_limit_s": 3.5},
+                {"time_limit_s": 15.0}, {"flip_budget": 200000}):
+        monkeypatch.setattr(m2, "load_config", fake(bad))
+        with pytest.raises(SystemExit):
+            sc.check_arm(sc.TGRID_ARMS)
+
+
+def test_tgrid_tasks_pair_four_time_arms():
+    elig, _ = sc.select([_inst("B", 11, "eligible", "65.0")], [_cell("B", "promising")])
+    for e in elig:
+        e["rc2_tier"] = "T2a"
+    stem, arms, extra, prefix = sc.PLANS["tgrid"]
+    tasks = sc.tasks_for(elig, arms, prefix)
+    assert len(tasks) == 12 and len({t["job_id"] for t in tasks}) == 12
+    assert [(t["ls_time_limit_s"], t["ls_polish_cap"]) for t in tasks[:4]] == [
+        (6.0, "time"), (8.0, "time"), (10.0, "time"), (15.0, "time")]
+    assert [t["job_id"] for t in tasks[:4]] == [
+        "sc2tg_t6tc_01_s1", "sc2tg_t8tc_01_s1", "sc2tg_t10tc_01_s1", "sc2tg_t15tc_01_s1"]
+    assert {t["deadline_mode"] for t in tasks} == {"clip"}
+
+
+@pytest.mark.parametrize("t_task,t_cfg,ok", [(10.0, 10.0, True), (10.0, 3.5, False), (3.5, 10.0, False)])
+def test_m2_results_checks_time_limit(t_task, t_cfg, ok):
+    t, r = _task("v2"), _shard("v2", "v2")
+    t["ls_polish_cap"] = "time"
+    r["config"]["ls"]["polish_cap"] = "time"
+    t["ls_time_limit_s"] = t_task
+    r["config"]["ls"]["time_limit_s"] = t_cfg
+    assert (m2_results.mismatch(t, r) is None) == ok
+
+
+def test_written_tgrid_manifest_is_reproducible(monkeypatch):
+    monkeypatch.chdir(STAGING)
+    if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
+        pytest.skip("calib_2sat_sc2 readout not present")
+    assert sc.main(["--plan", "tgrid", "--check"]) == 0

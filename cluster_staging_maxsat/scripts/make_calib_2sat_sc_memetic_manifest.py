@@ -29,11 +29,19 @@ instances and seeds, 6 arms paired line by line:
 Each config is checked equal to the pre-registered arm except `impl: v2`, the flip
 limit and ls.polish_cap. The sidecar adds `ls_polish_cap`. 108 tasks.
 
+PLAN `tgrid` (--plan tgrid; HP-1 Stage L1b, HYPERPARAMETER_CALIBRATION_PLAN.md §0d; user
+2026-10-14: "6, 8 10 15 seconds per local search, without stopping on flips budget"): the
+same instances and seeds, 4 arms paired line by line:
+  p40_ls{6,8,10,15}_tcap_v2  `ls.polish_cap: time` (the time limit alone ends a call;
+                     the flip limit is ignored) at ls.time_limit_s 6 / 8 / 10 / 15 s
+Each config is the tcap reference with only ls.time_limit_s changed; the sidecar's
+ls_time_limit_s carries it. 72 tasks.
+
 OUTPUTS (scripts/, the M2 formats plus `memetic_impl` and `ls_polish_flips`
 sidecar columns that m2_results.py checks against each shard;
 submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
 
-    (stem manifest_<batch>_m2v2, or manifest_<batch>_cgrid for --plan cgrid)
+    (stem manifest_<batch>_m2v2, or manifest_<batch>_{cgrid,tgrid} for --plan cgrid/tgrid)
     manifest_<batch>_m2v2.tsv          9 columns read by tier2_memetic_array.sbatch
     manifest_<batch>_m2v2.tasks.csv    sidecar
     manifest_<batch>_m2v2.sha256       `sha256sum -c` list of its instances
@@ -42,6 +50,7 @@ submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py          # write
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --check  # rebuild, diff, exit 3 on drift
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan cgrid [--check]
+    python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan tgrid [--check]
 """
 from __future__ import annotations
 
@@ -59,12 +68,13 @@ import make_m2_manifests as m2  # noqa: E402  (ARMS, BUDGET_S, render, sha256_fi
 BATCH = "calib_2sat_sc2"
 BASE_ARM = "p40_ls3p5"
 IMPL = "v2"
-# arm -> (config path, config_id, job-id tag, per-call flip limit, ls.polish_cap)
+LS_T = m2.ARMS[BASE_ARM][3]  # the pre-registered ls.time_limit_s, 3.5
+# arm -> (config path, config_id, job-id tag, per-call flip limit, ls.polish_cap, ls.time_limit_s)
 ARMS = {
     "p40_ls3p5_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_v2.yaml",
-                     "memetic_deeppolish_p40_ls3p5_v2", "p40ls3p5v2", 12500, "flips"),
+                     "memetic_deeppolish_p40_ls3p5_v2", "p40ls3p5v2", 12500, "flips", LS_T),
     "p40_ls3p5_f200k_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_f200k_v2.yaml",
-                           "memetic_deeppolish_p40_ls3p5_f200k_v2", "p40ls3p5f200kv2", 200000, "flips"),
+                           "memetic_deeppolish_p40_ls3p5_f200k_v2", "p40ls3p5f200kv2", 200000, "flips", LS_T),
 }
 EXTRA_COLS = ["memetic_impl", "ls_polish_flips"]
 SOLVER_SEEDS = (1, 2, 3)
@@ -73,34 +83,41 @@ STEM = f"manifest_{BATCH}_m2v2"
 CGRID_FLIPS = (("200k", 200000), ("400k", 400000), ("800k", 800000), ("1p6m", 1600000), ("3p2m", 3200000))
 CGRID_ARMS = {
     **{f"p40_f{t}_fonly_v2": (f"configs/tier2/memetic_deeppolish_p40_f{t}_fonly_v2.yaml",
-                              f"memetic_deeppolish_p40_f{t}_fonly_v2", f"f{t}fo", f, "flips_only")
+                              f"memetic_deeppolish_p40_f{t}_fonly_v2", f"f{t}fo", f, "flips_only", LS_T)
        for t, f in CGRID_FLIPS},
     "p40_ls3p5_tcap_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_tcap_v2.yaml",
-                          "memetic_deeppolish_p40_ls3p5_tcap_v2", "tcap", 12500, "time"),
+                          "memetic_deeppolish_p40_ls3p5_tcap_v2", "tcap", 12500, "time", LS_T),
+}
+TGRID_SECONDS = (6.0, 8.0, 10.0, 15.0)
+TGRID_ARMS = {
+    f"p40_ls{t:g}_tcap_v2": (f"configs/tier2/memetic_deeppolish_p40_ls{t:g}_tcap_v2.yaml",
+                             f"memetic_deeppolish_p40_ls{t:g}_tcap_v2", f"t{t:g}tc", 12500, "time", t)
+    for t in TGRID_SECONDS
 }
 # plan -> (stem, arms, sidecar extra columns, job-id prefix)
 PLANS = {
     "m2v2": (STEM, ARMS, EXTRA_COLS, "sc2"),
     "cgrid": (f"manifest_{BATCH}_cgrid", CGRID_ARMS, EXTRA_COLS + ["ls_polish_cap"], "sc2cg"),
+    "tgrid": (f"manifest_{BATCH}_tgrid", TGRID_ARMS, EXTRA_COLS + ["ls_polish_cap"], "sc2tg"),
 }
 NOT_RUN_COLS = ["instance", "instance_sha256", "cell_id", "gen_seed", "cell_outcome", "class",
                 "rc2_status", "solve_s", "c_star", "lower_bound"]
 
 
 def check_arm(arms=ARMS) -> None:
-    """Each config is the pre-registered arm plus `impl: v2`, its flip limit and (if not
-    the default "flips") its ls.polish_cap, nothing else."""
+    """Each config is the pre-registered arm plus `impl: v2`, its flip limit, its
+    ls.time_limit_s and (if not the default "flips") its ls.polish_cap, nothing else."""
     m2.check_arms()
     base_path = m2.ARMS[BASE_ARM][0]
-    for path, _cid, _tag, flips, cap in arms.values():
+    for path, _cid, _tag, flips, cap, ls_t in arms.values():
         want = m2.load_config(base_path)
         want["impl"] = IMPL
-        want["ls"] = dict(want["ls"], ls_polish_flips=flips, flip_budget=flips)
+        want["ls"] = dict(want["ls"], ls_polish_flips=flips, flip_budget=flips, time_limit_s=ls_t)
         if cap != "flips":
             want["ls"]["polish_cap"] = cap
         if m2.load_config(path) != want:
             raise m2.BuildError(f"{path} differs from {base_path} beyond impl {IMPL}, "
-                                f"the flip limit {flips} and polish_cap {cap}")
+                                f"the flip limit {flips}, time_limit_s {ls_t} and polish_cap {cap}")
 
 
 def read_csv(path: str) -> List[Dict[str, str]]:
@@ -138,11 +155,11 @@ def select(inst_rows: List[Dict[str, str]], cell_rows: List[Dict[str, str]]
 
 def tasks_for(elig: List[Dict[str, Any]], arms=ARMS, prefix: str = "sc2") -> List[Dict[str, Any]]:
     """All arms adjacent for every (instance, seed): paired line by line."""
-    _path, _cid, pop, ls_t, dmode = m2.ARMS[BASE_ARM]
+    _path, _cid, pop, _ls_t, dmode = m2.ARMS[BASE_ARM]
     out = []
     for e in elig:
         for seed in SOLVER_SEEDS:
-            for arm, (path, cid, tag, flips, cap) in arms.items():
+            for arm, (path, cid, tag, flips, cap, ls_t) in arms.items():
                 out.append({
                     "job_id": f"{prefix}_{tag}_{e['pop_idx'][2:]}_s{seed}", "stage": BATCH, "arm": arm,
                     "config_id": cid, "config": path, "pop_size": pop, "ls_time_limit_s": ls_t,

@@ -1,0 +1,23 @@
+# HP-1 Stage L1b time grid (docs/current/HYPERPARAMETER_CALIBRATION_PLAN.md §0d; repo):
+# the calib_2sat_sc2 v2 arm (memetic_deeppolish_p40_ls3p5_v2.yaml) with every polish
+# call capped by time only, at ls.time_limit_s = 6 s (user, 2026-10-14: "6, 8 10 15
+# seconds per local search, without stopping on flips budget"). `ls.polish_cap: time`
+# makes src/evo/memetic.py ignore ls_polish_flips and flip_budget; they are kept at the
+# primary arm's 12,500 only so the key-by-key comparison with the pre-registered arm
+# stays minimal. With ea.deadline_mode: clip the remaining run budget still ends a
+# call, so a run stays inside its 900 s. Same as memetic_deeppolish_p40_ls3p5_tcap_v2.yaml
+# except ls.time_limit_s.
+impl: v2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 6.0
+  flip_budget: 12500
+  polish_cap: time
