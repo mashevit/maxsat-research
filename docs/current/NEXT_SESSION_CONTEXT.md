@@ -52,7 +52,11 @@ stay in `docs/current/` and index the new files.
      asked an external LLM on 2026-10-14 and counts it as done; Prompt 3 is
      dropped). Still open, not an opener: the framework table of every
      memetic hyperparameter, with pointers to the related-work notes;
-   - the %35 concurrency smoke (after IT OK).
+   - the %35 concurrency smoke (after IT OK);
+   - **after the current enhancements are finished** (user): fixed-rate
+     mutation sends children far from the optimum on large instances
+     (raw large-n and MSE memetic batches). Reminder only, no check step
+     (N-2026-10-14-k).
 
 ## 00000000. Update 2026-10-14 (r10): read first
 

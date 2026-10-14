@@ -57,6 +57,24 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-14-k — Reminder, after the current enhancements: fixed-rate mutation sends children far from the optimum on large instances [quote + reminder]
+
+> "write note to address mutation distancing away from optimum when we get to relevant batches that this problem might be arised" (user, 2026-10-14)
+> "discard check, only put it somewhere in notes for me to remind, after i finish the current enhancements" (user, 2026-10-14)
+
+- **Reminder only; no check and no batch step.** Raise it after the user
+  finishes the current enhancements.
+- The problem: `pmutate` 0.02 gives about 0.02 · n flips per child. At
+  n 64,000 one mutation takes an optimal assignment from 13 to 832–948
+  unsatisfied clauses (N-2026-10-14-i; `RESEARCH_NOTES_SOLVER_DIRECTIONS.md`
+  §9.1).
+- Where it may come up: large-n memetic runs on the original formula
+  (calib_2sat_sc2 raw, milestone A's fallback, direction C), and the MSE
+  hard-clause memetic. There the `mutate1` guard may instead make mutation
+  almost a no-op (not measured).
+- Candidate fixes are listed in §9.1 there: a fixed flip count, localised
+  mutation, flips where the parents differ.
+
 ### N-2026-10-14-j — New documents go to docs/current2/; the hubs stay here [quote + decision]
 
 > "create new current docs folder in which you will put new docs from now" (user, 2026-10-14)

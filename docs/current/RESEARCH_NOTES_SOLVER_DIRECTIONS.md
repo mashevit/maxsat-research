@@ -424,6 +424,8 @@ and tabu parameters and might be implementation in notes".
   unchanged solver works there.
 - `pmutate` belongs in the framework table of hyperparameters as a
   size-dependent parameter (memory: hp-framework-reminder).
+- **Reminder (user, 2026-10-14):** come back to this after the current
+  enhancements, for large-n and MSE memetic batches (N-2026-10-14-k).
 
 ### 9.2 Tabu in the local search: parameters and a possible implementation [code + proposal; literature unverified]
 
