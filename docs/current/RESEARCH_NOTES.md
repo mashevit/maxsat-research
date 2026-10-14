@@ -57,6 +57,18 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-14-j — New documents go to docs/current2/; the hubs stay here [quote + decision]
+
+> "create new current docs folder in which you will put new docs from now" (user, 2026-10-14)
+
+- From now on, new documents (including new `RESEARCH_NOTES_<TOPIC>.md`) are
+  created in `docs/current2/`, and indexed in §1 above with that path.
+- Existing `docs/current/` documents stay and are updated in place (code,
+  configs and upload lists refer to their paths).
+- The hubs `NEXT_SESSION_CONTEXT.md`, `RESEARCH_NOTES.md` and
+  `READING_LIST.md` stay in `docs/current/`.
+- Rule: `docs/current2/README.md`.
+
 ### N-2026-10-14-i — Fixed-rate mutation wrecks big instances (13 → 832–948 unsat at n 64k); tabu parameters and an implementation sketch [quote + verified + proposal]
 
 > "keep the mutation damaging conclusion for big instances, and tabu parameters and might be implementation in notes" (user, 2026-10-14)

@@ -29,6 +29,10 @@ alias, so every cluster step is a command the user runs on the login node.
 | Generality | it does not carry over: 3-SAT/4-SAT, dense 2-SAT and crafted 0–1.2%, MSE ≤ 22%. A reconstruction bug for unequal or hard weights was found by brute force and fixed (0/3,000) | §7, N-2026-10-14-f |
 | Decisions (user) | kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s screen (`s` ≥ 20%, then a kernel gain of ≥ 20% with no longer clauses); **RC2 stays without preprocessing** (it belongs in a solver's core: RC2's limitation, our enhancement); L1b on hold | §8, N-2026-10-14-g/h |
 
+**Docs layout (user, 2026-10-14):** new documents go to `docs/current2/`
+(README there). The hubs (this file, `RESEARCH_NOTES.md`, `READING_LIST.md`)
+stay in `docs/current/` and index the new files.
+
 **Next session, in order:**
 1. ~~Commit~~: committed and pushed at wrap-up (see the git log).
 2. **Milestone A, after the user's go:**

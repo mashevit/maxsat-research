@@ -7,6 +7,9 @@ or already summarised in one of these.
 
 Read in this order. Paths are relative to the repository root.
 
+**2026-10-14: new documents now go to `docs/current2/`** (user decision;
+its README gives the rule). This list and the other two hubs stay here.
+
 **2026-10-14:** 5 superseded documents (not listed here, not indexed, not
 referred to by code) were moved to `docs/archive/2026-10-14_superseded/`.
 Its README lists them and the rule. **Also read**
