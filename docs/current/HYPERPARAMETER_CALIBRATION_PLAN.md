@@ -385,6 +385,119 @@ IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_cgri
 
 `<commit>` is the commit that holds these files. Commit before submitting.
 
+**Committed and pushed 2026-10-14:** `112c83d` (flips_only), `d11f731` (the
+batch: use `MAXSAT_GIT_SHA=d11f731`), `d031df5` (docs).
+
+**Upload checked 2026-10-14 [verified]** from the cluster snapshot
+`results/cluster_state/cluster_hashes_20261014.txt` (516 files; it is
+wider than the 10-12 one: all of `data/generated`, plus `*.old` / `*.bak`):
+- 43 of the 44 upload paths match the workstation byte for byte. Only
+  `rsync_files_calib_2sat_sc2_cgrid.txt` is missing; it is not used by the
+  runs.
+- The cluster `src` tree digest is `3b1547a6…`, the same as the workstation
+  at `d11f731`.
+- Elsewhere: the same 2 old differences as on 10-12
+  (`calib_2sat_sc_readout.py`, `preflight_calib_2sat_sc.sh`; not used).
+  Cluster-only `*.old` / `*.bak` copies under `src/` are not `*.py` files.
+  They are not imported and not in `src_tree_sha256`.
+- Ready to submit.
+
+## 0d. 2026-10-14: Stage L1 read; Stage L1b, a time grid (prepared, not submitted)
+
+### 0d.1 Stage L1 readout (the c grid, 108 tasks) [verified: results]
+
+- **Complete and clean:** 108/108 shards; 4 successes, 104 budget
+  exhausted; no infra or invalid rows. Provenance hashes equal the
+  workstation at `d11f731`; the flip limit ended every call (flips per
+  call at the set value; only the last call of a run is clipped).
+- **§0b.4 rule, per size:**
+  - n 16,000: **1.6M flips (c = 100)**, 3/9 successes against 0/9 for
+    every other grid arm (sc01 s2 848 s; sc03 s2 772 s, s3 626 s).
+  - n 64,000: no success in any arm. 1.6M has the lowest mean
+    median-best/c\* (1.546); 800k (1.587) and 3.2M (1.590) are within
+    0.05, so **800k (c = 12.5)** wins the tie rule. Only 200k is clearly
+    worse (1.782).
+  - tcap 3.5 s (reference): 1/9 and 1.101 at n 16,000; 1.590 at n 64,000.
+- **[inference]** The best c falls with n (100 against 12.5–25), but the
+  best flips per call is about the same at both sizes, 0.8–1.6M. Those
+  calls take about 2–5 s, and the run then makes about 120–250 children
+  (4–7 generations) in 900 s. At this budget the per-call limit looks set
+  by the trade-off between call length and generations, not by n. This
+  does not support `max(12500, c·n)` as it stands; the rule needs a
+  decision (§0b.4). Differences are about 0.5 clause at n 16,000, within
+  seed noise; node speed varied 180k–382k flips/s over 19 hosts.
+- Readout: `m2_results.py aggregate` plus a scratch script for §0b.4; the
+  committed readout script is still to write (§0b.6 item 5).
+
+### 0d.2 Stage L1b: a time grid, 6 / 8 / 10 / 15 s per local search [prepared, verified]
+
+> **Update the same day (N-2026-10-14-e/g):** the eligible instances reduce
+> exactly to 300–572-variable kernels. The user decided that the memetic
+> uses kernelising on this grid, behind a quick worth-it check
+> (`RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §8). Calibrating polish length on
+> the original formula no longer decides these instances. **Stage L1b is on
+> hold:** run it only as the raw baseline, if the user wants one.
+
+**Request (user, 2026-10-14)** [quote]: "make new manifest and commands, or
+configs - with 6, 8 10 15 seconds per local search, without stopping on
+flips budget".
+
+- **Arms:** `configs/tier2/memetic_deeppolish_p40_ls{6,8,10,15}_tcap_v2.yaml`.
+  Each is the tcap reference with only `ls.time_limit_s` changed:
+  `ls.polish_cap: time`, so each call ends on its time limit and the flip
+  limit is ignored; `ea.deadline_mode: clip` keeps the run inside 900 s.
+- **Manifest:** `scripts/manifest_calib_2sat_sc2_tgrid.{tsv,tasks.csv,sha256,not_run.csv}`,
+  72 tasks: the same 6 instances × seeds 1–3 × 4 arms, adjacent per
+  (instance, seed). Job ids `sc2tg_t<s>tc_<NN>_s<seed>`; 900 s, stop at
+  c\*, grace 60. Built by `make_calib_2sat_sc_memetic_manifest.py --plan tgrid`;
+  the builder now checks `ls.time_limit_s` per arm, and the m2v2 and cgrid
+  manifests still rebuild byte-identical (`--check`).
+- **Not included:** the 3.5 s tcap and the flip arms; their Stage L1 rows
+  (same instances, seeds and commit tree) are the comparison.
+- **Expected per run** (cluster 180k–380k flips/s): about 1.1–2.3M flips
+  per call at 6 s up to 2.7–5.7M at 15 s, and about 150 / 112 / 90 / 60
+  children. At 15 s that is about 1.5 generations of 38 children, like the
+  3.2M flip arm.
+- **Tests:** 4 new (8 cases) in `tests/test_calib_2sat_sc_memetic_prep.py`;
+  staging suite 282 passed, 3 skipped.
+- **Smoke (workstation, 20 s, n 16,000, 6 s arm):** 4 children, 3 full 6 s
+  calls of about 1.8M flips and 1 clipped; the 12,500 flip limit ignored.
+- **Upload:** `scripts/rsync_files_calib_2sat_sc2_tgrid.txt` (42 paths);
+  `manifest_calib_2sat_sc2_tgrid.upload.sha256` (40 files). Against the
+  Stage L1 upload, which the login node verified, only the 4 configs and
+  the manifest files are new; every shared file is byte-identical, and
+  the src tree digest is `3b1547a6…` as at `d11f731`.
+- **Dry run** of `submit_m2_memetic.sh` with `python`/`python3` tripwires:
+  OK, 72 rows, `--array=1-72%30`.
+- **Cost:** ≤ 72 × 960 s = 19.2 CPU-h; 3 waves at %30, about 48 min of
+  compute plus queue.
+
+**Commands.** Commit first; `<commit>` is that commit. On the workstation:
+
+```bash
+cd /home/mashe/maxsat-lab_new/maxsat-lab/cluster_staging_maxsat
+rsync -av --files-from=<(grep -v '^#' scripts/rsync_files_calib_2sat_sc2_tgrid.txt) ./ <user>@<cluster>:~/cluster_staging_maxsat_evo/
+```
+
+On the login node (shell only):
+
+```bash
+cd ~/cluster_staging_maxsat_evo
+sha256sum -c --quiet scripts/manifest_calib_2sat_sc2_tgrid.upload.sha256 && echo UPLOAD_OK
+cd scripts && mkdir -p logs
+DRY_RUN=1 MANIFEST=manifest_calib_2sat_sc2_tgrid.tsv OUTDIR=results/calib_2sat_sc2_tgrid/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_tgrid.tsv OUTDIR=results/calib_2sat_sc2_tgrid/tasks bash submit_m2_memetic.sh
+```
+
+Back on the workstation, after the array:
+
+```bash
+rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/calib_2sat_sc2_tgrid/ results/calib_2sat_sc2_tgrid/
+~/.venvs/maxsat/bin/python scripts/m2_results.py pending --manifest scripts/manifest_calib_2sat_sc2_tgrid.tsv --outdir results/calib_2sat_sc2_tgrid/tasks --summary
+# resume only infra/invalid ids, if any (login node):
+IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_calib_2sat_sc2_tgrid.tsv OUTDIR=results/calib_2sat_sc2_tgrid/tasks bash submit_m2_memetic.sh
+```
+
 ## 1. What instance sizes the solver can meet [verified]
 
 **Method:**

@@ -12,6 +12,12 @@ and bring the answer back.
 **Added 2026-10-14:** Prompt 2, on hyperparameter frameworks (user: "check
 if there are relevant hyperparameter frameworks, and write in to do I will
 check with external llm"). Same status: a to-do, not a session opener.
+**Done 2026-10-14 (user):** the user put the hyperparameter-framework
+question to an external LLM, and counts the prompt to-do as done [quote]:
+"I did ask llm propmpt about the hyper parameter frame works, count the
+prompt asking that i asked as done". The answer is not in the notes yet;
+add its verified sources to `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md` if the
+user brings it. The planned Prompt 3 (all parameters) is no longer needed.
 **Stance to keep in mind when reading the answers** (user, 2026-10-14): in
 the frameworks the parameter is set automatically; we want c as an
 empirical, concrete result of our own grid

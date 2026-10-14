@@ -52,9 +52,103 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Hyperparameter setting: frameworks, algorithms, what is influential (2026) | [`RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`](RESEARCH_NOTES_HYPERPARAMETER_TUNING.md) | AC tools (irace 4.5, SMAC 2.4.1, Optuna 5.0.0; ParamILS, GGA, Hyperband/BOHB/DEHB), per-instance configuration (ISAC, ISAC+ MaxSAT, Hydra), configuring for scaling (Styles et al. 2012; Mascia et al. 2013; Mu et al. 2016), DAC, LLM-driven design. Recommendation for HP-1: batch racing per size band, held-out large instances. N-2026-10-11-s. |
 | HP-1 calibration plan; instance-size inventory | [`HYPERPARAMETER_CALIBRATION_PLAN.md`](HYPERPARAMETER_CALIBRATION_PLAN.md) | 1,947 instance files, m from 48 to 276,705; proven c\* per size band (S 465, M 144, L 22 all-soft). Plan: flip-limit grid per band (S/M/L by m-decade), size-scaled budgets, racing, held-out test of categorical vs continuous rules. Not run. N-2026-10-11-s. |
 | Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. Stance 2026-10-14: c is calibrated empirically by our grid, not by a framework; it is part of the orthogonality flow (plan §0c, N-2026-10-14-a). |
+| Solver directions: exact Max-2-SAT kernel of the n 64,000 instances; preprocessing, stronger raw memetic, large-kernel corpus | [`RESEARCH_NOTES_SOLVER_DIRECTIONS.md`](RESEARCH_NOTES_SOLVER_DIRECTIONS.md) | Exact rules (pure literal, degree-2 MaxSAT resolution) shrink the 6 eligible calib_2sat_sc2 instances to 300–572-variable kernels; rebuilt cost = c\* on all. The unchanged memetic solves the 3 n 64,000 kernels in ≤ 0.7 s (s253 open). Explains the size-independent Stage L1 optimum. Directions A (preprocess, recommended) / B (impl v3: partition crossover, clause weighting) / C (large-kernel corpus). N-2026-10-14-e. §7: it does not carry over to 3-SAT, dense 2-SAT or crafted instances (N-2026-10-14-f). §8 (user decision): kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s worth-it screen (N-2026-10-14-g). |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-14-h — No preprocessing for RC2 (it belongs in a solver's core; ours has it); Stage L1b on hold; B and C to be explained later [quote + decision]
+
+> "1. no preprocessing on rc2 - explain it that it is should have been included in core solver of rc2, it is problem of rc2 solver, and in our there is enhancement. 2. time grid on hold, meanwhile we will try to get results with solver enhancement. 3. later I would like explanation on B and C" (user, 2026-10-14)
+
+- RC2 stays as distributed, on the original formula. Missing exact
+  preprocessing is RC2's limitation; gated kernelising is part of our
+  memetic solver.
+- Report: name the arms explicitly, count kernelise time in the memetic's
+  budget and TTT, and give the kernel sizes and RC2's kernel times as
+  context.
+- Stage L1b on hold; next results from direction A.
+- To-do: explain B and C to the user.
+- `RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §8.3.
+
+### N-2026-10-14-g — Kernelising mainly helps sparse Max-2-SAT, which is exactly the eligible RC2 grid; the memetic uses it there, behind a quick worth-it check [quote + decision + verified]
+
+> "write in research flow a note that karnelization mainly enhances not dense 2sat on which we got eligible grid points from rc2, and didn't pass memetic without it. so I think for this case of grid we do need kernnilization preprocessing, maybe check, even if it is on - that it is not dense 2sat, or other very rapid check that its worth this kind of processing" (user, 2026-10-14)
+
+- **Note:** the eligible calib_2sat_sc2 grid points are sparse Max-2-SAT
+  (2.5 occurrences per variable). There kernelising removes 97–99.4% of the
+  variables.
+  - Without it the memetic failed at n 64,000 (0/54 Stage L1 runs).
+  - With it, c\* was reached in ≤ 0.7 s on all three.
+  - On dense 2-SAT, 3-SAT, crafted and MSE instances it removes ≤ 22%.
+- **[decision]** For this grid the memetic runs with kernelising, opt-in.
+- **Gate:** the screen `s` (the fraction of variables removable at
+  once, ≤ 0.1 s) must be ≥ 20%. It is 61–65% on the grid and ≤ 13.1% on
+  every non-sparse family sampled. Then the kernel must remove ≥ 20%, with
+  no clause longer than the original. Otherwise the run uses the original
+  formula.
+- **Open:** RC2 on the kernel too (fairness); Stage L1b hold or baseline;
+  then B or C.
+- `RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §8.
+
+### N-2026-10-14-f — Kernelising does not carry over to 3-SAT; the stronger-solver components do [quote + verified + inference]
+
+> "will the kernelising and stronger solver work on 3sat, and in general not only on 2sat" (user, 2026-10-14)
+
+- **[verified]** Generalised diagnostic (any clause length, hard clauses).
+  A reconstruction bug for unequal or hard weights was found by brute force
+  and fixed; now 0/3,000 mismatches. The calib_2sat_sc2 results were
+  unaffected (all weights 1).
+- **[verified]** Reduction:
+  - random 3-SAT/4-SAT, dense Max-2-SAT, crafted maxcut, jnh: 0–1.2%;
+  - MSE industrial: 5–22%, with long resolvents;
+  - Max-2-SAT near the threshold: 97–99.5%.
+- **[inference]** Kernelising is family-specific: it needs about 2
+  occurrences per variable, while 3-SAT has about 12.8. The B components
+  (clause weighting, compiled loop, localised mutation) are general.
+  Partition crossover is general, but its benefit depends on the
+  instance decomposing.
+- `RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §7.
+
+### N-2026-10-14-e — The n 64,000 instances reduce exactly to 300–572-variable kernels; the unchanged memetic solves those in under a second [quote + verified + inference]
+
+> "actually i want you to think what direction to research or what to optimize in solver furthe, maybe with new version, you can if you think needed copy to new src folder, i want to try to get results on 64000 vars, with memetic , if the rc2 achieved optimum in 900s" (user, 2026-10-14)
+
+- **[verified]** Pure-literal elimination plus degree-2 MaxSAT resolution
+  (`scripts/diag_max2sat_kernel.py --verify`) leaves 300 / 332 / 572
+  variables at n 64,000 and 420–434 at n 16,000. The rebuilt full
+  assignment's cost equals the kernel optimum on all 15 batch instances,
+  and equals RC2's c\* on the 6 eligible ones.
+- **[verified, 1 seed]** The pre-registered memetic arm on the kernels
+  reaches c\* on all three n 64,000 instances in 0.03–0.70 s, and on 2 of 3
+  at n 16,000. s253 ends at 15 against 14 in 120 s; it is also RC2's
+  hardest (58 s on the kernel).
+- **[inference]** The best flips per call in Stage L1 does not depend on n
+  because the kernels are about the same size at both n. n is nominal for
+  these cells.
+- **Proposal:** direction A, exact preprocessing in front of the memetic,
+  then B or C. Stage L1b on hold pending the user's decision.
+  `RESEARCH_NOTES_SOLVER_DIRECTIONS.md`.
+
+### N-2026-10-14-d — HP-1 Stage L1b prepared: 72-task time grid, 6 / 8 / 10 / 15 s per local search [quote + verified: prepared, not submitted]
+
+> "make new manifest and commands, or configs - with 6, 8 10 15 seconds per local search, without stopping on flips budget" (user, 2026-10-14)
+
+- 4 configs `memetic_deeppolish_p40_ls{6,8,10,15}_tcap_v2` (`polish_cap: time`,
+  flip limit ignored); manifest `manifest_calib_2sat_sc2_tgrid`, 72 tasks,
+  ≤ 19.2 CPU-h; builder `--plan tgrid` checks `ls.time_limit_s`.
+- 4 new tests (suite 282 passed); 20 s smoke OK; dry run OK; upload list
+  and `sha256sum -c` file. Commands in
+  `HYPERPARAMETER_CALIBRATION_PLAN.md` §0d.2.
+
+### N-2026-10-14-c — HP-1 Stage L1 read: best 1.6M flips at n 16,000, 800k at n 64,000; best flips per call about size-independent [verified + inference]
+
+- 108/108 clean. §0b.4 rule: n 16,000 → 1.6M (c = 100; 3/9 successes,
+  the only grid successes); n 64,000 → 800k (c = 12.5) by the 0.05 tie rule
+  (no success in any arm).
+- **[inference]** c falls with n, but flips per call (0.8–1.6M, 2–5 s per
+  call) does not: at 900 s the limit looks set by call length against
+  generations, not by n. `max(12500, c·n)` needs a decision. Plan §0d.1.
 
 ### N-2026-10-14-b — HP-1 Stage L1 prepared: 108-task c grid with flip-only polish [decision + verified: prepared, not submitted]
 
@@ -68,6 +162,10 @@ Never edit an old entry's claim in place. Add a dated correction under it.
   call.
 - **Upload:** an upload list with a `sha256sum -c` file.
 - `HYPERPARAMETER_CALIBRATION_PLAN.md` §0c.4 (commands there).
+- **Upload verified the same day:** cluster snapshot
+  `cluster_hashes_20261014.txt`. 43/44 upload paths match; only the list
+  file is missing, and it is unused. The cluster `src` tree equals `d11f731`.
+  Ready to submit.
 
 ### N-2026-10-14-a — c is calibrated empirically, not by a framework; c is part of the orthogonality flow; flip-only polish added [quote + decision + verified]
 

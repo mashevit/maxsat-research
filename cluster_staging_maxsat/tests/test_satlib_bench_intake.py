@@ -44,13 +44,19 @@ def test_normalise_recovers_header_clauses(name):
     assert sbi.normalise(new)[0] == new
 
 
-def test_pysat_misreads_originals():
-    # The reason for normalising: PySAT's line reader turns these into empty clauses.
-    assert () in sbi.pysat_clauses(UUF)
-    assert () in sbi.pysat_clauses(PRET)
-    assert () in sbi.pysat_clauses(SPLIT)
-    # and silently drops the last literal of an unterminated line (dubois100)
-    assert sbi.pysat_clauses(UNTERMINATED) == [(1, 2), (-1, -2, 3)]
+@pytest.mark.parametrize("text,want", [(UUF, [(1, -2, 3), (-1, 2, 3)]), (PRET, [(1, -2, 3), (-1, 2, 3)]),
+                                       (SPLIT, [(1, 2), (3, -1)]),
+                                       (UNTERMINATED, [(1, 2, 3), (-1, -2, 3)])])
+def test_pysat_misreads_originals(text, want):
+    # The reason for normalising: PySAT does not read these originals as written.
+    # How it fails depends on the version: 1.9.dev2/dev3 (cluster) returns wrong
+    # clauses (empty clauses; the last literal of an unterminated line dropped),
+    # newer releases (1.9.dev15) raise a parse error. Either way, not `want`.
+    try:
+        got = sbi.pysat_clauses(text)
+    except ValueError:
+        return
+    assert got != want
 
 
 def test_canonical_file_is_left_alone():

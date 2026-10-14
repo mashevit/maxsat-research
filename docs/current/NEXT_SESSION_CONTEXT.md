@@ -17,6 +17,39 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000000. Wrap-up 2026-10-14 (r11): read first
+
+**Done today:**
+
+| thread | state | where |
+|---|---|---|
+| Stage L1 c grid (108 tasks, `d11f731`) | **read**: 108/108 clean. §0b.4 rule: 1.6M flips (c 100) at n 16k with 3/9 successes; 800k (c 12.5, tie rule) at n 64k with 0 successes. The best flips per call (0.8–1.6M, 2–5 s) is about the same at both n | plan §0d.1, N-2026-10-14-c |
+| Stage L1b time grid (6/8/10/15 s, `polish_cap: time`, 72 tasks) | prepared and verified (tests, smoke, dry run, upload hashes). **On hold (user)** | plan §0d.2, N-2026-10-14-d |
+| Exact kernel of the eligible instances | pure literal plus degree-2 MaxSAT resolution: n 64k → 300–572 vars, rebuilt cost = c\*. The unchanged memetic solves the three 64k kernels in ≤ 0.7 s; s253 (16k) open | `RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §2–§3, N-2026-10-14-e |
+| Generality | it does not carry over: 3-SAT/4-SAT, dense 2-SAT and crafted 0–1.2%, MSE ≤ 22%. A reconstruction bug for unequal or hard weights was found by brute force and fixed (0/3,000) | §7, N-2026-10-14-f |
+| Decisions (user) | kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s screen (`s` ≥ 20%, then a kernel gain of ≥ 20% with no longer clauses); **RC2 stays without preprocessing** (it belongs in a solver's core: RC2's limitation, our enhancement); L1b on hold | §8, N-2026-10-14-g/h |
+
+**Next session, in order:**
+1. ~~Commit~~: committed and pushed at wrap-up (see the git log).
+2. **Milestone A, after the user's go:**
+   - `src/sat/kernel.py` from `scripts/diag_max2sat_kernel.py`;
+   - the gate and the shard fields in `run_memetic_shard.py` (opt-in config
+     key); kernelise time counts inside the budget and the TTT;
+   - tests, including the brute-force exactness test;
+   - an 18-task manifest (6 instances × 3 seeds, 900 s), the upload list
+     and the commands.
+3. **Explain B and C** when the user asks ("later I would like explanation
+   on B and C"):
+   - B: stronger memetic on the original formula (clause-weighting local
+     search, compiled loop, localised mutation, partition crossover);
+   - C: a large-kernel corpus.
+4. **Still pending reminders:**
+   - ~~the web-LLM prompt on hyperparameter frameworks~~: **done** (the user
+     asked an external LLM on 2026-10-14 and counts it as done; Prompt 3 is
+     dropped). Still open, not an opener: the framework table of every
+     memetic hyperparameter, with pointers to the related-work notes;
+   - the %35 concurrency smoke (after IT OK).
+
 ## 00000000. Update 2026-10-14 (r10): read first
 
 **Done today** (from the user's notes; N-2026-10-14-a):
@@ -41,6 +74,76 @@ re-run all 90, include tcap). It is 108 tasks, `manifest_calib_2sat_sc2_cgrid`,
 ≤ 28.8 CPU-h, not submitted. The commands are in plan §0c.4; commit first
 for `MAXSAT_GIT_SHA`. Next: the user submits, then the readout (a §0b.4
 choice-rule script, still to write). N-2026-10-14-b.
+
+**Later still (2026-10-14): Stage L1 read, Stage L1b prepared** (plan §0d;
+N-2026-10-14-c/d).
+- L1 (submitted as `d11f731`, 108/108 clean): the §0b.4 rule picks 1.6M flips
+  (c = 100) at n 16,000 and 800k (c = 12.5, tie rule) at n 64,000. The best
+  flips per call, about 0.8–1.6M (2–5 s per call), is about the same at both
+  sizes, so `max(12500, c·n)` needs a decision.
+- L1b: time-only polish at 6 / 8 / 10 / 15 s, 72 tasks,
+  `manifest_calib_2sat_sc2_tgrid`, ≤ 19.2 CPU-h. **Not committed, not
+  submitted**; commands in plan §0d.2.
+
+**Latest (2026-10-14): the n 64,000 instances have a small exact kernel**
+(`RESEARCH_NOTES_SOLVER_DIRECTIONS.md`, N-2026-10-14-e).
+- Pure literals plus degree-2 MaxSAT resolution leave 300–572 variables;
+  verified exact against c\*.
+- The unchanged memetic solves the three n 64,000 kernels in under 1 s.
+- Proposed: A (preprocess → memetic → rebuild; one milestone); then B
+  (impl v3: partition crossover, clause weighting) or C (large-kernel
+  corpus). **Awaiting the user's decisions** (§6 there). Stage L1b on hold.
+
+**Decision (user, 2026-10-14): kernelise for the sparse Max-2-SAT grid**
+(N-2026-10-14-f/g; directions note §7–§8).
+- Kernelising mainly helps sparse 2-SAT, exactly the eligible RC2 grid. It
+  gives ≤ 22% elsewhere.
+- Gate: screen `s` ≥ 20% (≤ 0.1 s), then a kernel gain of ≥ 20%.
+- Next milestone (A): `src/sat/kernel.py` plus the gate in
+  `run_memetic_shard.py`, tests, an 18-task batch. Awaiting go. Open: RC2 on
+  the kernel too?
+
+**Reminder, raise next (user, 2026-10-14): a hyperparameter-settings framework plus a web-LLM prompt.**
+- The user asked [quote]: "remind me next to give framework of
+  hyperparameter settings, with prompt to llm to research known state
+  about paramater setting".
+- To deliver (not yet written):
+  1. **The framework:** one table of every memetic hyperparameter
+     (pop_size, tournament_k, pmutate, elitism, the flip limit / c,
+     ls.time_limit_s, polish_cap, noise, deadline_mode, the run budget),
+     with today's value, where it came from (pre-registered, calibrated,
+     default), whether it is size-dependent, and how each is (or will be)
+     set: fixed, the empirical grid (§0b/§0c), or open.
+  2. **A web-LLM prompt** asking for the known state of the art on setting
+     each parameter in memetic or local-search SAT/MaxSAT solvers.
+     Prompt 1 (published c) and Prompt 2 (frameworks) already exist in
+     `WEB_LLM_QUERY_FLIP_COEFFICIENT.md`; the new prompt covers all
+     parameters.
+- Keep the user's stance (§0c.1): frameworks are related work; the values
+  are set empirically.
+- **Also point the user to the related-work notes already written**
+  (user, 2026-10-14) [quote]: "I want yoy with this also to point you point
+  me the md file of the research of related work you wrote". The notes:
+  - `docs/current/RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`: frameworks,
+    per-instance configuration, tuning for scaling (2026-10-11);
+  - `docs/current/RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`: is there a
+    published c (2026-10-12);
+  - `docs/current/RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`: LLM-driven design,
+    related work only (2026-10-11);
+  - the index: `docs/current/RESEARCH_NOTES.md` §1.
+
+**Reminder (user, 2026-10-14): smoke-check more than 30 concurrent array tasks.**
+- The user asked: "remind me to do smoke check if my cluster supports more
+  than 30 array, if it is o.k with IT … try at first 35 array if you
+  assume the slrum will not get break".
+- Steps:
+  1. Confirm with IT, or the cluster's usage policy, that more than 30
+     concurrent tasks is allowed.
+  2. Read the limits on the login node (shell only).
+  3. Run a tiny sleep array at %35.
+  4. Only then use `THROTTLE=35` in `submit_m2_memetic.sh`.
+- Commands: see the to-do in §8. Note: for the 108-task Stage L1 batch,
+  %35 still takes 4 waves of 900 s runs, the same as %30; %36 would take 3.
 
 **Superseded (kept for the record):** answer §0b.7. Q3 is now "flips_only
 (recommended) or the 60 s cap". Then build the grid (configs, manifest,
@@ -685,6 +788,24 @@ Max-Clique on generated graphs): **reopened as an option (H).**
 optimises and certifies, and must never seed the memetic solver.
 
 ## 8. Open decisions
+
+**To-do (user, 2026-10-14): concurrency smoke at %35.** Do it only after IT
+confirms. Login node, shell only:
+
+```bash
+scontrol show config | grep -i -E 'MaxArraySize|MaxJobCount'
+sacctmgr -n show assoc user=$USER format=user,account,qos,maxjobs,maxsubmit,grptres
+sacctmgr -n show qos format=name,maxjobspu,maxsubmitpu,maxtrespu
+cd ~/cluster_staging_maxsat_evo/scripts && mkdir -p logs
+sbatch --array=1-35%35 --time=00:03:00 --mem=100M --cpus-per-task=1 --job-name=conc35 --output=logs/conc35-%A_%a.out --wrap='sleep 120'
+squeue -u $USER -r -h -t RUNNING -n conc35 | wc -l    # repeat for ~1 min; 35 = all ran together
+squeue -u $USER -r -h -t PENDING -n conc35 -o '%i %r' # reason, if fewer than 35 run
+```
+
+- **Pass:** 35 running at once, none pending with a QOS or association
+  reason (`QOSMaxJobsPerUserLimit`, `AssocMaxJobsLimit`, …).
+- **Then:** real arrays may use `THROTTLE=35`. The limit is per array:
+  with N parts, each gets 35/N.
 
 | # | decision | state |
 |---|---|---|
