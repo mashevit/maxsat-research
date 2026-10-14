@@ -57,6 +57,25 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-14-i — Fixed-rate mutation wrecks big instances (13 → 832–948 unsat at n 64k); tabu parameters and an implementation sketch [quote + verified + proposal]
+
+> "keep the mutation damaging conclusion for big instances, and tabu parameters and might be implementation in notes" (user, 2026-10-14)
+
+- **[verified]** One mutation at pmutate 0.02 applied to an optimal
+  assignment:
+  - n 64,000: 13 → 832–948 unsatisfied clauses;
+  - n 16,000: 12 → 255–311.
+  The damage grows with n while c\* does not. On big instances pmutate
+  must be a fixed count or local, not a per-variable rate.
+- **Tabu (proposal, not built):** tenure, random tenure, aspiration,
+  the all-tabu rule and noise, as parameters. Implementation: `last_flip[v]`
+  in `walksat_polish_v2`, opt-in, with today's behaviour unchanged when off.
+  A candidate arm in direction B. Literature values unverified.
+- **Also answered** (chat): why a pure variable can be set and its
+  clauses dropped. Setting it never breaks a clause, so some optimum has
+  it set that way.
+- `RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §9.
+
 ### N-2026-10-14-h — No preprocessing for RC2 (it belongs in a solver's core; ours has it); Stage L1b on hold; B and C to be explained later [quote + decision]
 
 > "1. no preprocessing on rc2 - explain it that it is should have been included in core solver of rc2, it is problem of rc2 solver, and in our there is enhancement. 2. time grid on hold, meanwhile we will try to get results with solver enhancement. 3. later I would like explanation on B and C" (user, 2026-10-14)

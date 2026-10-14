@@ -37,6 +37,44 @@ until nothing changes (`cluster_staging_maxsat/scripts/diag_max2sat_kernel.py`):
 
 Running the eliminations backwards rebuilds a full assignment.
 
+### 2.1 Why the rules are exact (plain explanation; user question 2026-10-14)
+
+**User** [quote]: "if variable is everywhere with same sign - why can we
+ignore it?"
+
+**A variable whose occurrences all have the same sign (a pure variable)**
+is not ignored. It is **set to that sign**, and then it and its clauses are
+removed. Say x occurs only as `x`, in `(x ∨ a)`, `(x ∨ ¬b)`, `(x ∨ c)`:
+1. **x = True can't break anything.** It satisfies every clause with `x`,
+   and a clause can only become false through `¬x`, which no clause contains.
+2. **So it never costs anything.** In any assignment, an optimal one
+   included, changing x to True keeps every satisfied clause satisfied, so
+   the cost can only fall or stay. Some optimal solution therefore has
+   x = True.
+3. **So its clauses can be removed.** With x = True they hold whatever a,
+   b, c are. They can't affect the rest. Solve the rest, then put back
+   x = True.
+
+The argument never uses the weights, so it holds for weighted and hard
+clauses too. **It cascades:** removing x's clauses can leave another
+variable pure (here, if `¬b` occurred only in `(x ∨ ¬b)`, then b becomes
+pure).
+
+**A variable in exactly two clauses of opposite sign,** `(x ∨ A)` with
+weight w₁ and `(¬x ∨ B)` with weight w₂:
+- If A or B is true, x can be chosen so that both clauses hold: x = False
+  when A holds, x = True when only B holds.
+- Only when A and B are both false must one clause be lost. The cheaper
+  one is lost, at cost min(w₁, w₂).
+- That is exactly what one clause `(A ∨ B)` with weight min(w₁, w₂) costs.
+  Replacing the two clauses by it keeps the optimum.
+- When rebuilding, x is set as above. If both A and B are false, x
+  satisfies the heavier clause; that is the case the 2026-10-14 bug fix
+  (§7.1) handles.
+
+These two rules, applied until nothing changes, take n 64,000 down to a few
+hundred variables here.
+
 **Check:** RC2 solves the kernel, the full assignment is rebuilt, and its
 cost is counted on the original clauses.
 - All 15 calib_2sat_sc2 instances: rebuilt cost = kernel optimum.
@@ -343,3 +381,87 @@ not tuned on memetic results.
   as the raw baseline?
 - **After A:** B (clause weighting first, general) or C (large-kernel
   corpus).
+
+## 9. Two findings to keep for the solver (user, 2026-10-14)
+
+**User** [quote]: "keep the mutation damaging conclusion for big instances,
+and tabu parameters and might be implementation in notes".
+
+### 9.1 Mutation at a fixed per-variable rate wrecks good solutions on big instances [verified + inference]
+
+**Measurement** (2026-10-14, workstation):
+- Start from an optimal assignment: the RC2-solved kernel, rebuilt to the
+  full formula.
+- Apply one mutation as the memetic does: each variable flipped with
+  probability `pmutate` = 0.02. Five draws each.
+
+| instance | n | flips per mutation (≈ 2% of n) | unsat clauses before | after one mutation |
+|---|---:|---:|---:|---:|
+| s256 | 64,000 | ≈ 1,280 | 13 (= c\*) | 832–948 |
+| s251 | 16,000 | ≈ 320 | 12 (= c\*) | 255–311 |
+
+**Conclusion** [inference]:
+- With a fixed per-variable rate, the damage grows linearly with n, while
+  the optimum stays at 9–14 clauses at every n here. Every child starts
+  about 65–75 times further from the optimum than its parent.
+- The local search spends most of each call repairing that damage, almost
+  all of it in the easy 99% of variables, before it can improve anything.
+  At n 64,000 that is four times the repair work of n 16,000, with a kernel
+  of the same size.
+- This is one of the main reasons the memetic failed on the original
+  formula at n 64,000 (Stage L1: 0/54).
+
+**Consequences for the solver design:**
+- On big instances, `pmutate` must not be a fixed per-variable rate.
+  Options:
+  - a fixed *number* of flips per child;
+  - flips limited to one neighbourhood (a variable and its clause
+    neighbours, or a short random walk in the variable-interaction graph);
+  - flips only among variables that differ between the parents, or that
+    sit near unsatisfied clauses.
+- Under kernelising (direction A) the same rate applies to the kernel
+  only: 2% of 572 is about 11 flips, which is mild. That is part of why the
+  unchanged solver works there.
+- `pmutate` belongs in the framework table of hyperparameters as a
+  size-dependent parameter (memory: hp-framework-reminder).
+
+### 9.2 Tabu in the local search: parameters and a possible implementation [code + proposal; literature unverified]
+
+**Today (code, `src/sat/walksat_v2.py`):**
+- no tabu;
+- pick a random unsatisfied clause, flip its variable with the best gain;
+- noise 0.10 (a random candidate instead).
+- In a chain of degree-2 variables an unsatisfied clause can move back and
+  forth with zero-gain flips [inference]. Tabu is the standard way to stop
+  the search from undoing its last moves.
+
+**Parameters a tabu version would add:**
+
+| parameter | meaning | candidate values (to calibrate, not to adopt) |
+|---|---|---|
+| `ls.tabu_tenure` | a variable flipped at step t may not be flipped again before step t + tenure | a fixed small integer (about 5–15), or relative to the kernel or clause count |
+| `ls.tabu_tenure_rand` | add a random 0…r to each tenure, against cycling | 0 or a small r |
+| `ls.tabu_aspiration` | a tabu move is allowed if it gives a new best | on / off |
+| `ls.tabu_all_tabu` | when every candidate of the chosen clause is tabu | the oldest-flipped (the usual choice), or random |
+| `ls.noise` | the existing noise; with tabu it is often lowered | 0.10 now; the grid could try 0–0.10 |
+
+- [unverified, from memory] WalkSAT/TABU (McAllester, Selman and Kautz,
+  1997) used a small fixed tenure, about 10. Robust Tabu Search and
+  IRoTS draw the tenure from a range that scales with n. Check before
+  citing, and put these in the hyperparameter table with "where the value
+  came from".
+
+**Possible implementation (not built):**
+- a per-variable array `last_flip[v]`, set to the flip counter on each
+  flip, O(1) to update;
+- in candidate selection, skip v while `num_flips - last_flip[v] < tenure`,
+  unless aspiration applies (the move would beat `best_soft`);
+- if all candidates are tabu, take the one with the smallest `last_flip`;
+- with no `ls.tabu_tenure` (or 0), the behaviour and the RNG stream are
+  exactly today's (the same opt-in pattern as `polish_cap`), with a test
+  of equality;
+- the place is `walksat_polish_v2` (or a v3 polish, if direction B makes a
+  new implementation). The cost per flip is one integer comparison per
+  candidate, two in 2-SAT.
+- It is a candidate arm inside direction B, beside clause weighting. Each
+  is calibrated by our own grid, not by a framework (§0c.1 stance).
