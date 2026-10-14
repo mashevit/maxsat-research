@@ -26,7 +26,7 @@ committed), before any calib_b instance is generated. Companion to
 [`CORPUS_CALIBRATION_GOALS.md`](CORPUS_CALIBRATION_GOALS.md) (§3 reserves this
 round: *"if the strip of §2.4 H3 falls between grid lines, `calib_b` refines
 around it with the same tooling before anything is frozen"*) and to
-[`CALIB_A_A1_READOUT.md`](CALIB_A_A1_READOUT.md), which is the evidence this
+[`CALIB_A_A1_READOUT.md`](archive/2026-10-14_superseded/CALIB_A_A1_READOUT.md), which is the evidence this
 plan is built on. Per-turn record goes to
 [`CORPUS_CALIBRATION_LOG.md`](CORPUS_CALIBRATION_LOG.md) Checkpoint 3.
 

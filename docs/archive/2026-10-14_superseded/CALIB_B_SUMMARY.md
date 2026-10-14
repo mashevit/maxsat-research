@@ -3,10 +3,10 @@
 **Date:** 2026-09-22. One-page summary of the calib_b round (B1, RC2 grid
 refinement). Read this first; the detail is in three places:
 
-- [`CALIB_B_PLAN.md`](CALIB_B_PLAN.md) — the plan, written before any calib_b
+- [`CALIB_B_PLAN.md`](../../CALIB_B_PLAN.md) — the plan, written before any calib_b
   instance existed, now carrying a status header
-- [`CALIB_B_B1_READOUT.md`](CALIB_B_B1_READOUT.md) — the full read-out
-- [`CORPUS_CALIBRATION_LOG.md`](CORPUS_CALIBRATION_LOG.md) — Checkpoint 4
+- [`CALIB_B_B1_READOUT.md`](../../CALIB_B_B1_READOUT.md) — the full read-out
+- [`CORPUS_CALIBRATION_LOG.md`](../../CORPUS_CALIBRATION_LOG.md) — Checkpoint 4
 
 ---
 

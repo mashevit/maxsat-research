@@ -5,7 +5,7 @@ day (r2)** against `0dc3bc3` (which committed the `oracle_evalmaxsat_array.sbatc
 path fix) after a review of every claim against the repository — the
 substantive changes are itemised in the log's Checkpoint 1. Companion to
 [`CORPUS_GENERATOR_PLAN.md`](CORPUS_GENERATOR_PLAN.md) (family list, Steps 0–7),
-[`CORPUS_GENERATOR_PILOT_NOTE.md`](CORPUS_GENERATOR_PILOT_NOTE.md) (the 25-row
+[`CORPUS_GENERATOR_PILOT_NOTE.md`](archive/2026-10-14_superseded/CORPUS_GENERATOR_PILOT_NOTE.md) (the 25-row
 RC2 pilot) and [`maxsat-benchmark-design-notes.md`](maxsat-benchmark-design-notes.md)
 (the (n, α) plane and the two-pass probe/select design). Per-turn checkpoints
 (verified facts, job ids, commands) accumulate in

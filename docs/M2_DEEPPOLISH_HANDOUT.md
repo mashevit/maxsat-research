@@ -7,7 +7,7 @@ number below was either recomputed from the result files for this handout or
 is cited to its source file. Numbers that are estimates are labelled as such.
 
 Inputs read: `docs/CORPUS_CALIBRATION_LOG.md` (Checkpoints 0–4),
-`docs/CALIB_B_SUMMARY.md`, `docs/CALIB_B_PLAN.md`,
+`docs/archive/2026-10-14_superseded/CALIB_B_SUMMARY.md`, `docs/CALIB_B_PLAN.md`,
 `docs/CALIB_B_B1_READOUT.md`, `docs/CORPUS_CALIBRATION_GOALS.md` §4–§7,
 `cluster_staging_maxsat/DIVERGENCE.md`, and the code and results listed in §4.
 

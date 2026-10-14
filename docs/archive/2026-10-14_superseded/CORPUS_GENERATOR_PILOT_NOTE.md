@@ -1,6 +1,6 @@
 # Generator pilot — what changed, in brief
 
-**Date:** 2026-09-14. Companion to [`CORPUS_GENERATOR_PLAN.md`](CORPUS_GENERATOR_PLAN.md),
+**Date:** 2026-09-14. Companion to [`CORPUS_GENERATOR_PLAN.md`](../../CORPUS_GENERATOR_PLAN.md),
 which holds the full plan and tables. This note is the summary of what the
 pilot established and how it revises the earlier documents.
 

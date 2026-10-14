@@ -7,6 +7,12 @@ or already summarised in one of these.
 
 Read in this order. Paths are relative to the repository root.
 
+**2026-10-14:** 5 superseded documents (not listed here, not indexed, not
+referred to by code) were moved to `docs/archive/2026-10-14_superseded/`.
+Its README lists them and the rule. **Also read**
+`docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md` before any solver work
+(the exact kernel, the gated preprocessing decision, mutation damage, tabu).
+
 | # | document | what it adds | read |
 |---:|---|---|---|
 | 1 | `docs/current/NEXT_SESSION_CONTEXT.md` (r3) | Current state; **§0: the larger-n Max-2-SAT / Max-3-SAT direction, its existing evidence, and the decisions left (R3-a…d)**; the decisions of 2026-10-06, what is prepared but on hold (`calib_c`), MaxCut, open decisions, configurations, paths, where to resume | §0 first, then all |

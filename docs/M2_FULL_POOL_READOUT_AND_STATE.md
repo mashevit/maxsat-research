@@ -218,7 +218,7 @@ algorithm with WalkSAT polishing) are both measured. Then test whether
   binds.
 - **Why `a35` exists.** It was introduced after a pilot showed that the
   0.5 s allowance, not the 12,500-flip limit, ends every call (see
-  `docs/M2_DEEPPOLISH_SUMMARY.md` and `docs/M2_PILOT_READOUT.md`).
+  `docs/archive/2026-10-14_superseded/M2_DEEPPOLISH_SUMMARY.md` and `docs/archive/2026-10-14_superseded/M2_PILOT_READOUT.md`).
 - **Common settings:** budget 900 s, grace 60 s, target = RC2 c\*, 1 CPU,
   8 GB.
 

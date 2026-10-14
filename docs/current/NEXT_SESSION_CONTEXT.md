@@ -565,7 +565,7 @@ hardness (ρ) is reported whatever it turns out to be.
 | step | what | result | where |
 |---|---|---|---|
 | historical tier 2 | 26 SATLIB uuf250/uuf200 × 5 seeds, 900 s | memetic 118/130; uniform multistart 124/130; **JW multistart 127/130** (array 22314854, 2026-10-06) | `docs/UUF_THREE_ARM_ABLATION_READOUT.md`; `cluster_staging_maxsat/results/tier2_*` |
-| A1 + B1 (RC2) | 290 generated pure-soft instances (calib_a 180 + calib_b 110), cap 900 | 177 certified, 113 censored, 0 failed; 107 certified ≤ 30 s; **70 eligible** | `results/profile_calib_{a,b}_all.jsonl`; `docs/CALIB_A_A1_READOUT.md`, `docs/CALIB_B_B1_READOUT.md` |
+| A1 + B1 (RC2) | 290 generated pure-soft instances (calib_a 180 + calib_b 110), cap 900 | 177 certified, 113 censored, 0 failed; 107 certified ≤ 30 s; **70 eligible** | `results/profile_calib_{a,b}_all.jsonl`; `docs/archive/2026-10-14_superseded/CALIB_A_A1_READOUT.md`, `docs/CALIB_B_B1_READOUT.md` |
 | M2 full pool | 70 eligible × 3 seeds × 2 arms (0.5 s / 3.5 s per call, pop 40, clip), 420 tasks, job 22131008, commit `69c9b97` (provenance verified) | 202/210 and 208/210 successes. 28/70 solved by the first call in all 6 runs; 55/70 never needed a second generation. **Q2 non-trivial: 9 (3.5 s arm), 5 (0.5 s arm).** | `results/m2_full_p40/`; `docs/M2_FULL_POOL_READOUT_AND_STATE.md` |
 | candidate cells (this session) | literal §5.3 cell rule over all 53 cells, with denominators | **only `max3sat_n250_a4.26` passes**; the read-out §6.2 claim of three passing cells was corrected. "Seven cells" mixes criteria: 8 cells have a run beyond gen 1, 5 have a Q2 instance, 1 passes the cell rule | `results/corpus_freeze_prep/`; `CORPUS_FREEZE_PREP.md` §2–§3 |
 

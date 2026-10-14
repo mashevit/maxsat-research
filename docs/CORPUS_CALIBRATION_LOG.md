@@ -496,7 +496,7 @@ To commit: `git add docs/CORPUS_CALIBRATION_LOG.md cluster_staging_maxsat/result
 
 ### Addendum (same day) — A1 read-out written
 
-`docs/CALIB_A_A1_READOUT.md`: per-cell table (36 cells), wall location per
+`docs/archive/2026-10-14_superseded/CALIB_A_A1_READOUT.md`: per-cell table (36 cells), wall location per
 (n, k) row, cap placement, RC2-side pre-screen of the §5.3 rules, and the
 M2 subset. Headline: the strip exists and is diagonal (H3), but it is one
 grid step wide and falls between grid lines in 5 of 9 rows; 5 cells pass
@@ -863,7 +863,7 @@ pooled statement over the corpus mixes two regimes.
 | file | what |
 |---|---|
 | `docs/CALIB_B_B1_READOUT.md` | the read-out (new) |
-| `docs/CALIB_B_SUMMARY.md` | one-page summary of the round, pointing at the plan, the read-out and this entry (new) |
+| `docs/archive/2026-10-14_superseded/CALIB_B_SUMMARY.md` | one-page summary of the round, pointing at the plan, the read-out and this entry (new) |
 | `cluster_staging_maxsat/results/profile_calib_b/` | 110 `task_N.jsonl` + 110 `task_N.env.json` from the cluster |
 | `cluster_staging_maxsat/results/profile_calib_b_all.jsonl` | 110 aggregated rows |
 | `cluster_staging_maxsat/results/profile_calib_b_env.jsonl` | 110 env rows |
@@ -941,7 +941,7 @@ Between Checkpoint 4 and this entry, `6d74189` (the M2 handout) and
 `81210fc` (M2 run preparation: deadline clipping, 4 arms, manifests) were
 committed. The 96-task pilot then ran on the cluster.
 
-**Read-out:** `docs/M2_PILOT_READOUT.md`. **Provenance:** the pilot shards
+**Read-out:** `docs/archive/2026-10-14_superseded/M2_PILOT_READOUT.md`. **Provenance:** the pilot shards
 carry `git_sha = null` and no source hash, so the code commit is
 **unverified**. The likely source is `81210fc`, but that is not confirmed.
 The configs (ea/ls blocks) and instance hashes are verified.

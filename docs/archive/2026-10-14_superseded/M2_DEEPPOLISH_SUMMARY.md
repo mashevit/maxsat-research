@@ -1,7 +1,7 @@
 # M2 modified deeppolish: handout summary
 
 **Date:** 2026-09-24. This is a one-page summary of
-[`M2_DEEPPOLISH_HANDOUT.md`](M2_DEEPPOLISH_HANDOUT.md), written against commit
+[`M2_DEEPPOLISH_HANDOUT.md`](../../M2_DEEPPOLISH_HANDOUT.md), written against commit
 `98fbd38`. The handout was a documentation stage only. No code, configs or
 manifests were changed, and no jobs were submitted.
 

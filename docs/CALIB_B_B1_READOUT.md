@@ -13,7 +13,7 @@ calib_b`; pooled eligibility from
 (`results/calibration/tier2_eligible.csv`, `tier2_cells.csv`).
 
 Companion to [`CALIB_B_PLAN.md`](CALIB_B_PLAN.md) (written before any instance
-was generated) and [`CALIB_A_A1_READOUT.md`](CALIB_A_A1_READOUT.md). Per-turn
+was generated) and [`CALIB_A_A1_READOUT.md`](archive/2026-10-14_superseded/CALIB_A_A1_READOUT.md). Per-turn
 record in [`CORPUS_CALIBRATION_LOG.md`](CORPUS_CALIBRATION_LOG.md)
 Checkpoint 4. **No memetic data and no ρ appear here** — M2 has not been run.
 
