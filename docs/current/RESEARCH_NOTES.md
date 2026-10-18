@@ -73,7 +73,7 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 - **[verified] Smoke** (60 s, seed 1): s251, s255, s256, s257, s258 reach c\*
   in 0.3–1.5 s including kernelising; s253 ends at 15 (c\* 14). The raw arm
   went 0/18 in 900 s on the same instances and seeds (m2v2 batch).
-- **Committed and pushed 2026-10-18: `754392a`** (`MAXSAT_GIT_SHA=754392a`); not submitted. Upload list, hashes and commands:
+- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`** (Slurm throttle default 30 → 1000, user's go; `MAXSAT_GIT_SHA=ad19012`); not submitted. Upload list, hashes and commands:
   `docs/current2/KERNEL_MEMETIC_RUN.md` §4.
 - **[inference] Direction B** (§5 there): B1 tabu, B2 clause-weighting local
   search, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop.

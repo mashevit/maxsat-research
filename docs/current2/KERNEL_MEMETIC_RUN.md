@@ -5,8 +5,9 @@ to stronger memetic? using which ideas? prepare cluster run for the max2sat, wit
 the kernelization, tell me files to upload to cluster and commands".
 
 **Status:** built, tested, smoke-run on the workstation. **Committed and pushed
-2026-10-18: `754392a`** (code + batch; use `MAXSAT_GIT_SHA=754392a`). Not yet
-submitted. Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-a.
+2026-10-18: `754392a`** (code + batch), then **`ad19012`** (throttle default
+1000; new `submit_m2_memetic.sh` hash in the upload file). Use
+`MAXSAT_GIT_SHA=ad19012`. Not yet submitted. Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-a.
 Background: `docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §2–§3 (the kernel
 finding), §5 A, §8 (the user's decision and the gate).
 
@@ -131,7 +132,8 @@ OK, DRY_RUN OK (`--array=1-18%30`).
 
 ### 4.2 Commands
 
-`<commit>` = `754392a` (the commit that holds these files).
+`<commit>` = `ad19012` (the commit that holds these files, including the
+throttle change).
 
 On the workstation:
 
@@ -147,7 +149,7 @@ cd ~/cluster_staging_maxsat_evo
 sha256sum -c --quiet scripts/manifest_calib_2sat_sc2_kern.upload.sha256 && echo UPLOAD_OK
 cd scripts && mkdir -p logs
 DRY_RUN=1 MANIFEST=manifest_calib_2sat_sc2_kern.tsv OUTDIR=results/calib_2sat_sc2_kern/tasks bash submit_m2_memetic.sh
-MAXSAT_GIT_SHA=754392a MANIFEST=manifest_calib_2sat_sc2_kern.tsv OUTDIR=results/calib_2sat_sc2_kern/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=ad19012 MANIFEST=manifest_calib_2sat_sc2_kern.tsv OUTDIR=results/calib_2sat_sc2_kern/tasks bash submit_m2_memetic.sh
 ```
 
 Back on the workstation, after the array:
@@ -158,12 +160,12 @@ rsync -av <user>@<cluster>:~/cluster_staging_maxsat_evo/results/calib_2sat_sc2_k
 ~/.venvs/maxsat/bin/python scripts/m2_results.py pending --manifest scripts/manifest_calib_2sat_sc2_kern.tsv --outdir results/calib_2sat_sc2_kern/tasks --summary
 ~/.venvs/maxsat/bin/python scripts/m2_results.py aggregate --manifest scripts/manifest_calib_2sat_sc2_kern.tsv --outdir results/calib_2sat_sc2_kern/tasks
 # resume only infra/invalid ids, if any (login node):
-IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=754392a MANIFEST=manifest_calib_2sat_sc2_kern.tsv OUTDIR=results/calib_2sat_sc2_kern/tasks bash submit_m2_memetic.sh
+IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=ad19012 MANIFEST=manifest_calib_2sat_sc2_kern.tsv OUTDIR=results/calib_2sat_sc2_kern/tasks bash submit_m2_memetic.sh
 ```
 
-**Throttle:** the cluster allows `--array=1-1000%1000` (user, 2026-10-18), but
-`submit_m2_memetic.sh` still defaults to `%30`. For 18 tasks that makes no
-difference. Raising the script default is a to-do for the user's go.
+**Throttle:** the cluster allows `--array=1-1000%1000` (user, 2026-10-18). Since
+`ad19012` the submit scripts default to `%1000` (user's go, 2026-10-18), so no
+`THROTTLE=` is needed; the DRY_RUN prints `--array=1-18%1000`.
 
 ## 5. A stronger memetic (direction B): what I propose and why [inference; literature unverified]
 

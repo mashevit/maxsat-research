@@ -26,14 +26,16 @@ N-2026-10-18-a):
   `--plan kern` manifest (18 tasks), `preprocess` check in `m2_results.py`,
   22 new tests (suite 307 passed / 3 skipped).
 - Smoke: 5/6 at c\* in ≤ 1.5 s including kernelising; s253 open.
-- **Committed and pushed 2026-10-18: `754392a`** (use `MAXSAT_GIT_SHA=754392a`); not submitted. Next: rsync → submit (§4.2
+- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`** (throttle; use `MAXSAT_GIT_SHA=ad19012`); not submitted. Next: rsync → submit (§4.2
   there) → readout (§4 pre-registered reading).
 - Direction B proposed (§5 there: tabu, clause weighting, distance-aware
   mutation, partition crossover, compiled loop). Nothing built.
 
-**Cluster limits (user, 2026-10-18):** `--array=1-1000%1000` is allowed. The
-%35 concurrency smoke below is no longer needed. `submit_m2_memetic.sh` still
-defaults to `THROTTLE=30`; raising script defaults waits for the user's go.
+**Cluster limits (user, 2026-10-18):** `--array=1-1000%1000` is allowed. **Done
+2026-10-18 (user's go), `ad19012`:** the submit scripts (`submit_m2_memetic.sh`
+in both trees, `submit_rc2_profile.sh` + its three wrappers,
+`submit_evalmaxsat_mse.sh`) default to `THROTTLE=1000`; the split tool divides
+1000 across parts. The %35 concurrency smoke is dropped from §8.
 
 **Restored (user, 2026-10-18):** `results/calib_2sat_sc2_cgrid/` had gone
 missing from the working tree; the user restored it.
@@ -818,23 +820,9 @@ optimises and certifies, and must never seed the memetic solver.
 
 ## 8. Open decisions
 
-**To-do (user, 2026-10-14): concurrency smoke at %35.** Do it only after IT
-confirms. Login node, shell only:
-
-```bash
-scontrol show config | grep -i -E 'MaxArraySize|MaxJobCount'
-sacctmgr -n show assoc user=$USER format=user,account,qos,maxjobs,maxsubmit,grptres
-sacctmgr -n show qos format=name,maxjobspu,maxsubmitpu,maxtrespu
-cd ~/cluster_staging_maxsat_evo/scripts && mkdir -p logs
-sbatch --array=1-35%35 --time=00:03:00 --mem=100M --cpus-per-task=1 --job-name=conc35 --output=logs/conc35-%A_%a.out --wrap='sleep 120'
-squeue -u $USER -r -h -t RUNNING -n conc35 | wc -l    # repeat for ~1 min; 35 = all ran together
-squeue -u $USER -r -h -t PENDING -n conc35 -o '%i %r' # reason, if fewer than 35 run
-```
-
-- **Pass:** 35 running at once, none pending with a QOS or association
-  reason (`QOSMaxJobsPerUserLimit`, `AssocMaxJobsLimit`, …).
-- **Then:** real arrays may use `THROTTLE=35`. The limit is per array:
-  with N parts, each gets 35/N.
+~~Concurrency smoke at %35~~: **dropped 2026-10-18**. The user reported
+`--array=1-1000%1000` as allowed, and the script defaults are now 1000
+(`ad19012`).
 
 | # | decision | state |
 |---|---|---|
@@ -851,7 +839,7 @@ squeue -u $USER -r -h -t PENDING -n conc35 -o '%i %r' # reason, if fewer than 35
 | — | intermittent staging test failure | named 2026-10-07: `test_m2_prep.py::test_population_10_runs[p10_ls2p5]` (timing bound under deadline clipping); investigate |
 | U250 | extend the RC2 and memetic budgets until RC2 certifies all 100 SATLIB uuf250. Today 77 are certified at 900 s and 23 are censored (5 with LB 2) | **deferred, very low priority** (user, 2026-10-07); not planned or approved; `RESEARCH_NOTES.md` N-2026-10-07-f |
 | HP-1 | **To-do (user, 2026-10-11): a hyperparameter module.** It would set solver hyperparameters from instance features, for example more local-search flips per call for larger instances, instead of one constant per YAML. Requirements: a pure function of config + instance size; resolved values recorded in the shard; fixed-value configs unchanged; `m2_results.py` checks the resolved values | **plan written 2026-10-11** (`HYPERPARAMETER_CALIBRATION_PLAN.md`: size inventory, bands S/M/L, flip grid, racing, held-out categorical vs continuous; ≤ 118 CPU-h); **awaiting approval (P0)**; **rule decided: continuous `max(12500, c·n)`, no categories (§0 of the plan)**. Literature: `RESEARCH_NOTES_HYPERPARAMETER_TUNING.md`. N-2026-10-11-r/s/t |
-| S-a…S-d | SATLIB RC2 screen | **settled 2026-10-07:** one array of all 263 unsat instances, %30, no pre-screen, satisfiable excluded. **Submission by the user is pending** (`SATLIB_BENCH_INTAKE.md` §5) |
+| S-a…S-d | SATLIB RC2 screen | **settled 2026-10-07:** one array of all 263 unsat instances, %30 (now %1000 by default, 2026-10-18), no pre-screen, satisfiable excluded. **Submission by the user is pending** (`SATLIB_BENCH_INTAKE.md` §5) |
 
 Closed: D1 (PySAT 1.9.dev3), D2 (seconds primary; reaffirmed r3), D4 (no
 new reference instances; reaffirmed r3).
