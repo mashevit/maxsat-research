@@ -7,7 +7,7 @@ the kernelization, tell me files to upload to cluster and commands".
 **Status:** built, tested, smoke-run on the workstation. **Committed and pushed
 2026-10-18: `754392a`** (code + batch), then **`ad19012`** (throttle default
 1000; new `submit_m2_memetic.sh` hash in the upload file). Use
-`MAXSAT_GIT_SHA=ad19012`. Not yet submitted. Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-a.
+`MAXSAT_GIT_SHA=ad19012`. **Submitted and read 2026-10-18: 15/18 (§6); the prediction held exactly.** Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-a.
 Background: `docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md` §2–§3 (the kernel
 finding), §5 A, §8 (the user's decision and the gate).
 
@@ -222,3 +222,85 @@ first test case.
   on raw instances in one grid. B3 and B4 change the EA. B5 last, so that every
   algorithmic arm is compared within one speed.
 - Nothing of B is built. It is several milestones; each needs approval.
+
+## 6. Readout of the 18-task batch (2026-10-18) [verified: shards; inference marked]
+
+**Run** [verified: `results/calib_2sat_sc2_kern/provenance/submit_20261018T083917Z.txt`]:
+- submitted 2026-10-18 08:39 UTC from `slurm-login-01`;
+- `MAXSAT_GIT_SHA=ad19012`, `--array=1-18%1000`;
+- the src tree digest `7d7818aa…` equals the workstation's at `ad19012`.
+
+**Status:** 18/18 shards valid. `m2_results.py pending` shows 0 pending, no
+infrastructure or invalid rows, and CPU/wall ≥ 0.99 on every task.
+
+### 6.1 Per instance, against the pre-registered reading (§4)
+
+Success = stop at c\* with TTT (kernel time included) ≤ 900 s.
+
+| instance | n | c\* | kernel vars | kernelise s | **kern arm: successes / 3** | median TTT (range) | raw v2 arm (m2v2, 12.5k flips): best at 900 s | raw 200k-flip arm: best at 900 s | RC2 raw s |
+|---|---:|---:|---:|---:|---:|---|---|---|---:|
+| s251 (sc01) | 16,000 | 12 | 425 | 0.13–0.22 | **3/3** | 1.6 s (0.5–2.5) | 17, 18, 16 | 14, 14, 14 | 65 |
+| s253 (sc02) | 16,000 | 14 | 434 | 0.15–0.17 | **0/3** | > 900 s | 19, 19, 20 | 18, 18, 17 | 673 |
+| s255 (sc03) | 16,000 | 13 | 420 | 0.16–0.21 | **3/3** | 0.6 s (0.3–0.9) | 17, 18, 18 | 14, 14, 14 | 172 |
+| s256 (sc04) | 64,000 | 13 | 572 | 0.80–0.88 | **3/3** | 2.8 s (2.1–4.7) | 37, 42, 31 | 25, 28, 23 | 155 |
+| s257 (sc05) | 64,000 | 10 | 300 | 0.41–0.48 | **3/3** | 0.5 s (0.5–0.7) | 30, 29, 32 | 17, 22, 20 | 82 |
+| s258 (sc06) | 64,000 | 9 | 332 | 0.47–0.49 | **3/3** | 0.5 s (0.5–0.6) | 19, 20, 21 | 16, 14, 17 | 49 |
+| **all** | | | | | **15/18** | 0.8 s | 0/18 | 0/18 | |
+
+- **The prediction holds exactly.** The doc recorded, before submission
+  [inference then]: "15/15 on s251, s255, s256, s257, s258; s253 open". The
+  result is 15/15 on those five and 0/3 on s253.
+- **Pairing with the raw arm** (same instances, seeds 1–3, 900 s): raw v2
+  went 0/18 and the raw 200k-flip arm 0/18. Their gaps at 900 s are +2 to
+  +29 above c\*. With kernelising, the same unchanged memetic reaches c\* in
+  0.3–4.7 s on 15 of 18 tasks.
+- **The gate:** `kernel` on 18/18 (screen_frac 0.61 on s253, for example).
+  Kernelising takes 0.13–0.22 s at n 16,000 and 0.41–0.88 s at n 64,000, all
+  charged to the TTT. The lift cross-check found no `cost_mismatch`.
+- **Children to target:** 1–94 (median about 10).
+  - Most successes come within the first generation (`gens` = 1 on 13 of 15).
+  - On kernels this small, the population mostly acts as a multistart. This
+    matches the hard-tree note "multistart may be enough"
+    ([inference]; `HARD_CLAUSE_SOLVER_PLAN.md`).
+
+### 6.2 s253: a search-quality failure, now measured at 900 s
+
+| seed | best (kernel = original, const 0) | children | generations | flips |
+|---|---:|---:|---:|---:|
+| 1 | 15 | 15,164 | 400 | 189.5M |
+| 2 | 16 | 15,166 | 400 | 189.6M |
+| 3 | 15 | 14,871 | 392 | 185.9M |
+
+- 434 variables and 692 clauses, about 190M WalkSAT flips (≈ 437,000 per
+  variable) and 15,000 polished children, yet it never reaches 14.
+- RC2 proves 14 in 58 s on the same kernel (directions note §3) and in 673 s
+  raw.
+- So s253 is not a budget or size problem. The v2 operators cannot find the
+  last clause: §5's point 5 is confirmed at 900 s and 3 seeds.
+- **[verified, workstation smoke] Against the stronger memetic:** the
+  `allC` arm (B1 CC + B2 DLS + B3 walk + B4 PX + C core) solved kernel s253
+  in 5.8 s on seed 1, within 60 s
+  (`STRONG_MEMETIC_S1_RUN.md` §2.2).
+  - That is one seed on the workstation.
+  - Batch S1 tests it on 3 seeds at 900 s, in both the Python `all` arm and
+    `allC`.
+
+### 6.3 What this settles and what it leaves open
+
+- **Settled** [verified]: on 5 of the 6 eligible calib_2sat_sc2 instances,
+  "memetic with exact kernelising (gated)" finds c\* in seconds. Without the
+  kernel, the same configuration fails at 900 s.
+  - **Reporting convention** (user, 2026-10-14): RC2 is reported "as
+    distributed", without our preprocessing, so the RC2 times above are raw.
+  - A comparison of RC2 on the kernel would be a separate, labelled row:
+    2.2 / 21 / 58 s on the three n 16,000 kernels (directions note §3).
+- **Inference for the orthogonality question:** on this grid, kernelised
+  memetic difficulty and raw RC2 difficulty do not order the same way.
+  - s253 is the hardest for both: RC2 673 s raw, and the memetic 0/3.
+  - But the memetic's other five all take ≤ 5 s, whatever RC2 took
+    (49–172 s).
+  - Six instances cannot carry a correlation claim.
+- **Open:**
+  - s253 (batch S1);
+  - whether the kernel arms' near-zero TTT survives on larger-kernel
+    instances (direction C in the directions note: cells with larger n·ε³).

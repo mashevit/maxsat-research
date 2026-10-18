@@ -26,7 +26,7 @@ N-2026-10-18-a):
   `--plan kern` manifest (18 tasks), `preprocess` check in `m2_results.py`,
   22 new tests (suite 307 passed / 3 skipped).
 - Smoke: 5/6 at c\* in ≤ 1.5 s including kernelising; s253 open.
-- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`** (throttle; use `MAXSAT_GIT_SHA=ad19012`); not submitted. Next: rsync → submit (§4.2
+- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`.** **Submitted and read 2026-10-18: 15/18** (5 instances 3/3 in 0.3–4.7 s; s253 0/3 after 190M flips). Readout §6 there, N-2026-10-18-d. Next: rsync → submit (§4.2
   there) → readout (§4 pre-registered reading).
 - Direction B proposed (§5 there: tabu, clause weighting, distance-aware
   mutation, partition crossover, compiled loop). Nothing built.

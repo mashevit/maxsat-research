@@ -1,0 +1,2 @@
+config_id,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+memetic_deeppolish_p40_ls3p5_kern_v2,18,15,0.833,0.8,15,0,3,0,0,0,0,0,0,1.0,13.5,12500.0,0.083,0.014,0.99
