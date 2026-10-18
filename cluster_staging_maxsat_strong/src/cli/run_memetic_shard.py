@@ -1,0 +1,635 @@
+# src/cli/run_memetic_shard.py
+"""
+One (instance, config, seed, budget) solver run -> one JSONL record.
+
+This is the memetic counterpart of `src/cli/profile_hardness.py`: one process
+per SLURM array task, one shard file out, aggregated afterwards. It exists
+instead of reusing `src/cli/run_experiment.py` because that CLI writes a CSV
+keyed on the *basename* of the instance and records nothing about the solver
+configuration, which makes a join against the RC2 tier tables ambiguous and
+unauditable. Every provenance gap listed in `docs/archive/RC2_STATUS.md` §6 is closed
+here: sha256 of the instance, the resolved absolute path, the full effective
+config plus its hash, the git sha, and the host.
+
+Cost convention (docs/archive/HARNESS_PLAN.md §5.1): `best_cost` is the **total weight
+of UNSATISFIED soft clauses** — lower is better, and directly comparable with
+`profile.final_cost` from the RC2 records. `hard_violations` is reported
+separately and a record with `hard_violations > 0` is infeasible, so its
+`best_cost` must not be compared against the oracle.
+
+`--stop-at-oracle` (off by default) forwards `--oracle-cost` into the solver as
+a target and stops the run the moment the incumbent reaches it, so `wall_time_s`
+becomes a time-to-optimum measurement rather than "the budget was spent"
+(docs/archive/TIER2_MEMETIC_PLAN.md §6.6). It is opt-in because an oracle-terminated run
+is a *benchmarking* mode, not a solver mode. `stop_reason` says which condition
+ended the run.
+
+SOLVER DISPATCH. The config's top-level `solver:` key selects the loop; the
+default is the memetic EA, so every existing config keeps its behaviour without
+being touched. `solver: local_multistart` selects the no-EA ablation baseline in
+`src/evo/multistart.py`, whose record is schema-compatible with the EA's --
+`ea_generations` and `children` come back null (there are no generations), and
+`restarts` / `flips_in_target_restart` are populated instead.
+
+PREPROCESSING (opt-in, 2026-10-18). `preprocess: kernel` in the config runs the
+exact kernel of src/sat/kernel.py behind its worth-it gate (`preprocess_gate`,
+defaults screen_min 0.20, gain_min 0.20). When the gate passes, the solver runs
+on the kernel with the target shifted by the kernel constant, and its best
+kernel assignment is lifted back and scored on the ORIGINAL clauses, so
+`best_cost` keeps its meaning. The gate's time counts inside the budget (the
+solver gets budget - preprocess_s) and inside `time_to_target_s`. Absent (every
+earlier config): `preprocess` is null and the run is exactly the historical one.
+docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md §8 (repo).
+
+NOTE: this file is intentionally AHEAD of the repo copy at `src/` -- see
+`cluster_staging_maxsat/DIVERGENCE.md`.
+
+Usage:
+    python -m src.cli.run_memetic_shard \
+        --instance data/unsat_uuf_diff/uuf250-03.cnf \
+        --config configs/tier2/memetic_base.yaml \
+        --config-id memetic_base \
+        --seed 1 --budget-s 60 \
+        --out results/tier2_memetic/tasks/t2m_0001.jsonl
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import signal
+import socket
+import subprocess
+import sys
+import time
+from typing import Any, Dict, List, Optional, Tuple
+
+# --- Flexible imports so this runs as a module or as a script -----------------
+try:
+    from evo.memetic import run_memetic
+    from evo.multistart import run_multistart_ls
+    from sat.cnf import WCNF
+    from sat import kernel as kern
+    from evo import v3 as evo_v3
+    from evo.impl_v2 import memetic_impl
+except Exception:  # pragma: no cover - path fixup for `python src/cli/...`
+    _here = os.path.abspath(__file__)
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(_here), "..")))
+    from evo.memetic import run_memetic  # type: ignore
+    from evo.multistart import run_multistart_ls  # type: ignore
+    from sat.cnf import WCNF  # type: ignore
+    from sat import kernel as kern  # type: ignore
+    from evo import v3 as evo_v3  # type: ignore
+    from evo.impl_v2 import memetic_impl  # type: ignore
+
+try:
+    import yaml  # type: ignore
+except Exception:
+    yaml = None
+
+# 2: additive fields for the no-EA ablation baseline -- `solver` now varies,
+#    plus cpu_time_s / restarts / flips_in_target_restart / target_reached.
+#    Every version-1 field is still present and still means what it meant, so
+#    src/bench/combine_tier2.py reads both without a branch.
+# 3: additive `memetic_impl` -- the EA implementation used ("v1" historical,
+#    "v2" faster bookkeeping with v1's decisions; config key `impl`,
+#    src/evo/impl_v2.py). Null on the local_multistart path.
+#    Every version-2 field is unchanged.
+# 4: additive preprocessing fields (`preprocess`, `preprocess_s`, `screen_frac`,
+#    `kernel_*`, `solver_time_limit_s`); all null when the config has no
+#    `preprocess` key. Every version-3 field is unchanged; `best_cost` is still
+#    scored on the original clauses.
+# 5 (cluster_staging_maxsat_strong): additive `hard` (impl hard / v3 with
+#    hard_mode on: src/evo/hard.HardStats), `v3` (src/evo/v3.V3Stats: resolved
+#    hard_mode, mutation damage, PX components, polish core counters,
+#    ls_native) and `native_build` (gcc version and .so hash when ls.native).
+#    All null for v1/v2. Every version-4 field is unchanged.
+SHARD_SCHEMA_VERSION = 5
+
+DEFAULT_SOLVER = "memetic_ea"
+KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
+
+
+# ---------- instance inspection ----------------------------------------------
+def sha256_file(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def detect_format(path: str) -> str:
+    """
+    Classify a DIMACS file as 'cnf', 'wcnf_old' (has a `p wcnf` header) or
+    'wcnf_new' (MSE 2022+: no `p` line, hard clauses prefixed `h`).
+
+    All three are now read by `sat.cnf.WCNF.parse_dimacs` (staging copy, see
+    DIVERGENCE.md), so this no longer gates anything — it is kept purely as
+    provenance: the result lands in `instance_format`, which
+    `src/bench/combine_tier2.py` carries into `summary.csv` as a column to
+    stratify by. A file this returns 'unknown' for has no clauses at all and
+    will fail in the parser, loudly, which is where that belongs.
+    """
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("c") or line.startswith("%"):
+                continue
+            if line.startswith("p "):
+                toks = line.split()
+                return "wcnf_old" if len(toks) > 1 and toks[1].lower() == "wcnf" else "cnf"
+            # First non-comment, non-header line: new-format WCNF.
+            return "wcnf_new"
+    return "unknown"
+
+
+def instance_stats(wcnf: Any) -> Dict[str, int]:
+    n_hard = sum(1 for cl in wcnf.clauses if cl.is_hard)
+    soft_w = sum(int(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+    return {
+        "n_vars": int(wcnf.n_vars),
+        "n_clauses": len(wcnf.clauses),
+        "n_hard": n_hard,
+        "n_soft": len(wcnf.clauses) - n_hard,
+        "soft_total_weight": soft_w,
+    }
+
+
+def score_assignment(wcnf: Any, assign01: List[bool]) -> Tuple[int, int, int]:
+    """
+    (unsat_soft_weight, hard_violations, unsat_soft_count) for a 1-indexed
+    boolean assignment.
+
+    Recomputed from the assignment rather than trusted from run_memetic's
+    `best_soft_weight`, so the number in the record is verifiable against the
+    instance file alone.
+    """
+    unsat_w = 0
+    hard_v = 0
+    unsat_n = 0
+    for cl in wcnf.clauses:
+        sat = False
+        for lit in cl.lits:
+            v = abs(lit)
+            if (lit > 0) == assign01[v]:
+                sat = True
+                break
+        if sat:
+            continue
+        if cl.is_hard:
+            hard_v += 1
+        else:
+            unsat_w += int(cl.weight)
+            unsat_n += 1
+    return unsat_w, hard_v, unsat_n
+
+
+# ---------- config handling ---------------------------------------------------
+def deep_set(d: Dict[str, Any], dotted_key: str, val: Any) -> None:
+    keys = dotted_key.split(".")
+    cur = d
+    for k in keys[:-1]:
+        if k not in cur or not isinstance(cur[k], dict):
+            cur[k] = {}
+        cur = cur[k]
+    cur[keys[-1]] = val
+
+
+def parse_kv_override(s: str) -> Tuple[str, Any]:
+    if "=" not in s:
+        raise ValueError(f"Expected KEY=VALUE, got: {s}")
+    k, v = s.split("=", 1)
+    try:
+        return k.strip(), json.loads(v.strip())
+    except Exception:
+        return k.strip(), v.strip()
+
+
+def load_cfg(path: Optional[str]) -> Dict[str, Any]:
+    if not path:
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    if yaml is not None:
+        try:
+            return yaml.safe_load(text) or {}
+        except Exception:
+            pass
+    try:
+        return json.loads(text)
+    except Exception as e:
+        if yaml is None and path.endswith((".yaml", ".yml")):
+            raise SystemExit(
+                f"Cannot read {path}: PyYAML is not installed in this environment "
+                f"(requirements.txt pins pyyaml>=6.0.1). Run `pip install pyyaml` "
+                f"in the `maxsat` conda env before submitting the array.")
+        raise SystemExit(f"Failed to parse config {path}: {e}")
+
+
+def config_hash(cfg: Dict[str, Any]) -> str:
+    canon = json.dumps(cfg, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
+# ---------- provenance --------------------------------------------------------
+def git_sha() -> Optional[str]:
+    """Env var first: the staging tree rsynced to the cluster is not a git repo."""
+    env = os.environ.get("MAXSAT_GIT_SHA")
+    if env:
+        return env.strip()
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+        return out.stdout.strip() if out.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def slurm_env() -> Dict[str, Optional[str]]:
+    return {k.lower(): os.environ.get(k) for k in (
+        "SLURM_JOB_ID", "SLURM_ARRAY_JOB_ID", "SLURM_ARRAY_TASK_ID",
+        "SLURM_JOB_PARTITION", "SLURM_CPUS_PER_TASK", "SLURM_MEM_PER_NODE",
+    )}
+
+
+class _Timeout(Exception):
+    pass
+
+
+def _on_alarm(signum, frame):  # pragma: no cover - signal path
+    raise _Timeout()
+
+
+# ---------- main --------------------------------------------------------------
+def main(argv: Optional[List[str]] = None) -> int:
+    p = argparse.ArgumentParser(
+        prog="src.cli.run_memetic_shard",
+        description="Run one solver configuration once and emit a single "
+                    "provenance-complete JSONL record.",
+    )
+    p.add_argument("--instance", required=True, help="Path to a .cnf/.wcnf file")
+    p.add_argument("--config", help="YAML/JSON solver config (configs/tier2/*.yaml)")
+    p.add_argument("--config-id", help="Label stored in the record (default: config file stem)")
+    p.add_argument("--seed", type=int, required=True)
+    p.add_argument("--budget-s", type=float, required=True,
+                   help="Wall-clock budget, injected as top-level time_limit_s")
+    p.add_argument("--grace-s", type=float, default=60.0,
+                   help="SIGALRM watchdog fires at budget+grace (default: 60)")
+    p.add_argument("--out", required=True, help="Output .jsonl shard (one record)")
+    p.add_argument("--job-id", default=None, help="Manifest job id, echoed into the record")
+    p.add_argument("--oracle-cost", type=int, default=None,
+                   help="RC2 optimum for this instance; enables gap fields in the record")
+    p.add_argument("--stop-at-oracle", action="store_true",
+                   help="Stop the solver the moment it reaches --oracle-cost, turning "
+                        "wall_time_s into a time-to-optimum measurement. Opt-in: "
+                        "an oracle-terminated run is a BENCHMARKING mode, not a "
+                        "solver mode. Requires --oracle-cost.")
+    p.add_argument("--max-total-flips", type=int, default=None,
+                   help="Optional total local-search flip cutoff, for flip-budget "
+                        "comparisons that do not depend on machine speed. Applies "
+                        "to solver=local_multistart only; the wall-clock --budget-s "
+                        "still applies and whichever binds first ends the run.")
+    p.add_argument("--tier", default=None, help="RC2 tier label, echoed into the record")
+    p.add_argument("--rc2-run", default=None, help="RC2 run dir the oracle came from")
+    p.add_argument("--save-assignment", action="store_true",
+                   help="Store the full best assignment bit-string (off by default)")
+    p.add_argument("--override", "-D", action="append", default=[],
+                   help="Config override, e.g. -D ea.pop_size=80")
+    args = p.parse_args(argv)
+
+    if args.stop_at_oracle and args.oracle_cost is None:
+        print("FATAL: --stop-at-oracle requires --oracle-cost -- there is no "
+              "target to stop at without it. Pass the RC2 optimum for this "
+              "instance (the oracle_cost column of the manifest), or drop "
+              "--stop-at-oracle to run the full budget.", file=sys.stderr)
+        return 2
+
+    # `--oracle-cost` alone keeps doing only what it always did: fill the gap
+    # fields in the record for the combine step. It becomes a stop condition
+    # only when --stop-at-oracle is passed explicitly.
+    target_cost: Optional[int] = int(args.oracle_cost) if args.stop_at_oracle else None
+
+    cfg = load_cfg(args.config)
+    for ov in args.override:
+        k, v = parse_kv_override(ov)
+        deep_set(cfg, k, v)
+
+    solver = str(cfg.get("solver", DEFAULT_SOLVER))
+    if solver not in KNOWN_SOLVERS:
+        print(f"FATAL: unknown solver {solver!r} in {args.config}. Known: "
+              f"{', '.join(KNOWN_SOLVERS)}. A typo here would otherwise run the "
+              f"wrong arm of the ablation under the right config_id.",
+              file=sys.stderr)
+        return 2
+    if args.max_total_flips is not None and solver != "local_multistart":
+        print(f"FATAL: --max-total-flips is only implemented for "
+              f"solver=local_multistart, not {solver!r}. Silently ignoring it "
+              f"would produce a record whose budget fields lie about the run.",
+              file=sys.stderr)
+        return 2
+
+    try:
+        preprocess = kern.preprocess_mode(cfg)
+        if preprocess != "none":
+            kern.gate_params(cfg)
+    except ValueError as e:
+        print(f"FATAL: {e} in {args.config}.", file=sys.stderr)
+        return 2
+
+    # v3 keys (src/evo/v3.py): refused under another impl, validated under v3;
+    # `ls.native: true` needs the prebuilt C core (scripts/build_native.sh) --
+    # refused here, before the run, so an arm never mixes native and Python tasks.
+    native_build = None
+    try:
+        vc = evo_v3.check_cfg(cfg, memetic_impl(cfg))
+        if vc is not None and vc["native"]:
+            from native.native import build_info, NativeUnavailable
+            try:
+                native_build = build_info()
+            except NativeUnavailable as e:
+                print(f"FATAL: ls.native: true but the C core is unavailable: {e}", file=sys.stderr)
+                return 2
+    except ValueError as e:
+        print(f"FATAL: {e} in {args.config}.", file=sys.stderr)
+        return 2
+
+    # EA defaults are applied ONLY on the EA path. Injecting them unconditionally
+    # would stamp an `ea:` block into the resolved config of the no-population
+    # baseline, which is precisely the thing that baseline asserts it has none of.
+    if solver == DEFAULT_SOLVER:
+        cfg.setdefault("ea", {})
+        cfg["ea"].setdefault("enabled", True)
+    # The budget always wins over anything in the config file.
+    deep_set(cfg, "time_limit_s", float(args.budget_s))
+
+    config_id = args.config_id or (
+        os.path.splitext(os.path.basename(args.config))[0] if args.config else "default"
+    )
+
+    inst = args.instance
+    rec: Dict[str, Any] = {
+        "schema_version": SHARD_SCHEMA_VERSION,
+        "job_id": args.job_id,
+        "instance": inst,
+        "instance_abspath": os.path.abspath(inst),
+        "instance_sha256": None,
+        "instance_format": None,
+        "size_mb": None,
+        "n_vars": None, "n_clauses": None, "n_hard": None, "n_soft": None,
+        "soft_total_weight": None,
+        "solver": solver,
+        "config_id": config_id,
+        "config": cfg,
+        "config_hash": config_hash(cfg),
+        "seed": args.seed,
+        "budget_s": float(args.budget_s),
+        "grace_s": float(args.grace_s),
+        "max_total_flips": args.max_total_flips,
+        "wall_time_s": None,
+        # Wall-clock stays the primary budget and the primary measurement --
+        # every existing tier-2 number is wall. `cpu_time_s` is process CPU
+        # across the solver call only (time.process_time), recorded so a
+        # flip-rate anomaly can be told apart from a loaded node. These solvers
+        # are single-threaded scalar Python, so the two should track closely;
+        # a large gap means the node was oversubscribed and the wall-clock
+        # comparison for that row is not trustworthy.
+        "cpu_time_s": None,
+        # Target-cost early stop (docs/archive/TIER2_MEMETIC_PLAN.md §6.6).
+        # `wall_time_s` keeps its meaning -- total loop wall time. It now equals
+        # `time_to_target_s` on target-stopped runs and the budget otherwise;
+        # `stop_reason` is what disambiguates, so downstream code never has to
+        # infer which case it is looking at.
+        "stop_reason": None,
+        "time_to_target_s": None,
+        "target_cost_used": target_cost,
+        "stop_at_oracle": bool(args.stop_at_oracle),
+        # Explicit success flag for the ablation tables. True/False only when a
+        # target was actually in play; None when the run had no target to hit,
+        # so "did not reach" and "was never asked to" never collapse into one
+        # value. `is_optimal` stays the cost-derived field it always was.
+        "target_reached": None,
+        "best_cost": None,
+        "hard_violations": None,
+        "unsat_soft_clauses": None,
+        "best_soft_weight_reported": None,
+        # EA-only; stay null on the local_multistart path, where there is no
+        # population and therefore no generation and no child.
+        "ea_generations": None,
+        "children": None,
+        "memetic_impl": None,
+        # `impl: hard`, or v3 with hard_mode on: src/evo/hard.HardStats; else None.
+        "hard": None,
+        # `impl: v3` only (schema 5): src/evo/v3.V3Stats.as_dict().
+        "v3": None,
+        "native_build": None,
+        # local_multistart-only; stay null on the EA path, where a "restart" has
+        # no meaning (run_memetic reports a hard-coded 0).
+        "restarts": None,
+        "flips_in_target_restart": None,
+        "total_flips": None,
+        # Preprocessing (schema 4; src/sat/kernel.py). `preprocess` is null
+        # when the config has none, else the gate's decision: kernel |
+        # kernel_empty | skipped_screen | skipped_gain | skipped_length |
+        # skipped_infeasible. `kernel_best_cost` is the solver's best on the
+        # kernel; best_cost == kernel_best_cost + kernel_const is checked.
+        "preprocess": None,
+        "preprocess_s": None,
+        "screen_frac": None,
+        "kernel_n_vars": None,
+        "kernel_n_clauses": None,
+        "kernel_n_hard": None,
+        "kernel_const": None,
+        "kernel_max_len": None,
+        "kernel_gain": None,
+        "kernel_best_cost": None,
+        "solver_time_limit_s": None,
+        "best_assignment_hash": None,
+        "best_assignment_bits": None,
+        "status": "error",
+        "error": None,
+        "oracle_cost": args.oracle_cost,
+        "abs_gap": None,
+        "rel_gap": None,
+        "is_optimal": None,
+        "rc2_tier": args.tier,
+        "rc2_run": args.rc2_run,
+        "git_sha": git_sha(),
+        "python": platform.python_version(),
+        "host": socket.gethostname(),
+        "slurm": slurm_env(),
+        "started_at": None,
+        "finished_at": None,
+    }
+
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
+
+    def emit() -> int:
+        with open(args.out, "w", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        s = rec["status"]
+        print(f"[shard] {rec['job_id']} {os.path.basename(inst)} solver={solver} "
+              f"cfg={config_id} "
+              f"seed={args.seed} budget={args.budget_s:g}s -> status={s} "
+              f"cost={rec['best_cost']} hv={rec['hard_violations']} "
+              f"opt={rec['oracle_cost']} wall={rec['wall_time_s']} "
+              f"stop={rec['stop_reason']} t_target={rec['time_to_target_s']} "
+              f"restarts={rec['restarts']} flips={rec['total_flips']}"
+              + (f" pre={rec['preprocess']} kernel_n={rec['kernel_n_vars']} pre_s={rec['preprocess_s']}"
+                 if rec["preprocess"] is not None else ""))
+        return 0 if s == "ok" else 1
+
+    if not os.path.isfile(inst):
+        rec["status"] = "missing_instance"
+        rec["error"] = f"no such file: {inst}"
+        return emit()
+
+    rec["size_mb"] = round(os.path.getsize(inst) / 1e6, 4)
+    rec["instance_sha256"] = sha256_file(inst)
+    rec["instance_format"] = detect_format(inst)
+
+    try:
+        wcnf = WCNF.parse_dimacs(inst)
+    except Exception as e:
+        rec["status"] = "parse_error"
+        rec["error"] = f"{type(e).__name__}: {e}"
+        return emit()
+
+    rec.update(instance_stats(wcnf))
+
+    rec["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    signal.signal(signal.SIGALRM, _on_alarm)
+    signal.setitimer(signal.ITIMER_REAL, float(args.budget_s) + float(args.grace_s))
+    t0 = time.time()
+    c0 = time.process_time()
+    kernel = None
+    pre_s = 0.0
+    try:
+        run_wcnf, run_cfg, run_target = wcnf, cfg, target_cost
+        if preprocess != "none":
+            g = kern.gate(wcnf, cfg)
+            rec.update(g.fields)
+            rec["preprocess"] = g.decision
+            pre_s = float(g.fields["preprocess_s"])
+            kernel = g.kernel
+            # The gate's time is spent whatever it decides, so it always counts.
+            run_cfg = dict(cfg, time_limit_s=max(0.0, float(args.budget_s) - pre_s))
+            rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
+            if kernel is not None:
+                run_wcnf = kernel.wcnf
+                if target_cost is not None:
+                    run_target = target_cost - kernel.const
+        if kernel is not None and kernel.wcnf.n_vars == 0:
+            # Every variable eliminated: the lifted assignment is optimal.
+            reached = run_target is not None and run_target >= 0
+            res = {"best_soft_weight": 0.0, "stop_reason": "target" if reached else "preprocess_exact",
+                   "time_to_target_s": 0.0 if reached else None, "impl": None, "total_flips": 0,
+                   "meta": {"assign_bits": "", "ea_generations": 0, "children": 0}}
+        elif solver == "local_multistart":
+            res = run_multistart_ls(run_wcnf, run_cfg, rng_seed=args.seed,
+                                    target_cost=run_target,
+                                    max_total_flips=args.max_total_flips)
+        else:
+            res = run_memetic(run_wcnf, run_cfg, rng_seed=args.seed, target_cost=run_target)
+        rec["wall_time_s"] = round(time.time() - t0, 3)
+        rec["cpu_time_s"] = round(time.process_time() - c0, 3)
+        rec["status"] = "ok"
+    except _Timeout:
+        rec["wall_time_s"] = round(time.time() - t0, 3)
+        rec["cpu_time_s"] = round(time.process_time() - c0, 3)
+        rec["status"] = "timeout"
+        rec["error"] = f"watchdog_fired_at_budget+{args.grace_s:g}s"
+        return emit()
+    except Exception as e:
+        rec["wall_time_s"] = round(time.time() - t0, 3)
+        rec["cpu_time_s"] = round(time.process_time() - c0, 3)
+        rec["status"] = "error"
+        rec["error"] = f"{type(e).__name__}: {e}"
+        return emit()
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        rec["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+    meta = res.get("meta", {}) or {}
+    bits = meta.get("assign_bits")
+    if not bits and not (kernel is not None and kernel.wcnf.n_vars == 0):
+        rec["status"] = "error"
+        rec["error"] = f"{solver} returned no meta.assign_bits"
+        return emit()
+
+    assign01 = [False] + [c == "1" for c in bits]
+    if kernel is not None:
+        k_unsat, _, _ = score_assignment(kernel.wcnf, assign01)
+        rec["kernel_best_cost"] = k_unsat
+        assign01 = kern.lift(kernel, assign01)
+        bits = "".join("1" if b else "0" for b in assign01[1:])
+    unsat_w, hard_v, unsat_n = score_assignment(wcnf, assign01)
+    rec["best_cost"] = unsat_w
+    rec["hard_violations"] = hard_v
+    rec["unsat_soft_clauses"] = unsat_n
+    rec["best_soft_weight_reported"] = float(res.get("best_soft_weight", 0.0))
+    rec["stop_reason"] = res.get("stop_reason")
+    ttt = res.get("time_to_target_s")
+    # On the kernel path the solver's clock started after the gate.
+    rec["time_to_target_s"] = None if ttt is None else round(float(ttt) + pre_s, 3)
+    rec["ea_generations"] = meta.get("ea_generations")
+    rec["memetic_impl"] = res.get("impl")
+    rec["hard"] = res.get("hard")
+    rec["v3"] = res.get("v3")
+    rec["native_build"] = native_build
+    rec["children"] = meta.get("children")
+    rec["total_flips"] = int(res.get("total_flips", 0))
+    rec["best_assignment_hash"] = "sha256-12:" + hashlib.sha256(bits.encode()).hexdigest()[:12]
+    if args.save_assignment:
+        rec["best_assignment_bits"] = bits
+
+    if solver == "local_multistart":
+        rec["restarts"] = int(res.get("restarts", 0))
+        fitr = res.get("flips_in_target_restart")
+        rec["flips_in_target_restart"] = None if fitr is None else int(fitr)
+
+    # Only meaningful when a target was actually in play; `target_cost is None`
+    # leaves it None so "missed it" and "was not asked to look for it" stay
+    # distinguishable in the table.
+    if target_cost is not None:
+        rec["target_reached"] = bool(rec["stop_reason"] == "target")
+
+    if args.oracle_cost is not None and hard_v == 0:
+        opt = int(args.oracle_cost)
+        rec["abs_gap"] = unsat_w - opt
+        rec["rel_gap"] = round((unsat_w - opt) / opt, 6) if opt > 0 else None
+        rec["is_optimal"] = bool(unsat_w == opt)
+
+    # Lift cross-check: for every kernel assignment the lifted one costs exactly
+    # kernel cost + constant on the original clauses (src/sat/kernel.py).
+    if kernel is not None and hard_v == 0 and unsat_w != rec["kernel_best_cost"] + kernel.const:
+        rec["status"] = "cost_mismatch"
+        rec["error"] = (f"lifted best_cost={unsat_w} != kernel_best_cost={rec['kernel_best_cost']} "
+                        f"+ kernel_const={kernel.const}")
+        return emit()
+
+    # Cost cross-check (docs/archive/TIER2_MEMETIC_PLAN.md §6.3). `best_cost` is
+    # re-derived from meta.assign_bits; the solver's own number lives in
+    # `best_soft_weight_reported`. If the solver stopped because *its* incumbent
+    # reached the target but the re-derived cost is worse than the target, the
+    # two cost paths disagree about the same assignment -- a parse or unit bug.
+    # Fail the record loudly so the combine step's integrity pass sees it
+    # instead of averaging it in.
+    if target_cost is not None and rec["stop_reason"] == "target" and unsat_w > target_cost:
+        rec["status"] = "cost_mismatch"
+        rec["error"] = (
+            f"target stop fired but re-derived best_cost={unsat_w} > "
+            f"target_cost={target_cost} (solver reported satisfied soft weight "
+            f"{rec['best_soft_weight_reported']}, soft_total_weight "
+            f"{rec['soft_total_weight']}); the two cost paths disagree")
+
+    return emit()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

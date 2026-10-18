@@ -1,0 +1,26 @@
+# The pre-registered primary arm with `impl: v2` (memetic_deeppolish_p40_ls3p5_v2.yaml,
+# every key unchanged) plus exact kernelising in front of the memetic, behind the
+# worth-it gate (src/sat/kernel.py; docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md §8,
+# repo; user decision 2026-10-14: kernelise for the sparse Max-2-SAT grid).
+#   screen_min: skip unless >= 20% of the occurring variables are pure or (1 pos, 1 neg)
+#   gain_min:   use the kernel only if it removes >= 20% of the occurring variables
+#               (and no kernel clause is longer than the longest original clause)
+# The gate's time counts inside the run budget and the time to target; best_cost is
+# scored on the original clauses after lifting the kernel assignment back.
+impl: v2
+preprocess: kernel
+preprocess_gate:
+  screen_min: 0.2
+  gain_min: 0.2
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 3.5
+  flip_budget: 12500

@@ -1,0 +1,25 @@
+# M2 full-pool control: memetic_deeppolish with pop_size 40 and its original
+# 0.5 s per-call local-search allowance, plus opt-in deadline clipping, so that
+# it differs from memetic_deeppolish_p40_ls3p5.yaml in ls.time_limit_s ONLY
+# (docs/M2_FULL_POOL_RUN.md in the repo). The historical control
+# memetic_deeppolish.yaml is kept unchanged (no clipping) for the 130 historical
+# deeppolish rows and the M2 pilot. `deadline_mode: clip` gives each polish call
+# min(ls.time_limit_s, remaining budget) and ends the run when the budget is
+# spent, instead of only at a generation boundary (src/evo/memetic.py); while
+# the budget does not bind, the trajectory equals the unclipped config's. The
+# watchdog and its grace are unchanged. The 900 s run budget is injected by
+# run_memetic_shard.py --budget-s; do NOT set a top-level time_limit_s here
+# (memetic.py would fall back to ls.time_limit_s).
+# Elites stay max(1, ceil(0.05 * pop_size)) in code: 2 elites + 38 children per generation.
+ea:
+  enabled: true
+  pop_size: 40
+  tournament_k: 3
+  pmutate: 0.02
+  elitism: true
+  max_gens: 1000000
+  deadline_mode: clip
+ls:
+  ls_polish_flips: 12500
+  time_limit_s: 0.5
+  flip_budget: 12500

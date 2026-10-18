@@ -82,6 +82,14 @@ cluster_staging_maxsat_hard/data/**
 !cluster_staging_maxsat_hard/data/.gitkeep
 !cluster_staging_maxsat_hard/data/**/manifest.jsonl
 
+# Stronger-memetic staging tree (docs/current2/STRONGER_MEMETIC_DESIGN.md):
+# instances out, manifests in; the C core's build output out (built on each host).
+cluster_staging_maxsat_strong/data/**
+!cluster_staging_maxsat_strong/data/**/
+!cluster_staging_maxsat_strong/data/.gitkeep
+!cluster_staging_maxsat_strong/data/**/manifest.jsonl
+cluster_staging_maxsat_strong/src/native/build/
+
 # MSE-2016 ms_random / ms_crafted benchmark (more_data/): 856 instances, 32 MB,
 # downloaded not generated. Same convention as data/generated above -- instances
 # out, documentation and manifests in. The sampled subset that experiments

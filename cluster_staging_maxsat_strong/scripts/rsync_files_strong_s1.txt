@@ -1,0 +1,77 @@
+# rsync --files-from list for the stronger-memetic batch S1 (324 tasks;
+# docs/current2/STRONGER_MEMETIC_DESIGN.md §8.3, repo). Paths relative to
+# cluster_staging_maxsat_strong/. Destination: ~/cluster_staging_maxsat_strong/ (a new tree).
+# After the rsync: sha256sum -c scripts/manifest_strong_s1.upload.sha256 on the login node.
+#
+# 1. code (src/, including the C core source; build it once with scripts/build_native.sh)
+src/__init__.py
+src/cli/__init__.py
+src/cli/oracle_evalmaxsat.py
+src/cli/profile_hardness.py
+src/cli/run_memetic_shard.py
+src/cli/run_opt_rc2.py
+src/cli/solve_rc2_anytime.py
+src/evo/__init__.py
+src/evo/hard.py
+src/evo/impl_v2.py
+src/evo/memetic.py
+src/evo/multistart.py
+src/evo/operators.py
+src/evo/population.py
+src/evo/v3.py
+src/llm/__init__.py
+src/llm/advisor.py
+src/llm/prompt.py
+src/llm/providers/__init__.py
+src/llm/providers/noop.py
+src/llm/providers/ollama.py
+src/native/__init__.py
+src/native/native.py
+src/sat/__init__.py
+src/sat/cnf.py
+src/sat/kernel.py
+src/sat/ls_v3.py
+src/sat/rng.py
+src/sat/state.py
+src/sat/walksat.py
+src/sat/walksat_v2.py
+src/native/ls_core.c
+# 2. configs (one per arm and variant)
+configs/strong/B3only_kern.yaml
+configs/strong/B3only_raw.yaml
+configs/strong/allC_kern.yaml
+configs/strong/allC_raw.yaml
+configs/strong/all_kern.yaml
+configs/strong/all_raw.yaml
+configs/strong/base_kern.yaml
+configs/strong/base_raw.yaml
+configs/strong/noB1_kern.yaml
+configs/strong/noB1_raw.yaml
+configs/strong/noB2_kern.yaml
+configs/strong/noB2_raw.yaml
+configs/strong/noB3_kern.yaml
+configs/strong/noB3_raw.yaml
+configs/strong/noB4_kern.yaml
+configs/strong/noB4_raw.yaml
+configs/strong/wccB3_kern.yaml
+configs/strong/wccB3_raw.yaml
+# 3. driver, submit, build, results, manifest
+scripts/tier2_memetic_array.sbatch
+scripts/submit_m2_memetic.sh
+scripts/build_native.sh
+scripts/build_native.sbatch
+scripts/m2_results.py
+scripts/make_strong_manifest.py
+scripts/instances_calib_2sat_sc2.csv
+scripts/manifest_strong_s1.tsv
+scripts/manifest_strong_s1.tasks.csv
+scripts/manifest_strong_s1.sha256
+scripts/manifest_strong_s1.upload.sha256
+scripts/rsync_files_strong_s1.txt
+# 4. instances (the six eligible calib_2sat_sc2 instances)
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s251.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s253.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v16000_k2_m19200_s255.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s256.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s257.wcnf
+data/generated/calib_2sat_sc2/ksat_distinct_v64000_k2_m70400_s258.wcnf
