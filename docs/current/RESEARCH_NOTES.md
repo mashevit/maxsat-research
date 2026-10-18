@@ -54,10 +54,41 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. Stance 2026-10-14: c is calibrated empirically by our grid, not by a framework; it is part of the orthogonality flow (plan §0c, N-2026-10-14-a). |
 | Solver directions: exact Max-2-SAT kernel of the n 64,000 instances; preprocessing, stronger raw memetic, large-kernel corpus | [`RESEARCH_NOTES_SOLVER_DIRECTIONS.md`](RESEARCH_NOTES_SOLVER_DIRECTIONS.md) | Exact rules (pure literal, degree-2 MaxSAT resolution) shrink the 6 eligible calib_2sat_sc2 instances to 300–572-variable kernels; rebuilt cost = c\* on all. The unchanged memetic solves the 3 n 64,000 kernels in ≤ 0.7 s (s253 open). Explains the size-independent Stage L1 optimum. Directions A (preprocess, recommended) / B (impl v3: partition crossover, clause weighting) / C (large-kernel corpus). N-2026-10-14-e. §7: it does not carry over to 3-SAT, dense 2-SAT or crafted instances (N-2026-10-14-f). §8 (user decision): kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s worth-it screen (N-2026-10-14-g). |
 | Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). Batch prepared, not submitted. §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
+| Stronger memetic built (`impl: v3`, tree `cluster_staging_maxsat_strong/`); smoke; batch S1 | [`../current2/STRONG_MEMETIC_S1_RUN.md`](../current2/STRONG_MEMETIC_S1_RUN.md) | All of B1–B5 built on the hard tree plus the kernel ports; v3 without keys = staging v2 / `impl: hard` exactly; C core = Python twin flip for flip. Smoke (60 s, seed 1): `allC` solves kernel s253 (5.8 s) and raw s256/s257 (n 64k) at c\*; mutation damage 200–640 → 7–12 clauses. Batch S1: 324 tasks, ≤ 86.4 CPU-h, commit `16589fb`. N-2026-10-18-c. |
 | Stronger memetic B1–B5 (tabu/CC, clause weighting, distance-aware mutation, partition crossover, compiled loop): motivation, mechanism, parameters, interactions, build plan for a third tree | [`../current2/STRONGER_MEMETIC_DESIGN.md`](../current2/STRONGER_MEMETIC_DESIGN.md) | Design only. SATLike weighting rules and parameters read from the full text; PX exactness derived (each clause's differing variables lie in one component). Interactions §6 fix the build order B3 → B1 → B2 → B4 → B5 and a leave-one-out batch (288 tasks, ≤ 76.8 CPU-h). Tree `cluster_staging_maxsat_strong/` proposed. N-2026-10-18-b. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-18-c — Stronger memetic built in a third tree; C core 8–23× faster; smoke solves s253 on its kernel and two raw n 64,000 instances; batch S1 prepared [quote + verified + inference]
+
+> "on cluster, compile once, I think , I think there aint no python script on login node, and anyhow it can be compiled in saparate job. add the karnileztion and things arent in hard now" (user, 2026-10-18)
+
+- Record: `docs/current2/STRONG_MEMETIC_S1_RUN.md`; tree record
+  `cluster_staging_maxsat_strong/PROVENANCE.md`. Committed `16589fb`.
+- **[verified] Built:** `impl: v3` with `hard_mode: auto`. B1 tabu / CC; B2
+  SATLike-style DLS (optional CC); B3 mutation count / walk / diff; B4
+  partition crossover; B5 C twin (portable RNG, built once per tree, stale
+  builds refused).
+- **[verified] Exactness:**
+  - v3 without keys == staging `impl: v2` (subprocess against that tree) and
+    == `impl: hard`;
+  - C == Python twin flip for flip;
+  - the PX child == best of 2^q (brute force);
+  - DLS state == full recompute.
+  - 329 passed / 24 skipped.
+- **[verified] Speed** (one call, workstation): WalkSAT C 4.6M flips/s vs v2
+  0.55M; DLS C 2.6M vs Python 0.11M. One DLS call from a random start
+  reaches c\* 12 on raw s251.
+- **[verified] Smoke** (60 s, seed 1):
+  - kernel: `base` 5/6, `all` 5/6, `allC` **6/6** (s253 in 5.8 s, a first);
+  - raw: `base` 0/6 (+10…+81), `all` 0/6 (+1…+31), `allC` **2/6**
+    (s256, s257 at n 64,000), the rest +1/+2.
+  - Mutation damage 198–644 → 6.5–12.4 clauses with walk k 16.
+  - PX q: thousands on raw, 12–80 on kernels.
+- **Batch S1:** 9 arms × raw/kern × 6 × 3 = 324 tasks, ≤ 86.4 CPU-h. B5 is in
+  the batch as arm `allC` (a deviation from design §8.3, which had it
+  separate). Commands in §4.2 there. Not submitted.
 
 ### N-2026-10-18-b — Stronger memetic design: B1–B5 explained, their interactions, and the build plan for a third staging tree [quote + source + inference + proposal]
 

@@ -4,8 +4,9 @@
 interactions- I want you next step implement all the ideas for stronger solver
 in new folder analogue to the cluster_staging_maxsat/_hard in 3rd folder".
 
-**Status:** design only. Nothing is built. The build (§8) waits for the
-user's go. Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-b.
+**Status:** design. **Built 2026-10-18** in `cluster_staging_maxsat_strong/`
+(commit `16589fb`). The build record, deviations, smoke run and batch S1 are
+in [`STRONG_MEMETIC_S1_RUN.md`](STRONG_MEMETIC_S1_RUN.md). Index: `docs/current/RESEARCH_NOTES.md`, N-2026-10-18-b.
 
 **Background:**
 - `docs/current2/KERNEL_MEMETIC_RUN.md` §5: the short proposal this document

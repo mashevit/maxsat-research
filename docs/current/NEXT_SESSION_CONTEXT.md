@@ -33,8 +33,13 @@ N-2026-10-18-a):
 - **Direction B designed in full** (`docs/current2/STRONGER_MEMETIC_DESIGN.md`,
   N-2026-10-18-b): motivations, mechanisms (sources checked), parameters,
   interactions (§6), build plan S1–S7 for a third tree
-  `cluster_staging_maxsat_strong/`. The user wants all ideas implemented
-  next; awaiting the go, the tree name, and the cluster compiler check.
+  `cluster_staging_maxsat_strong/`.
+- **Built 2026-10-18** (`docs/current2/STRONG_MEMETIC_S1_RUN.md`, N-2026-10-18-c,
+  commit `16589fb`): the tree is the hard tree plus the kernel ports plus
+  `impl: v3` (B1–B5, C core built once per tree on the cluster). Smoke: `allC`
+  solves kernel s253 and raw s256/s257. **Batch S1 (324 tasks, ≤ 86.4 CPU-h)
+  prepared, not submitted.** Next: rsync → `sbatch build_native.sbatch` →
+  submit (§4.2 there) → readout.
 
 **Cluster limits (user, 2026-10-18):** `--array=1-1000%1000` is allowed. **Done
 2026-10-18 (user's go), `ad19012`:** the submit scripts (`submit_m2_memetic.sh`
