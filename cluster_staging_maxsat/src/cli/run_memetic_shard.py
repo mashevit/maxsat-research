@@ -31,6 +31,16 @@ being touched. `solver: local_multistart` selects the no-EA ablation baseline in
 `ea_generations` and `children` come back null (there are no generations), and
 `restarts` / `flips_in_target_restart` are populated instead.
 
+PREPROCESSING (opt-in, 2026-10-18). `preprocess: kernel` in the config runs the
+exact kernel of src/sat/kernel.py behind its worth-it gate (`preprocess_gate`,
+defaults screen_min 0.20, gain_min 0.20). When the gate passes, the solver runs
+on the kernel with the target shifted by the kernel constant, and its best
+kernel assignment is lifted back and scored on the ORIGINAL clauses, so
+`best_cost` keeps its meaning. The gate's time counts inside the budget (the
+solver gets budget - preprocess_s) and inside `time_to_target_s`. Absent (every
+earlier config): `preprocess` is null and the run is exactly the historical one.
+docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md §8 (repo).
+
 NOTE: this file is intentionally AHEAD of the repo copy at `src/` -- see
 `cluster_staging_maxsat/DIVERGENCE.md`.
 
@@ -61,12 +71,14 @@ try:
     from evo.memetic import run_memetic
     from evo.multistart import run_multistart_ls
     from sat.cnf import WCNF
+    from sat import kernel as kern
 except Exception:  # pragma: no cover - path fixup for `python src/cli/...`
     _here = os.path.abspath(__file__)
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(_here), "..")))
     from evo.memetic import run_memetic  # type: ignore
     from evo.multistart import run_multistart_ls  # type: ignore
     from sat.cnf import WCNF  # type: ignore
+    from sat import kernel as kern  # type: ignore
 
 try:
     import yaml  # type: ignore
@@ -81,7 +93,11 @@ except Exception:
 #    "v2" faster bookkeeping with v1's decisions; config key `impl`,
 #    src/evo/impl_v2.py). Null on the local_multistart path.
 #    Every version-2 field is unchanged.
-SHARD_SCHEMA_VERSION = 3
+# 4: additive preprocessing fields (`preprocess`, `preprocess_s`, `screen_frac`,
+#    `kernel_*`, `solver_time_limit_s`); all null when the config has no
+#    `preprocess` key. Every version-3 field is unchanged; `best_cost` is still
+#    scored on the original clauses.
+SHARD_SCHEMA_VERSION = 4
 
 DEFAULT_SOLVER = "memetic_ea"
 KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
@@ -309,6 +325,14 @@ def main(argv: Optional[List[str]] = None) -> int:
               file=sys.stderr)
         return 2
 
+    try:
+        preprocess = kern.preprocess_mode(cfg)
+        if preprocess != "none":
+            kern.gate_params(cfg)
+    except ValueError as e:
+        print(f"FATAL: {e} in {args.config}.", file=sys.stderr)
+        return 2
+
     # EA defaults are applied ONLY on the EA path. Injecting them unconditionally
     # would stamp an `ea:` block into the resolved config of the no-population
     # baseline, which is precisely the thing that baseline asserts it has none of.
@@ -378,6 +402,22 @@ def main(argv: Optional[List[str]] = None) -> int:
         "restarts": None,
         "flips_in_target_restart": None,
         "total_flips": None,
+        # Preprocessing (schema 4; src/sat/kernel.py). `preprocess` is null
+        # when the config has none, else the gate's decision: kernel |
+        # kernel_empty | skipped_screen | skipped_gain | skipped_length |
+        # skipped_infeasible. `kernel_best_cost` is the solver's best on the
+        # kernel; best_cost == kernel_best_cost + kernel_const is checked.
+        "preprocess": None,
+        "preprocess_s": None,
+        "screen_frac": None,
+        "kernel_n_vars": None,
+        "kernel_n_clauses": None,
+        "kernel_n_hard": None,
+        "kernel_const": None,
+        "kernel_max_len": None,
+        "kernel_gain": None,
+        "kernel_best_cost": None,
+        "solver_time_limit_s": None,
         "best_assignment_hash": None,
         "best_assignment_bits": None,
         "status": "error",
@@ -408,7 +448,9 @@ def main(argv: Optional[List[str]] = None) -> int:
               f"cost={rec['best_cost']} hv={rec['hard_violations']} "
               f"opt={rec['oracle_cost']} wall={rec['wall_time_s']} "
               f"stop={rec['stop_reason']} t_target={rec['time_to_target_s']} "
-              f"restarts={rec['restarts']} flips={rec['total_flips']}")
+              f"restarts={rec['restarts']} flips={rec['total_flips']}"
+              + (f" pre={rec['preprocess']} kernel_n={rec['kernel_n_vars']} pre_s={rec['preprocess_s']}"
+                 if rec["preprocess"] is not None else ""))
         return 0 if s == "ok" else 1
 
     if not os.path.isfile(inst):
@@ -434,13 +476,35 @@ def main(argv: Optional[List[str]] = None) -> int:
     signal.setitimer(signal.ITIMER_REAL, float(args.budget_s) + float(args.grace_s))
     t0 = time.time()
     c0 = time.process_time()
+    kernel = None
+    pre_s = 0.0
     try:
-        if solver == "local_multistart":
-            res = run_multistart_ls(wcnf, cfg, rng_seed=args.seed,
-                                    target_cost=target_cost,
+        run_wcnf, run_cfg, run_target = wcnf, cfg, target_cost
+        if preprocess != "none":
+            g = kern.gate(wcnf, cfg)
+            rec.update(g.fields)
+            rec["preprocess"] = g.decision
+            pre_s = float(g.fields["preprocess_s"])
+            kernel = g.kernel
+            # The gate's time is spent whatever it decides, so it always counts.
+            run_cfg = dict(cfg, time_limit_s=max(0.0, float(args.budget_s) - pre_s))
+            rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
+            if kernel is not None:
+                run_wcnf = kernel.wcnf
+                if target_cost is not None:
+                    run_target = target_cost - kernel.const
+        if kernel is not None and kernel.wcnf.n_vars == 0:
+            # Every variable eliminated: the lifted assignment is optimal.
+            reached = run_target is not None and run_target >= 0
+            res = {"best_soft_weight": 0.0, "stop_reason": "target" if reached else "preprocess_exact",
+                   "time_to_target_s": 0.0 if reached else None, "impl": None, "total_flips": 0,
+                   "meta": {"assign_bits": "", "ea_generations": 0, "children": 0}}
+        elif solver == "local_multistart":
+            res = run_multistart_ls(run_wcnf, run_cfg, rng_seed=args.seed,
+                                    target_cost=run_target,
                                     max_total_flips=args.max_total_flips)
         else:
-            res = run_memetic(wcnf, cfg, rng_seed=args.seed, target_cost=target_cost)
+            res = run_memetic(run_wcnf, run_cfg, rng_seed=args.seed, target_cost=run_target)
         rec["wall_time_s"] = round(time.time() - t0, 3)
         rec["cpu_time_s"] = round(time.process_time() - c0, 3)
         rec["status"] = "ok"
@@ -462,12 +526,17 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     meta = res.get("meta", {}) or {}
     bits = meta.get("assign_bits")
-    if not bits:
+    if not bits and not (kernel is not None and kernel.wcnf.n_vars == 0):
         rec["status"] = "error"
         rec["error"] = f"{solver} returned no meta.assign_bits"
         return emit()
 
     assign01 = [False] + [c == "1" for c in bits]
+    if kernel is not None:
+        k_unsat, _, _ = score_assignment(kernel.wcnf, assign01)
+        rec["kernel_best_cost"] = k_unsat
+        assign01 = kern.lift(kernel, assign01)
+        bits = "".join("1" if b else "0" for b in assign01[1:])
     unsat_w, hard_v, unsat_n = score_assignment(wcnf, assign01)
     rec["best_cost"] = unsat_w
     rec["hard_violations"] = hard_v
@@ -475,7 +544,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     rec["best_soft_weight_reported"] = float(res.get("best_soft_weight", 0.0))
     rec["stop_reason"] = res.get("stop_reason")
     ttt = res.get("time_to_target_s")
-    rec["time_to_target_s"] = None if ttt is None else round(float(ttt), 3)
+    # On the kernel path the solver's clock started after the gate.
+    rec["time_to_target_s"] = None if ttt is None else round(float(ttt) + pre_s, 3)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["memetic_impl"] = res.get("impl")
     rec["children"] = meta.get("children")
@@ -500,6 +570,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         rec["abs_gap"] = unsat_w - opt
         rec["rel_gap"] = round((unsat_w - opt) / opt, 6) if opt > 0 else None
         rec["is_optimal"] = bool(unsat_w == opt)
+
+    # Lift cross-check: for every kernel assignment the lifted one costs exactly
+    # kernel cost + constant on the original clauses (src/sat/kernel.py).
+    if kernel is not None and hard_v == 0 and unsat_w != rec["kernel_best_cost"] + kernel.const:
+        rec["status"] = "cost_mismatch"
+        rec["error"] = (f"lifted best_cost={unsat_w} != kernel_best_cost={rec['kernel_best_cost']} "
+                        f"+ kernel_const={kernel.const}")
+        return emit()
 
     # Cost cross-check (docs/archive/TIER2_MEMETIC_PLAN.md §6.3). `best_cost` is
     # re-derived from meta.assign_bits; the solver's own number lives in

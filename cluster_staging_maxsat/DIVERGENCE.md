@@ -449,6 +449,21 @@ existing config) runs exactly the historical code. Documentation:
 `docs/current/MEMETIC_IMPL_V2.md` (why, design, equivalence, speed); tests:
 `tests/test_walksat_v2.py`; benchmark: `scripts/bench_walksat_v1_v2.py`.
 
+## 2026-10-18: exact kernel before the memetic (staging only)
+
+**New file (staging only):** `src/sat/kernel.py`, the exact MaxSAT kernel
+(pure variables, degree-2 resolution) and its worth-it gate, promoted from
+`scripts/diag_max2sat_kernel.py`.
+
+**Changed (already-divergent file):** `src/cli/run_memetic_shard.py`, shard
+schema 4. The opt-in config key `preprocess: kernel` runs the gate, solves
+the kernel and lifts the result back; the additive fields are null without the
+key, and the run is then exactly the historical one.
+
+**Unchanged:** `src/evo/*`, `src/sat/cnf.py` and the eight byte-identical files.
+Documentation: `docs/current2/KERNEL_MEMETIC_RUN.md` (repo). Tests:
+`tests/test_kernel.py`.
+
 ## 2026-10-11: EvalMaxSAT oracle driver (staging only)
 
 `src/cli/oracle_evalmaxsat.py` now differs from the repo copy at

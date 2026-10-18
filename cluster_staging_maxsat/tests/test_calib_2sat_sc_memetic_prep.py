@@ -239,3 +239,61 @@ def test_written_tgrid_manifest_is_reproducible(monkeypatch):
     if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
         pytest.skip("calib_2sat_sc2 readout not present")
     assert sc.main(["--plan", "tgrid", "--check"]) == 0
+
+
+# --- direction A: kernelised memetic (--plan kern; RESEARCH_NOTES_SOLVER_DIRECTIONS.md §8) ---
+
+def test_kern_arm_is_the_v2_arm_plus_preprocessing_only(monkeypatch):
+    sc.check_arm(sc.KERN_ARMS)  # the real config
+    real = m2.load_config
+    path = sc.KERN_ARMS["p40_ls3p5_kern_v2"][0]
+
+    def fake(change):
+        def load(p):
+            cfg = real(p)
+            if p == path:
+                cfg = {k: v for k, v in dict(cfg, **change).items() if v is not None}
+            return cfg
+        return load
+    for change in ({"preprocess": None}, {"preprocess_gate": {"screen_min": 0.1, "gain_min": 0.2}},
+                   {"preprocess_gate": None}, {"ls": {"ls_polish_flips": 200000}}):
+        monkeypatch.setattr(m2, "load_config", fake(change))
+        with pytest.raises(SystemExit):
+            sc.check_arm(sc.KERN_ARMS)
+
+
+def test_kern_tasks_carry_the_preprocess_column():
+    elig, _ = sc.select([_inst("B", 11, "eligible", "65.0")], [_cell("B", "promising")])
+    for e in elig:
+        e["rc2_tier"] = "T2a"
+    stem, arms, extra, prefix = sc.PLANS["kern"]
+    tasks = sc.tasks_for(elig, arms, prefix)
+    assert [t["job_id"] for t in tasks] == ["sc2kn_ls3p5_01_s1", "sc2kn_ls3p5_01_s2", "sc2kn_ls3p5_01_s3"]
+    assert {(t["preprocess"], t["ls_polish_flips"], t["ls_polish_cap"]) for t in tasks} == {("kernel", 12500, "flips")}
+    side = sc.render(tasks, extra)[".tasks.csv"].splitlines()
+    assert side[0].endswith(",ls_polish_cap,preprocess") and side[1].endswith(",v2,12500,flips,kernel")
+    # every other plan's tasks leave it empty, and their sidecars do not have the column
+    assert {t["preprocess"] for t in sc.tasks_for(elig)} == {""}
+
+
+@pytest.mark.parametrize("pre_task,pre_cfg,ok", [
+    (None, None, True),          # every earlier manifest and shard
+    (None, "none", True),
+    ("kernel", "kernel", True),
+    ("kernel", None, False),     # a raw run under the kernel arm
+    (None, "kernel", False),     # a kernel run under a raw manifest
+])
+def test_m2_results_checks_preprocess(pre_task, pre_cfg, ok):
+    t, r = _task("v2"), _shard("v2", "v2")
+    if pre_task:
+        t["preprocess"] = pre_task
+    if pre_cfg:
+        r["config"]["preprocess"] = pre_cfg
+    assert (m2_results.mismatch(t, r) is None) == ok
+
+
+def test_written_kern_manifest_is_reproducible(monkeypatch):
+    monkeypatch.chdir(STAGING)
+    if not os.path.isfile(os.path.join("results", sc.BATCH, "instances.csv")):
+        pytest.skip("calib_2sat_sc2 readout not present")
+    assert sc.main(["--plan", "kern", "--check"]) == 0

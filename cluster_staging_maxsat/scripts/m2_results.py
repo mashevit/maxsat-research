@@ -26,7 +26,8 @@ Every task gets exactly one class:
     invalid_submission   shard exists but does not match its manifest row
                          (job_id, config_id, seed, instance sha, budget, grace,
                          stop-at-oracle, pop_size, ls.time_limit_s,
-                         ea.deadline_mode, memetic_impl, ls_polish_flips, ls.polish_cap)
+                         ea.deadline_mode, memetic_impl, ls_polish_flips, ls.polish_cap,
+                         preprocess)
     infra_error          status error / parse_error / missing_instance / other
     infra_missing        no shard (Slurm kill, node failure, never ran) or an
                          unreadable one
@@ -91,6 +92,12 @@ def read_shard(path: str) -> Optional[dict]:
         return None
 
 
+def _preprocess(cfg: dict) -> str:
+    """The config's preprocess mode, "" when absent or "none"."""
+    mode = str(cfg.get("preprocess") or "none").lower()
+    return "" if mode == "none" else mode
+
+
 def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
     cfg = r.get("config") or {}
     checks = [
@@ -116,6 +123,9 @@ def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
         # before 2026-10-12, and both default to "flips".
         ("ls.polish_cap", str((cfg.get("ls") or {}).get("polish_cap", "flips")).lower(),
          t.get("ls_polish_cap") or "flips"),
+        # Opt-in preprocessing (src/sat/kernel.py, 2026-10-18). Absent on both sides
+        # in every earlier manifest and shard, and "none" means absent.
+        ("preprocess", _preprocess(cfg), t.get("preprocess") or ""),
     ]
     for name, got, want in checks:
         if got != want:
@@ -173,6 +183,9 @@ def evaluate(manifest: str, outdir: str) -> List[Dict[str, Any]]:
             mean_flips_per_call=(round(fl / ch, 1) if ch and fl is not None else None),
             mean_wall_per_child_s=(round(wall / ch, 4) if ch and wall and cls != "watchdog" else None),
             host=r.get("host"), python=r.get("python"),
+            # Gate outcome on preprocessing arms (shard schema 4); null elsewhere.
+            preprocess_outcome=r.get("preprocess"), kernel_n_vars=r.get("kernel_n_vars"),
+            preprocess_s=r.get("preprocess_s"),
         ))
     return out
 
@@ -290,6 +303,9 @@ def main(argv=None) -> int:
         print(f"{s['config_id']:34s} {s['analysis_group']:10s} {s['tasks']:5d} {s['successes']:4d} "
               f"{s['median_ttt_s']:>8s} {s['n_budget_exhausted']:8d} {s['n_watchdog']:8d} "
               f"{s['n_target_after_budget']:4d} {infra:5d}")
+    pre = Counter(r["preprocess_outcome"] for r in rows if r["preprocess_outcome"] is not None)
+    if pre:
+        print("\npreprocess gate: " + "  ".join(f"{k}={v}" for k, v in sorted(pre.items())))
     low = [r for r in rows if r["cpu_wall_ratio"] is not None and r["cpu_wall_ratio"] < 0.9]
     if low:
         print(f"\nWARNING: {len(low)} task(s) with cpu/wall < 0.9 (node contention?): "

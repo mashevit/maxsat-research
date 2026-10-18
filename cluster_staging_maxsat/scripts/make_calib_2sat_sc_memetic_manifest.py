@@ -37,11 +37,20 @@ same instances and seeds, 4 arms paired line by line:
 Each config is the tcap reference with only ls.time_limit_s changed; the sidecar's
 ls_time_limit_s carries it. 72 tasks.
 
+PLAN `kern` (--plan kern; direction A, docs/current/RESEARCH_NOTES_SOLVER_DIRECTIONS.md §5 A
+and §8, repo; user decision 2026-10-14: kernelise for the sparse Max-2-SAT grid): the same
+instances and seeds, 1 arm:
+  p40_ls3p5_kern_v2  the pre-registered v2 arm plus `preprocess: kernel` behind the gate
+                     (screen_min 0.2, gain_min 0.2; src/sat/kernel.py)
+The config is checked equal to memetic_deeppolish_p40_ls3p5_v2.yaml plus those two keys;
+the sidecar adds `preprocess`. The raw baseline is the m2v2 arm p40_ls3p5_v2 (same
+instances, seeds and budget; results/calib_2sat_sc2_m2v2). 18 tasks.
+
 OUTPUTS (scripts/, the M2 formats plus `memetic_impl` and `ls_polish_flips`
 sidecar columns that m2_results.py checks against each shard;
 submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
 
-    (stem manifest_<batch>_m2v2, or manifest_<batch>_{cgrid,tgrid} for --plan cgrid/tgrid)
+    (stem manifest_<batch>_m2v2, or manifest_<batch>_{cgrid,tgrid,kern} for --plan cgrid/tgrid/kern)
     manifest_<batch>_m2v2.tsv          9 columns read by tier2_memetic_array.sbatch
     manifest_<batch>_m2v2.tasks.csv    sidecar
     manifest_<batch>_m2v2.sha256       `sha256sum -c` list of its instances
@@ -51,6 +60,7 @@ submit_m2_memetic.sh and tier2_memetic_array.sbatch are reused unchanged)
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --check  # rebuild, diff, exit 3 on drift
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan cgrid [--check]
     python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan tgrid [--check]
+    python3 scripts/make_calib_2sat_sc_memetic_manifest.py --plan kern [--check]
 """
 from __future__ import annotations
 
@@ -94,11 +104,21 @@ TGRID_ARMS = {
                              f"memetic_deeppolish_p40_ls{t:g}_tcap_v2", f"t{t:g}tc", 12500, "time", t)
     for t in TGRID_SECONDS
 }
+KERN_ARMS = {
+    "p40_ls3p5_kern_v2": ("configs/tier2/memetic_deeppolish_p40_ls3p5_kern_v2.yaml",
+                          "memetic_deeppolish_p40_ls3p5_kern_v2", "ls3p5", 12500, "flips", LS_T),
+}
+# config path -> top-level keys an arm adds to the pre-registered arm (beyond impl/ls)
+ARM_EXTRA_KEYS = {
+    KERN_ARMS["p40_ls3p5_kern_v2"][0]: {"preprocess": "kernel",
+                                        "preprocess_gate": {"screen_min": 0.2, "gain_min": 0.2}},
+}
 # plan -> (stem, arms, sidecar extra columns, job-id prefix)
 PLANS = {
     "m2v2": (STEM, ARMS, EXTRA_COLS, "sc2"),
     "cgrid": (f"manifest_{BATCH}_cgrid", CGRID_ARMS, EXTRA_COLS + ["ls_polish_cap"], "sc2cg"),
     "tgrid": (f"manifest_{BATCH}_tgrid", TGRID_ARMS, EXTRA_COLS + ["ls_polish_cap"], "sc2tg"),
+    "kern": (f"manifest_{BATCH}_kern", KERN_ARMS, EXTRA_COLS + ["ls_polish_cap", "preprocess"], "sc2kn"),
 }
 NOT_RUN_COLS = ["instance", "instance_sha256", "cell_id", "gen_seed", "cell_outcome", "class",
                 "rc2_status", "solve_s", "c_star", "lower_bound"]
@@ -106,7 +126,8 @@ NOT_RUN_COLS = ["instance", "instance_sha256", "cell_id", "gen_seed", "cell_outc
 
 def check_arm(arms=ARMS) -> None:
     """Each config is the pre-registered arm plus `impl: v2`, its flip limit, its
-    ls.time_limit_s and (if not the default "flips") its ls.polish_cap, nothing else."""
+    ls.time_limit_s, (if not the default "flips") its ls.polish_cap and its ARM_EXTRA_KEYS,
+    nothing else."""
     m2.check_arms()
     base_path = m2.ARMS[BASE_ARM][0]
     for path, _cid, _tag, flips, cap, ls_t in arms.values():
@@ -115,6 +136,7 @@ def check_arm(arms=ARMS) -> None:
         want["ls"] = dict(want["ls"], ls_polish_flips=flips, flip_budget=flips, time_limit_s=ls_t)
         if cap != "flips":
             want["ls"]["polish_cap"] = cap
+        want.update(ARM_EXTRA_KEYS.get(path, {}))
         if m2.load_config(path) != want:
             raise m2.BuildError(f"{path} differs from {base_path} beyond impl {IMPL}, "
                                 f"the flip limit {flips}, time_limit_s {ls_t} and polish_cap {cap}")
@@ -165,6 +187,7 @@ def tasks_for(elig: List[Dict[str, Any]], arms=ARMS, prefix: str = "sc2") -> Lis
                     "config_id": cid, "config": path, "pop_size": pop, "ls_time_limit_s": ls_t,
                     "deadline_mode": dmode, "solver_seed": seed, "budget_s": m2.BUDGET_S, "pilot_idx": "",
                     "memetic_impl": IMPL, "ls_polish_flips": flips, "ls_polish_cap": cap,
+                    "preprocess": ARM_EXTRA_KEYS.get(path, {}).get("preprocess", ""),
                     **{k: e[k] for k in ("pop_idx", "instance", "instance_sha256", "batch", "cell_id",
                                          "gen_seed", "m", "oracle_cost", "rc2_solve_s", "rc2_tier",
                                          "analysis_group")},
