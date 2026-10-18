@@ -13,10 +13,10 @@
 #
 #   cd ~/cluster_staging_maxsat_evo/scripts && mkdir -p logs
 #   DRY_RUN=1 bash submit_rc2_calib_2sat_sc2.sh   # checks + print the sbatch command
-#   bash submit_rc2_calib_2sat_sc2.sh             # 15 tasks, %30, cap 900 + grace 60
+#   bash submit_rc2_calib_2sat_sc2.sh             # 15 tasks, %1000, cap 900 + grace 60
 #   RESUME=1 bash submit_rc2_calib_2sat_sc2.sh    # only if rows are missing; finished tasks exit at once
 #
-# Worst case: 15 x 960 s = 4.0 CPU-h; one wave at %30, <= 20 min of elapsed
+# Worst case: 15 x 960 s = 4.0 CPU-h; one wave at %1000, <= 20 min of elapsed
 # compute, excluding queue delay.
 
 set -euo pipefail
@@ -26,7 +26,7 @@ MANIFEST=manifest_calib_2sat_sc2_rc2.txt \
 OUTDIR="${OUTDIR:-results/profile_calib_2sat_sc2}" \
 CAP=900 \
 GRACE=60 \
-THROTTLE="${THROTTLE:-30}" \
+THROTTLE="${THROTTLE:-1000}" \
 EXPECT_PYSAT=1.9.dev3 \
 exec bash "${SCRIPT_DIR}/submit_rc2_profile.sh" -- \
     --job-name=rc2-2sat-sc2 "$@"

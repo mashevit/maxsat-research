@@ -10,15 +10,15 @@
 #   SMOKE=1 bash submit_evalmaxsat_mse.sh       # 2 tasks, 600 s cap: ja-00000385 (optimum 37; 109 s alone and
 #                                               # 293 s on a loaded workstation) and setcover-sts-data.135 (SIGTERM stop)
 #   CHECK_SMOKE=1 bash submit_evalmaxsat_mse.sh # after the smoke: read its 2 rows (grep only)
-#   bash submit_evalmaxsat_mse.sh               # sample s1: 60 tasks, %30, 3600 s + 120 s
+#   bash submit_evalmaxsat_mse.sh               # sample s1: 60 tasks, %1000, 3600 s + 120 s
 #   IDS=1-30 bash submit_evalmaxsat_mse.sh      # only these ids (e.g. MSE 2023 = 1-30, MSE 2024 = 31-60)
 #   RESUME=1 bash submit_evalmaxsat_mse.sh      # resubmit all; tasks with a final row exit at once
 #
-# Env: MANIFEST (in scripts/), OUTDIR, TIMEOUT (3600), GRACE (120), THROTTLE (30),
+# Env: MANIFEST (in scripts/), OUTDIR, TIMEOUT (3600), GRACE (120), THROTTLE (1000; smoke 2),
 #      EVALMAXSAT_BIN (default <tree root>/EvalMaxSAT/build/main/EvalMaxSAT_bin), IDS, DRY_RUN.
 # Anything after `--` goes to sbatch.
 #
-# Worst case for s1: 60 x 3720 s = 62 CPU-h; at %30, 2 waves x ~65 min ~= 2.2 h of
+# Worst case for s1: 60 x 3720 s = 62 CPU-h; at %1000, 1 wave x ~65 min of
 # compute (queue delay not included).
 
 set -euo pipefail
@@ -59,7 +59,7 @@ else
     OUTDIR="${OUTDIR:-results/evalmaxsat_mse_s1}"
     TIMEOUT="${TIMEOUT:-3600}"
     GRACE="${GRACE:-120}"
-    THROTTLE="${THROTTLE:-30}"
+    THROTTLE="${THROTTLE:-1000}"
     TIME_LIMIT=""
 fi
 DRY_RUN="${DRY_RUN:-0}"

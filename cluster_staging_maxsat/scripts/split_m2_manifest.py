@@ -31,7 +31,8 @@ OUTPUTS, in scripts/parts/ (STEM = full manifest name without .tsv):
 
 Every output is verified after it is written (line identity, mapping, group
 integrity, coverage). Concurrency: the throttle is per array, so N parts
-submitted together get THROTTLE = 30 // N each (printed).
+submitted together get THROTTLE = 1000 // N each (printed; the cluster allows
+--array=1-1000%1000, user 2026-10-18; it was 30 before).
 
     python3 scripts/split_m2_manifest.py --manifest scripts/manifest_m2_full_p40.tsv --max-tasks K
 """
@@ -45,7 +46,7 @@ import os
 import sys
 from typing import Dict, List, Tuple
 
-TOTAL_CONCURRENCY = 30
+TOTAL_CONCURRENCY = 1000
 
 
 def read_full(manifest: str) -> Tuple[List[str], List[Dict[str, str]], List[str]]:

@@ -428,7 +428,15 @@ def test_split_parts_map_local_to_global(tmp_path, k, sizes):
     assert len({r["job_id"] for r in mp}) == 420
 
 
-def test_split_refuses_more_parts_than_slots(tmp_path):
+def test_split_refuses_more_parts_than_slots(tmp_path, monkeypatch):
+    # 420 rows cannot need 1000 parts, so shrink the slot count to reach the guard
+    import split_m2_manifest as sp
+    monkeypatch.setattr(sp, "TOTAL_CONCURRENCY", 30)
     with pytest.raises(SystemExit):
         _split(tmp_path, 7)
+
+
+def test_split_throttle_matches_cluster_limit():
+    import split_m2_manifest as sp
+    assert sp.TOTAL_CONCURRENCY == 1000
 

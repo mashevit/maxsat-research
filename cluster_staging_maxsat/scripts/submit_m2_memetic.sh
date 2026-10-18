@@ -16,8 +16,9 @@
 # Env:
 #   MANIFEST   manifest in scripts/ (required)
 #   OUTDIR     root-relative shard dir (required; one per stage/manifest)
-#   THROTTLE   max concurrent tasks (default 30). The limit is per array: N part
-#              manifests submitted together get THROTTLE=30/N each (split tool).
+#   THROTTLE   max concurrent tasks (default 1000: the cluster allows
+#              --array=1-1000%1000, user 2026-10-18; it was 30 before). N part
+#              manifests submitted together get THROTTLE=1000/N each (split tool).
 #
 # Split manifests: if one array cannot hold the manifest (MaxArraySize /
 # max_array_tasks), scripts/split_m2_manifest.py writes part manifests under
@@ -58,7 +59,7 @@ cd "$SCRIPT_DIR"
 
 MANIFEST="${MANIFEST:?set MANIFEST, e.g. manifest_m2_pilot.tsv}"
 OUTDIR="${OUTDIR:?set OUTDIR, e.g. results/m2_pilot/tasks}"
-THROTTLE="${THROTTLE:-30}"
+THROTTLE="${THROTTLE:-1000}"
 RESUME="${RESUME:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 ARRAY_SCRIPT="tier2_memetic_array.sbatch"

@@ -8,7 +8,7 @@
 #
 #   cd ~/maxsat-lab/scripts && mkdir -p logs
 #   DRY_RUN=1 bash submit_rc2_profile.sh        # print the sbatch command, submit nothing
-#   bash submit_rc2_profile.sh                  # calib_a: 180 tasks, %30, cap 900, grace 60
+#   bash submit_rc2_profile.sh                  # calib_a: 180 tasks, %1000, cap 900, grace 60
 #   RESUME=1 bash submit_rc2_profile.sh         # after a partial run: resubmit; finished tasks self-skip
 #   IDS=3,17 RESUME=1 bash submit_rc2_profile.sh   # or only these ids (computed on the workstation)
 #   MANIFEST=manifest_calib_b_rc2.txt OUTDIR=results/profile_calib_b bash submit_rc2_profile.sh
@@ -25,9 +25,10 @@
 #   OUTDIR     root-relative per-task JSONL dir   (default results/profile_calib_a)
 #   CAP        RC2 cap, s                         (default 900)
 #   GRACE      SIGKILL margin, s                  (default 60)
-#   THROTTLE   max concurrent tasks (%N)          (default 30; the cluster allows 30
-#                                                 single-CPU tasks per user; 20 was
-#                                                 the earlier RC2 screens' setting)
+#   THROTTLE   max concurrent tasks (%N)          (default 1000; the cluster allows
+#                                                 --array=1-1000%1000, user 2026-10-18;
+#                                                 30, and 20 for the earlier RC2
+#                                                 screens, were the old settings)
 #   EXPECT_PYSAT  passed to the array tasks when set (they refuse to run on any
 #              other PySAT version); unset by default
 #   RESUME     1 => resubmit after a partial run. With IDS set, --array = IDS;
@@ -43,9 +44,9 @@
 #   DRY_RUN    1 => print the command instead of running it
 #
 # Elapsed-time expectation (compute only, excluding queue delay): worst case
-# ceil(tasks/THROTTLE) waves x (CAP+GRACE+startup) -- 180 tasks at %30 and
-# 900 s is 6 waves x ~17 min ~= 1.7 h; CPU-hours are tasks x (CAP+GRACE)
-# regardless of THROTTLE (180 x 960 s = 48 CPU-h worst case).
+# ceil(tasks/THROTTLE) waves x (CAP+GRACE+startup) -- 180 tasks at %1000 and
+# 900 s is 1 wave x ~17 min (6 waves, ~1.7 h, at the old %30); CPU-hours are
+# tasks x (CAP+GRACE) regardless of THROTTLE (180 x 960 s = 48 CPU-h worst case).
 
 set -euo pipefail
 
@@ -56,7 +57,7 @@ MANIFEST="${MANIFEST:-manifest_calib_a_rc2.txt}"
 OUTDIR="${OUTDIR:-results/profile_calib_a}"
 CAP="${CAP:-900}"
 GRACE="${GRACE:-60}"
-THROTTLE="${THROTTLE:-30}"
+THROTTLE="${THROTTLE:-1000}"
 RESUME="${RESUME:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 ARRAY_SCRIPT="rc2_profile_array.sbatch"

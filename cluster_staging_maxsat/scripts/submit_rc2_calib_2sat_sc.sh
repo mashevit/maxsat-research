@@ -19,11 +19,11 @@
 #
 #   cd ~/maxsat-lab/scripts && mkdir -p logs
 #   DRY_RUN=1 bash submit_rc2_calib_2sat_sc.sh   # print the sbatch command, submit nothing
-#   bash submit_rc2_calib_2sat_sc.sh             # 45 tasks, %30, cap 900 + grace 60
+#   bash submit_rc2_calib_2sat_sc.sh             # 45 tasks, %1000, cap 900 + grace 60
 #   RESUME=1 bash submit_rc2_calib_2sat_sc.sh    # only ids without a valid row at cap >= 900
 #
-# Worst case: 45 x 960 s = 12.0 CPU-h; at %30, 2 waves x ~20 min (the --time
-# limit) = 40 min of elapsed compute, excluding queue delay.
+# Worst case: 45 x 960 s = 12.0 CPU-h; at %1000, 1 wave x ~20 min (the --time
+# limit) of elapsed compute, excluding queue delay.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,7 +32,7 @@ MANIFEST=manifest_calib_2sat_sc_rc2.txt \
 OUTDIR="${OUTDIR:-results/profile_calib_2sat_sc}" \
 CAP=900 \
 GRACE=60 \
-THROTTLE="${THROTTLE:-30}" \
+THROTTLE="${THROTTLE:-1000}" \
 EXPECT_PYSAT=1.9.dev3 \
 exec bash "${SCRIPT_DIR}/submit_rc2_profile.sh" -- \
     --job-name=rc2-2sat-sc "$@"
