@@ -30,6 +30,11 @@ N-2026-10-18-a):
   there) → readout (§4 pre-registered reading).
 - Direction B proposed (§5 there: tabu, clause weighting, distance-aware
   mutation, partition crossover, compiled loop). Nothing built.
+- **Direction B designed in full** (`docs/current2/STRONGER_MEMETIC_DESIGN.md`,
+  N-2026-10-18-b): motivations, mechanisms (sources checked), parameters,
+  interactions (§6), build plan S1–S7 for a third tree
+  `cluster_staging_maxsat_strong/`. The user wants all ideas implemented
+  next; awaiting the go, the tree name, and the cluster compiler check.
 
 **Cluster limits (user, 2026-10-18):** `--array=1-1000%1000` is allowed. **Done
 2026-10-18 (user's go), `ad19012`:** the submit scripts (`submit_m2_memetic.sh`

@@ -54,9 +54,52 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. Stance 2026-10-14: c is calibrated empirically by our grid, not by a framework; it is part of the orthogonality flow (plan §0c, N-2026-10-14-a). |
 | Solver directions: exact Max-2-SAT kernel of the n 64,000 instances; preprocessing, stronger raw memetic, large-kernel corpus | [`RESEARCH_NOTES_SOLVER_DIRECTIONS.md`](RESEARCH_NOTES_SOLVER_DIRECTIONS.md) | Exact rules (pure literal, degree-2 MaxSAT resolution) shrink the 6 eligible calib_2sat_sc2 instances to 300–572-variable kernels; rebuilt cost = c\* on all. The unchanged memetic solves the 3 n 64,000 kernels in ≤ 0.7 s (s253 open). Explains the size-independent Stage L1 optimum. Directions A (preprocess, recommended) / B (impl v3: partition crossover, clause weighting) / C (large-kernel corpus). N-2026-10-14-e. §7: it does not carry over to 3-SAT, dense 2-SAT or crafted instances (N-2026-10-14-f). §8 (user decision): kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s worth-it screen (N-2026-10-14-g). |
 | Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). Batch prepared, not submitted. §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
+| Stronger memetic B1–B5 (tabu/CC, clause weighting, distance-aware mutation, partition crossover, compiled loop): motivation, mechanism, parameters, interactions, build plan for a third tree | [`../current2/STRONGER_MEMETIC_DESIGN.md`](../current2/STRONGER_MEMETIC_DESIGN.md) | Design only. SATLike weighting rules and parameters read from the full text; PX exactness derived (each clause's differing variables lie in one component). Interactions §6 fix the build order B3 → B1 → B2 → B4 → B5 and a leave-one-out batch (288 tasks, ≤ 76.8 CPU-h). Tree `cluster_staging_maxsat_strong/` proposed. N-2026-10-18-b. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-18-b — Stronger memetic design: B1–B5 explained, their interactions, and the build plan for a third staging tree [quote + source + inference + proposal]
+
+> "write it, also do the reasoning of interactions- I want you next step implement all the ideas for stronger solver in new folder analogue to the cluster_staging_maxsat/_hard in 3rd folder" (user, 2026-10-18)
+
+- Document: `docs/current2/STRONGER_MEMETIC_DESIGN.md`. Design only; nothing built.
+- **[source]** SATLike (IJCAI 2018, full text): two modes (BMS over decreasing
+  variables; when stuck, weight update and a falsified-clause pick);
+  Weighting-PMS with h_inc, soft limit ζ and smoothing sp; published values
+  per benchmark family. Tabu (WalkSAT/TABU, IRoTS n/10 + 4), configuration
+  checking (Cai and Su; CCLS), PX (FOGA 2015; PXSAT, GECCO 2018), SAPS/PAWS
+  checked at abstract level.
+- **[inference] The c\* > 0 catch:** with no hard clauses, SATLike's ζ = 1
+  never changes a weight, and at the optimum the c\* falsified clauses keep
+  gaining weight. So we need ζ > 1, the best tracked on the true cost, and
+  smoothing.
+- **[derived]** PX is exact for MaxSAT: every clause's differing variables
+  lie in one component, so the child is the best of 2^q and ≥ both parents
+  (also lexicographically with hard clauses).
+- **[inference] Interactions (§6):** B2's effect on raw needs B3 (weighting
+  acts only when stuck; after a fixed-rate mutation the polish is repairing,
+  not stuck). Tabu can fight weighting (CC or a tie-break only in the DLS
+  core). Small local mutation makes PX's components, and heavy mutation
+  wastes PX's gain. PX is only as good as the local optima it combines. B5
+  last, with the C core equal to a Python twin on a portable RNG.
+- **[proposal]** Tree `cluster_staging_maxsat_strong/` (copy of
+  `cluster_staging_maxsat/`, `impl: v3`). Steps S1–S7 with stop-on-failure.
+  First batch: leave-one-out, 8 arms × 6 instances × 3 seeds × raw/kernel =
+  288 tasks, ≤ 76.8 CPU-h. Awaiting go, the tree name, and the cluster
+  compiler check (`which cc gcc clang`).
+- **Update 2026-10-18 (§8.0 there):**
+  - The user approved the name and asked to base the tree on the hard tree.
+  - The cluster has gcc 11.5.0.
+  - **[verified]** `impl: hard` on soft-only s251 (30 s): cost 49 with 9
+    children, against v2's 23 with 365. Feasible moves M take 28.6 of 30 s,
+    because each one-literal move costs a Glucose call plus O(m) Python. So
+    the base is the hard tree, the hard machinery engages only when the
+    solved instance has hard clauses (`hard_mode: auto`), and the kernel,
+    `polish_cap` and the results tooling are ported from staging.
+  - B5 is unaffected: Glucose, R and M sit outside the flip loop. The C
+    cores carry the `is_hard` branches, with C == Python-twin tests that
+    include hard clauses.
 
 ### N-2026-10-18-a — Milestone A built: the memetic kernelises behind the gate; 18-task batch prepared; direction B proposed [quote + verified + proposal]
 
@@ -73,7 +116,7 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 - **[verified] Smoke** (60 s, seed 1): s251, s255, s256, s257, s258 reach c\*
   in 0.3–1.5 s including kernelising; s253 ends at 15 (c\* 14). The raw arm
   went 0/18 in 900 s on the same instances and seeds (m2v2 batch).
-- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`** (Slurm throttle default 30 → 1000, user's go; `MAXSAT_GIT_SHA=ad19012`); not submitted. Upload list, hashes and commands:
+- **Committed and pushed 2026-10-18: `754392a`, then `ad19012`** (Slurm throttle default 30 → 1000, user's go; `MAXSAT_GIT_SHA=ad19012`); not submitted. **Upload verified 2026-10-18** from `cluster_hashes_20261018.txt`: 38/38 upload hashes and the `src` digest (`7d7818aa…`) match; ready to submit. Upload list, hashes and commands:
   `docs/current2/KERNEL_MEMETIC_RUN.md` §4.
 - **[inference] Direction B** (§5 there): B1 tabu, B2 clause-weighting local
   search, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop.

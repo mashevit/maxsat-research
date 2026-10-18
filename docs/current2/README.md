@@ -23,4 +23,5 @@ will put new docs from now").
 
 | document | created | what it is |
 |---|---|---|
+| [`STRONGER_MEMETIC_DESIGN.md`](STRONGER_MEMETIC_DESIGN.md) | 2026-10-18 | Stronger memetic B1–B5: motivation, how each works (sources checked), parameters, the interactions between them, and the build plan for the third tree `cluster_staging_maxsat_strong/` (S1–S7) plus a leave-one-out batch. N-2026-10-18-b. |
 | [`KERNEL_MEMETIC_RUN.md`](KERNEL_MEMETIC_RUN.md) | 2026-10-18 | Milestone A: the kernel module, gate and shard fields; smoke; the 18-task calib_2sat_sc2 batch (upload list, commands); §5 the proposed stronger memetic (direction B). N-2026-10-18-a. |

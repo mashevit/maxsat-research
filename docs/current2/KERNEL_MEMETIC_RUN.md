@@ -130,6 +130,21 @@ driver, manifest, instances) proves the cluster copy after the rsync. The
 login-node steps were run with `python`/`python3` tripwires on PATH: hash check
 OK, DRY_RUN OK (`--array=1-18%30`).
 
+**Upload checked 2026-10-18 [verified]** from the cluster snapshot
+`results/cluster_state/cluster_hashes_20261018.txt` (2,452 files, taken after
+the rsync):
+- all 38 entries of `manifest_calib_2sat_sc2_kern.upload.sha256` match,
+  including the `ad19012` `submit_m2_memetic.sh`;
+- 39 of the 40 upload-list paths match byte for byte; only the list itself
+  (`rsync_files_calib_2sat_sc2_kern.txt`) is missing. The runs don't use it;
+- the cluster `src` tree digest is `7d7818aa…`, the same as the workstation at
+  `ad19012`; no `.py` file is extra, missing or different;
+- elsewhere, 5 files differ, none used by the runs: `DIVERGENCE.md`,
+  `LOCAL_MULTISTART_JW_REPORT.md`, `readme.txt`, and the 2 old ones
+  (`calib_2sat_sc_readout.py`, `preflight_calib_2sat_sc.sh`). The cluster-only
+  files are the EvalMaxSAT build, `*.old` / `*.bak` backups and old archive
+  copies.
+
 ### 4.2 Commands
 
 `<commit>` = `ad19012` (the commit that holds these files, including the
@@ -168,6 +183,10 @@ IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=ad19012 MANIFEST=manifest_calib_2sat_sc2_kern.
 `THROTTLE=` is needed; the DRY_RUN prints `--array=1-18%1000`.
 
 ## 5. A stronger memetic (direction B): what I propose and why [inference; literature unverified]
+
+**Expanded 2026-10-18** in [`STRONGER_MEMETIC_DESIGN.md`](STRONGER_MEMETIC_DESIGN.md):
+sources checked, the interactions, and the build plan. That document
+supersedes the table below where they differ.
 
 **What limits the solver** (evidence: directions note §1, §3, §9; Stage L1):
 1. **Mutation at a fixed per-variable rate.** 2% of n flips per child: at
