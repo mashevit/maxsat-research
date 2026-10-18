@@ -17,6 +17,27 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000000. Update 2026-10-18 (r12): read first
+
+**Milestone A built** (user's go, 2026-10-18; `docs/current2/KERNEL_MEMETIC_RUN.md`,
+N-2026-10-18-a):
+- `src/sat/kernel.py`, opt-in `preprocess: kernel` in `run_memetic_shard.py`
+  (shard schema 4), config `memetic_deeppolish_p40_ls3p5_kern_v2.yaml`,
+  `--plan kern` manifest (18 tasks), `preprocess` check in `m2_results.py`,
+  22 new tests (suite 307 passed / 3 skipped).
+- Smoke: 5/6 at c\* in ≤ 1.5 s including kernelising; s253 open.
+- **Committed and pushed 2026-10-18: `754392a`** (use `MAXSAT_GIT_SHA=754392a`); not submitted. Next: rsync → submit (§4.2
+  there) → readout (§4 pre-registered reading).
+- Direction B proposed (§5 there: tabu, clause weighting, distance-aware
+  mutation, partition crossover, compiled loop). Nothing built.
+
+**Cluster limits (user, 2026-10-18):** `--array=1-1000%1000` is allowed. The
+%35 concurrency smoke below is no longer needed. `submit_m2_memetic.sh` still
+defaults to `THROTTLE=30`; raising script defaults waits for the user's go.
+
+**Restored (user, 2026-10-18):** `results/calib_2sat_sc2_cgrid/` had gone
+missing from the working tree; the user restored it.
+
 ## 000000000. Wrap-up 2026-10-14 (r11): read first
 
 **Done today:**

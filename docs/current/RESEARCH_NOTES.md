@@ -53,9 +53,32 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | HP-1 calibration plan; instance-size inventory | [`HYPERPARAMETER_CALIBRATION_PLAN.md`](HYPERPARAMETER_CALIBRATION_PLAN.md) | 1,947 instance files, m from 48 to 276,705; proven c\* per size band (S 465, M 144, L 22 all-soft). Plan: flip-limit grid per band (S/M/L by m-decade), size-scaled budgets, racing, held-out test of categorical vs continuous rules. Not run. N-2026-10-11-s. |
 | Is there a known c for a flip limit c · n? (WalkSAT linear-time theory, Maxflips scaling, IRoTS, memetic depth) | [`RESEARCH_NOTES_FLIP_LIMIT_SCALING.md`](RESEARCH_NOTES_FLIP_LIMIT_SCALING.md) | No published c. Flips ∝ n only on satisfiable formulas below a density threshold (proven for 2-SAT α < 1). The optimal WSAT Maxflips grows as ~n^2.4 at the 3-SAT threshold. IRoTS scales its parameters with n (stall window n²/4). c = 15 must be calibrated, and the 3.5 s cap binds at n = 64,000. N-2026-10-12-b. Stance 2026-10-14: c is calibrated empirically by our grid, not by a framework; it is part of the orthogonality flow (plan §0c, N-2026-10-14-a). |
 | Solver directions: exact Max-2-SAT kernel of the n 64,000 instances; preprocessing, stronger raw memetic, large-kernel corpus | [`RESEARCH_NOTES_SOLVER_DIRECTIONS.md`](RESEARCH_NOTES_SOLVER_DIRECTIONS.md) | Exact rules (pure literal, degree-2 MaxSAT resolution) shrink the 6 eligible calib_2sat_sc2 instances to 300–572-variable kernels; rebuilt cost = c\* on all. The unchanged memetic solves the 3 n 64,000 kernels in ≤ 0.7 s (s253 open). Explains the size-independent Stage L1 optimum. Directions A (preprocess, recommended) / B (impl v3: partition crossover, clause weighting) / C (large-kernel corpus). N-2026-10-14-e. §7: it does not carry over to 3-SAT, dense 2-SAT or crafted instances (N-2026-10-14-f). §8 (user decision): kernelise for the sparse Max-2-SAT grid behind a ≤ 0.1 s worth-it screen (N-2026-10-14-g). |
+| Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). Batch prepared, not submitted. §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-18-a — Milestone A built: the memetic kernelises behind the gate; 18-task batch prepared; direction B proposed [quote + verified + proposal]
+
+> "what you purpose in optimizing memetic - to stronger memetic? using which ideas? prepare cluster run for the max2sat, with the kernelization, tell me files to upload to cluster and commands" (user, 2026-10-18)
+
+- **Built** (staging): `src/sat/kernel.py` (promoted from the diagnostic, same
+  rules), opt-in `preprocess: kernel` in `run_memetic_shard.py` (schema 4), the
+  config `memetic_deeppolish_p40_ls3p5_kern_v2.yaml`, `--plan kern` (18 tasks),
+  and a `preprocess` check in `m2_results.py`. Kernelise time counts inside the
+  budget and the TTT; the cost is scored on the original clauses.
+- **[verified]** Brute force: for every kernel assignment, the lifted cost is
+  exactly kernel cost + constant (600 random instances with hard clauses and
+  weights). Staging suite 307 passed / 3 skipped.
+- **[verified] Smoke** (60 s, seed 1): s251, s255, s256, s257, s258 reach c\*
+  in 0.3–1.5 s including kernelising; s253 ends at 15 (c\* 14). The raw arm
+  went 0/18 in 900 s on the same instances and seeds (m2v2 batch).
+- **Committed and pushed 2026-10-18: `754392a`** (`MAXSAT_GIT_SHA=754392a`); not submitted. Upload list, hashes and commands:
+  `docs/current2/KERNEL_MEMETIC_RUN.md` §4.
+- **[inference] Direction B** (§5 there): B1 tabu, B2 clause-weighting local
+  search, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop.
+  s253 (a 434-variable kernel the memetic misses by 1, RC2 58 s) is the first
+  test case. Nothing built.
 
 ### N-2026-10-14-k — Reminder, after the current enhancements: fixed-rate mutation sends children far from the optimum on large instances [quote + reminder]
 

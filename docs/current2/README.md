@@ -23,4 +23,4 @@ will put new docs from now").
 
 | document | created | what it is |
 |---|---|---|
-| (none yet) | | |
+| [`KERNEL_MEMETIC_RUN.md`](KERNEL_MEMETIC_RUN.md) | 2026-10-18 | Milestone A: the kernel module, gate and shard fields; smoke; the 18-task calib_2sat_sc2 batch (upload list, commands); §5 the proposed stronger memetic (direction B). N-2026-10-18-a. |
