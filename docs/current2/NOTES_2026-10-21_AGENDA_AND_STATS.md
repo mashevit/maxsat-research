@@ -625,6 +625,72 @@ exact-track tables (VBS = fastest exact solver, 1 h).
   - Consistent with §9.2: low ρ, wide CI. N grows with the full 2024
     window (about 280) and 2023.
 
+## 13. Getting the full MSE 2023/2024 sets onto the cluster (2026-10-21, late) [verified: remote zip listings, local tests]
+
+> "will you be able to get the all gigabutes benchmarks? and also on cluster
+> I would like command it would download them, and not from my laptop"
+> (user, 2026-10-21)
+
+**The census, made without downloading.** The servers accept HTTP range
+requests, so `scripts/mse_census/remote_zip_list.py` reads only each zip's
+central directory (about 0.1 MB per zip). Listings are in
+`cluster_staging_maxsat_strong/scripts/mse_census/*.tsv`.
+
+| zip | members | format | zip size |
+|---|---:|---|---:|
+| mse23-exact-unweighted (Google Drive) | 572 | .wcnf.xz | 1.14 GiB |
+| mse23-exact-weighted (Google Drive) | 558 | .wcnf.xz | 2.92 GiB |
+| mse24-exact-unweighted (Helsinki) | 553 | .wcnf.xz | 1.93 GiB |
+| mse24-exact-weighted (Helsinki) | 571 | .wcnf.xz | 4.41 GiB |
+| MSE2023 anytime UW / W (Helsinki) | 179 / 160 | plain .wcnf, up to 2.5 GB each | 2.14 / 5.33 GiB |
+| mse24 anytime UW / W (Helsinki) | 216 / 229 | .wcnf.xz | 1.68 / 4.19 GiB |
+
+- **The anytime sets are subsets of the exact sets:**
+  - 2023: all 179 + 160 names are in the exact zips;
+  - 2024: all 216 + 229, with identical CRCs.
+- **So the four exact zips, 10.4 GiB, hold every instance of both years.**
+- **Page error:** the 2023 page swaps the anytime counts. The UW zip holds
+  179 files and the W zip 160.
+- **Plain-text parser:** our `WCNF.parse_dimacs` reads plain text only. The
+  `.xz` files must be decompressed, selectively by size, before runs.
+  Alternatively, add xz support to the parser (`lzma`) later.
+
+**Download on the cluster, shell only** (the user does not download on the
+laptop). Scripts: `tmp/upload_mse_dl/download_mse_full.{sh,sbatch}`, with
+copies in `cluster_staging_maxsat_strong/scripts/`.
+- **Steps:**
+  - `net`: can the node reach both servers?
+  - `download`: curl, resumable (`-C -`), exact byte-size check; a Google
+    Drive HTML page instead of the zip would fail it;
+  - `test`: `unzip -t` CRC of every member, plus member counts;
+  - `extract`: flat, into `~/mse_full/<set>/`, no overwrite; `KEEP_ZIPS=0`
+    deletes each zip;
+  - `sizes`: `xz -l` reads only the index, giving `~/mse_full/sizes.tsv`
+    with the real `.wcnf` sizes before any decompression.
+- **Tested locally** on fake zips over `file://` URLs, with python blocked
+  on PATH: a full run, an idempotent rerun, a wrong member count, a
+  truncated zip, a wrong download size, and `KEEP_ZIPS=0`.
+- **Disk** (user, 2026-10-21: about 300 GB free on the workstation, up to
+  400 GB on the cluster):
+  - **The WSL figure is wrong:** `df` inside WSL reports about 943 GB free,
+    but that is the virtual disk, not the Windows drive. **Never plan with
+    it.**
+  - **The workstation needs none of the full sets.** Local smokes use a few
+    selected instances.
+  - **Cluster estimate:** decompression ratio 8.4–13.3×, measured on the
+    2023 anytime files, which exist both plain and as `.xz`. All four sets
+    decompressed come to about **87–138 GiB**. Plus 10.4 GiB of `.xz` and
+    10.4 GiB of zips, that is about 110–160 GiB worst case, within the 400 GB.
+  - **Recommended:** `KEEP_ZIPS=0`, and decompress only what will run (the
+    ρ window, size-filtered via `sizes.tsv`). GB-scale instances exceed the
+    memetic's 8 GB anyway.
+- **Where to run:**
+  - a Slurm job (`sbatch download_mse_full.sbatch`) if compute nodes reach
+    the internet; the log's `net` step shows it;
+  - otherwise `bash download_mse_full.sh download` on the login node (it
+    is network I/O, no Python), then
+    `sbatch --export=ALL,STEPS=test,extract,sizes download_mse_full.sbatch`.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
@@ -651,3 +717,5 @@ exact-track tables (VBS = fastest exact solver, 1 h).
   8. §11: the ≤ 30 s exact instances may enter, but only by a rule on x (widen
      the window, or a pre-registered complementarity map), never by filtering on
      memetic difficulty.
+  9. §13: the user downloads the four exact zips on the cluster (`download_mse_full.sh`),
+     then `sizes.tsv` comes back for the size census and the choice of what to decompress.

@@ -53,6 +53,17 @@ next time i work").
    Plan with the user: the ρ design on published times, the downloads,
    the memetic runs (about 224 CPU-h for the 2024 window), a size census,
    and parsing 2023's tables.
+8. **Full MSE 2023/2024 download** (notes §13), prepared, not run:
+   - four exact zips, 10.4 GiB, holding every instance of both years;
+   - the user uploads `tmp/upload_mse_dl/download_mse_full.{sh,sbatch}` to
+     `~` and runs `bash download_mse_full.sh net`, then
+     `sbatch --export=ALL,KEEP_ZIPS=0 download_mse_full.sbatch`;
+   - if compute nodes have no internet: download on the login node and
+     run test/extract/sizes as a job;
+   - then `~/mse_full/sizes.tsv` comes back for the census;
+   - disk: the cluster limit is 400 GB, and everything decompressed is
+     about 87–138 GiB. The workstation has about 300 GB real free space;
+     ignore WSL's 943 GB.
 7. **≤ 30 s exact instances may count** (notes §11, user). Only by a
    pre-registered rule on the exact side (a wider window, or a
    complementarity map), never by filtering on memetic difficulty.
