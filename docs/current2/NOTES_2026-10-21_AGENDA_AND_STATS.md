@@ -1,0 +1,245 @@
+# Notes 2026-10-21: agenda for the next sessions, and the start of the statistics / ρ summary
+
+> "for tommorow: add the instance you want, now commit and push, keep in
+> some note to run the 2016 mse, even though it is hard for exact, also
+> there is possibility for more bigger than 5mgbyte instances in 23/24 mse,
+> keep somewhere in note, I also want you to remember to explain me what is
+> the monkey patch engineering decision I have in code. I do want to already
+> start summing up statistics and rho. maybe if there is a reason that under
+> 30s rc2 is also easy for my memetic to sketch the result in general, and
+> to think of some reason to keep it out of rho statistics, maybe because of
+> milisecond unmeasurable noise stastical. write the notes in this prompt in
+> some doc, and remember to update me on context next time i work" (user,
+> 2026-10-21)
+
+**Status:** notes and a first sketch; no new runs. Note N-2026-10-21-l.
+**The next session opens with §6.**
+
+## 1. Next on the cluster: lean code, native build, the per_polish batch
+
+**Order** (`NEXT_SESSION_CONTEXT.md` r16): U30 and HMSE have run on
+`0877898` and been read (`UNDER30_HARDMSE_RUN.md` §8). What remains:
+1. upload the lean-table code (`7c5ecc8` or later) as a flat folder with
+   an arrange script;
+2. `sbatch build_native.sbatch`, then check for `BUILD_OK`;
+3. the per_polish check batch.
+
+**The per_polish batch:**
+- **Arms:** `hard.moves.per_polish` {200, 10}.
+- **Runs:** 3 seeds × 900 s, stop at the target.
+- **Instances:** 24.
+  - the 16 KS2 instances;
+  - the 3 setcover rail instances (lean tables);
+  - **5 added from the weak HMSE families** (the user: "add the instance
+    you want"). Each is the instance whose median-run gap is closest to
+    its family's median:
+
+| pop_idx (HMSE) | year | family | instance | best-known | HMSE median run | gap |
+|---|---|---|---|---:|---:|---:|
+| h003 | 2023 | decision-tree | heart-cleveland …atleast_15 | 31 | 50 | +61 % |
+| h047 | 2023 | logic-synthesis | normalized-test4.pi | 94 | 108 | +15 % |
+| h011 | 2023 | inconsistency-measurement | im-forgetting-B-2-stb_625_161 | 79 | 84 | +6.3 % |
+| h100 | 2024 | decision-tree | primary-tumor …atleast_31 | 108 | 157 | +45 % |
+| h095 | 2024 | correlation-clustering | Rounded_CorrelationClustering_Prot… | 15,658,391 | 17,472,547 | +12 % |
+
+- gen-hyper-tw's typical instance (b01, +40 %) is already one of the 16
+  KS2 instances.
+- **Size:** 24 × 2 × 3 = **144 tasks**; worst case 144 × 960 s = 38 CPU-h.
+- **Decision rule (user):**
+  - if 10 wins broadly, it becomes rule R5 of `auto_hparams` for hard
+    instances;
+  - if not, a rail-only rule: "lean tables → per_polish 10" ("if 10
+    doesnt win do it rule like 3").
+  - "Broadly" will be pre-registered in the batch doc before submission,
+    as in KS2 (better/worse counts per instance).
+
+## 2. To run later: MSE 2016 (all-soft), even though it is hard for exact solvers
+
+**What exists** (`MSE_EVALMAXSAT_3600.md` §2):
+- **The full set:** `data/more_data/`, 856 files, `ms_random` and
+  `ms_crafted`, unweighted, no hard clauses.
+- **The sample:** `data/mse16/`, 104 files (5 per leaf directory).
+- **Earlier runs:**
+  - the 900 s RC2 screen was never run;
+  - EvalMaxSAT has 12 rows, all timeouts;
+  - an RC2 preview certified spinglass and dimacs-mod in ≤ 22 s, while
+    bipartite maxcut was capped.
+
+**Why run it:** it is the all-soft family where the strong solver is
+strongest (1,686/1,686 soft runs at the optimum so far). Exact solvers
+struggle there, so it is where the memetic can show something exact
+solvers cannot.
+
+**Open points:**
+- **Targets:** check whether MSE 2016 publishes best-knowns per file.
+  Without targets, run the full budget and report the cost reached.
+- **Comparisons:** RC2 (and EvalMaxSAT) at 900 s for proofs and lower
+  bounds, and the memetic for upper bounds.
+- **Selection:** families, sample size, per-formula duplicate check (as
+  O900).
+
+## 3. To check: larger MSE 2023/2024 instances (over 5 MB)
+
+- **What we have:** only the *small* tracks: MSE 2023 "uw-small" (75)
+  and MSE 2024 "small" (91).
+- **The gap:** the full evaluations also contain larger instances.
+  **Check:** the MSE 2023/2024 benchmark pages and archives for files
+  over 5 MB, their families, and whether best-knowns exist for them.
+- **Before running them:**
+  - **memory:** the lean tables cover long clauses (Σk(k−1) > 50M);
+  - **other structures:** Glucose's learned clauses and the ks2 cores
+    over 900 s are not yet audited (the RAM-audit item in
+    `NEXT_SESSION_CONTEXT` r15);
+  - **cluster memory:** set `--mem` per job by size. The user sets memory
+    per job on the cluster, so no in-record field is needed.
+
+## 4. To explain to the user: the "monkey patch" engineering decision in the code
+
+Explain this at the start of the next session. What it most likely
+refers to [verified: code]:
+
+**(a) Static tables cached as attributes on the instance object** (the
+main one, in production code). Expensive, run-invariant tables are built
+once and attached to the WCNF object with `setattr(cnf, "_<name>", …)`:
+- `sat/walksat_v2._CACHE_ATTR = "_walksat_v2_static"` (occurrence lists);
+- `evo/impl_v2._XO_ATTR = "_crossover_v2_static"`;
+- `sat/ls_v3._V3_ATTR = "_ls_v3_static"` (cvd / neighbour or lean
+  tables);
+- `sat/ls_v3._MODE_ATTR = "_ls_v3_nbrs_mode"`;
+- `native/native.NativeCore._ATTR = "_native_core"` (the flattened C
+  arrays).
+
+Points to explain:
+- **Why:** every polish call (thousands per run) would otherwise rebuild
+  them. `setattr` gives a per-instance cache without changing every
+  function signature.
+- **The risks:**
+  - hidden state;
+  - stale caches, guarded by `m` = clause count, by the requested mode,
+    and by `NativeCore.x is v3_static(wcnf)`;
+  - objects that refuse attributes, which fall back to no cache;
+  - memory that lives as long as the WCNF object.
+- **The alternative:** an explicit context object passed down, which is
+  cleaner but a larger refactor.
+
+**(b) pytest `monkeypatch` in tests:**
+- `monkeypatch.setattr(lsv3, "NBRS_MAX", …)` forces lean mode on small
+  instances;
+- fake clocks (`tick_clock`), `chdir` and environment variables (the
+  native build directory).
+
+**(c) This session's mutation check:** a deliberately broken
+`cc_touch_lean` was swapped in at module level, to show the tests catch
+it. It was not committed (`tmp/`).
+
+## 5. Statistics and ρ: first sketch [verified: records; inference marked]
+
+**ρ, as defined** (`docs/M2_FULL_POOL_READOUT_AND_STATE.md` §1):
+- Spearman ρ between RC2 proof time and memetic ERT, one point per
+  instance.
+- ERT = total effort over seeds, with failures charged their spend,
+  divided by the number of successes.
+- **Pre-registered:**
+  - instance bootstrap, BCa, B = 10,000;
+  - partial ρ on [log n, α, log(1 + c\*)];
+  - zero-success instances excluded in the primary analysis and top-tied
+    in a sensitivity analysis;
+  - **eligibility: RC2 time in (30, 900] s**;
+  - calibration rows are exploratory; the final ρ needs fresh seeds
+    1001–1020.
+
+### 5.1 Data now available (strong solver, `impl: v3`, `hparams: auto`)
+
+| batch | instances | RC2 / EvalMaxSAT proof | memetic result |
+|---|---:|---|---|
+| U30 | 319 soft | RC2 < 30 s | 957/957 runs at the optimum; TTT median 0.033 s, max 2.16 s |
+| O900, soft part | 245 soft | RC2 [30, 900) s (243) or EvalMaxSAT | 729/729 + drmx 0/6; TTT median 0.05 s |
+| O900 + KS2 + HMSE, hard | 141 MSE (17 proven) | EvalMaxSAT < 3600 s for 16, RC2 for 1 | 129/423 runs at target |
+
+### 5.2 Sketch: under 30 s for RC2 is also easy for the memetic
+
+- **Every U30 instance was solved in every run**, mostly within the
+  first local-search call:
+  - **83 %** of runs (797/957) reached the optimum with the first child;
+    their effort is exactly one polish call (`total_flips` = 12,500);
+  - **229/319 instances (72 %)** have all three seeds at that floor;
+  - TTT: median 0.033 s, 99th percentile 0.54 s.
+- **Statement for the paper (draft):** "Instances that RC2 certifies in
+  under 30 s are uniformly easy for the memetic solver: 319/319 solved in
+  all runs, 83 % of runs at the first local-search call."
+
+### 5.3 Why U30 stays out of ρ [proposal]
+
+1. **Pre-registration.** The eligibility window is RC2 time in
+   (30, 900] s (`CORPUS_CALIBRATION_GOALS.md`, `GRID_POINTS_WINDOW_30_900.md`).
+   U30 is outside it by definition. Adding it would be a protocol change
+   made after seeing data.
+2. **The memetic effort is at its measurement floor.**
+   - 72 % of U30 instances have every seed at exactly one polish call.
+     In flips (quantized at 12,500 per call) and in children, they are
+     **tied**.
+   - In seconds, a 5–50 ms TTT is the same order as fixed costs: the
+     kernel screen, building the population, the first call's setup,
+     timer and OS jitter. 11 runs even show cpu/wall < 0.9. The ranks
+     there measure overhead noise, not search effort.
+   - Spearman over mostly tied ranks carries little information and
+     inflates the CI.
+3. **The RC2 side is also floor-dominated.**
+   - 149 of the 319 formulas certified in < 1 s;
+   - below about a second, process start-up and parsing are a large share
+     of the measured time.
+4. **There is no variance in success** (100 %), so the
+   success-rate version of ρ is undefined.
+
+**Report U30 descriptively instead,** with the sentence in §5.2, as
+evidence that the easy region is easy for both solvers.
+
+### 5.4 Caveat: the same floor reaches into the window (O900) [inference]
+
+- **O900's soft part, inside the (30, 900] window:** 54 % of runs end at
+  the first call, and **84/245 instances** have all seeds at the floor.
+- **With the strong solver, ρ in seconds or flips** would be dominated by
+  ties in the window too. The M2 ρ (+0.05 to +0.10 pooled) was measured
+  with the older v2 solver, where the effort varied more.
+- **Options to decide:**
+  1. **A finer effort measure:** flips counted to the first improving flip
+     that reaches the target, inside the call. This needs a new record
+     field; today the target is checked at call boundaries.
+  2. **Harder instances for the memetic:**
+     - the larger-n grid (calib_2sat_sc2);
+     - MSE 2016 (§2);
+     - larger MSE (§3).
+  3. **Report** the strong solver as "trivial on the RC2 window" and run
+     ρ on the v2 solver (as M2), or on a deliberately weakened
+     configuration. This changes the research question, so it is the
+     user's call.
+
+### 5.5 Proposed next steps for the statistics (not started)
+
+1. A per-instance table of all batches: RC2 / EvalMaxSAT time, c\* or
+   best-known, n, m, α, family, and memetic ERT in seconds, flips and
+   children, success.
+2. The floor analysis: the share of instances at the first-call floor, by
+   batch and family.
+3. ρ (pooled and per family) on O900 soft with the pre-registered
+   conventions, labelled exploratory, with the tie share reported next to
+   each ρ.
+4. The decision on option 1, 2 or 3 above.
+
+## 6. Context for the next session (read first)
+
+- **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
+  results and readout, these notes).
+- **Cluster state:**
+  - the tree is at `0877898` plus the U30/HMSE results;
+  - the lean code is NOT uploaded;
+  - the `.so` is the old build.
+- **Next actions:**
+  1. §4: explain the monkey patch decision;
+  2. §1: build the per_polish manifest (144 tasks) and the flat upload
+     with the lean code, plus its arrange script;
+  3. the user uploads and arranges, runs `build_native.sbatch`, then
+     submits;
+  4. §5.5: start the statistics table and the floor analysis;
+  5. §2/§3: the MSE 2016 plan and the large-MSE check, when the user
+     asks.

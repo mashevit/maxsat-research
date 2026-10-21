@@ -1,0 +1,14 @@
+config_id,analysis_group,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+strong_auto,bf,12,12,1.0,0.1,12,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.11,,0.982
+strong_auto,calib_2sat_sc,87,87,1.0,0.1,87,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.123,,0.938
+strong_auto,calib_2sat_sc2,24,24,1.0,0.2,24,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.19,,0.975
+strong_auto,calib_a,183,183,1.0,0.0,183,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.015,,0.875
+strong_auto,calib_b,84,84,1.0,0.0,84,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.035,,0.921
+strong_auto,dubois,39,39,1.0,0.0,39,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.019,,0.889
+strong_auto,jnh,102,102,1.0,0.1,102,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.149,,0.967
+strong_auto,pigeon-hole,9,9,1.0,0.0,9,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.019,,0.941
+strong_auto,pret,24,24,1.0,0.0,24,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.024,,0.944
+strong_auto,unsat250_1000c,21,21,1.0,0.1,21,0,0,0,0,0,0,0,0,1.0,4.0,12500.0,0.037,,0.959
+strong_auto,unsat_uuf_diff,90,90,1.0,0.0,90,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.033,,0.879
+strong_auto,uuf200-860,183,183,1.0,0.0,183,0,0,0,0,0,0,0,0,1.0,1.0,12500.0,0.03,,0.857
+strong_auto,uuf225-960,99,99,1.0,0.1,99,0,0,0,0,0,0,0,0,1.0,2.0,12500.0,0.046,,0.909

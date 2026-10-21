@@ -12,7 +12,7 @@
 `scripts/make_hardmse_manifest.py`, and `scripts/make_flat_upload.py` for
 the upload folder.
 **Note:** N-2026-10-21-i.
-**Status:** prepared, uploaded and verified on the cluster (`U30_OK`, `HMSE_OK`, 423 tasks); committed `0877898` (`MAXSAT_GIT_SHA=0877898`); to be submitted 2026-10-22.
+**Status:** submitted 2026-10-21 15:50 UTC (`MAXSAT_GIT_SHA=0877898`) and read the same day (§8): U30 957/957 at the optimum; HMSE 129/423 at the target, 0 infeasible.
 
 ## 1. Settings (both batches)
 
@@ -244,3 +244,69 @@ python3 scripts/m2_results.py aggregate --manifest scripts/manifest_<m>.tsv --ou
   - proven vs best-known targets kept apart;
   - on the 16 KS2 instances, a check against the `ks2_10` arm (26/48);
   - any run below a best-known is reported by name.
+
+## 8. Readout (2026-10-21) [verified: 1,380 shard records]
+
+**Runs:**
+- Slurm jobs 23475119 (HMSE) and 23475734 (U30), submitted 2026-10-21
+  15:50 UTC.
+- Provenance: `maxsat_git_sha 0877898`, `src_tree_sha256 047871e7…`.
+  This equals the tree at `0877898`, rebuilt on the workstation.
+- Manifest hashes: the 423-task HMSE (rail dropped) and the 957-task U30.
+- Results are in `results/{hardmse,under30}/`; aggregates come from
+  `m2_results.py aggregate`.
+
+**Integrity:** 1,380/1,380 records `ok`, with no infra, invalid,
+watchdog or late records. No HMSE run was infeasible (hv 0 on all 423),
+and no run went below a best-known.
+
+### 8.1 U30: 957/957 runs at the optimum
+
+- **Every family 100 %**, including the five families new to the strong
+  solver (jnh, unsat_uuf_diff, dubois, pret, bf).
+- **Time to target:** median 0.033 s, 99th percentile 0.54 s; slowest
+  2.16 s (uuf225-049, seed 1). Total wall time was 0.02 h.
+- **Kernel gate:** engaged on 192 runs, skipped by the screen on 765.
+- 11 runs show cpu/wall < 0.9. They took tens of milliseconds, where
+  the ratio is noise.
+- **Together with O900's soft part (729/729):** the strong solver reached
+  the optimum on every one of the 1,686 soft-only runs with a proven
+  optimum.
+
+### 8.2 HMSE: 129/423 runs at the target
+
+| group | instances | runs at target | instances with ≥ 1 / 3 of 3 | median relative gap of the median run |
+|---|---:|---:|---|---:|
+| MSE 2023, proven target | 9 | 13/27 | 5 / 3 | 0.000 |
+| MSE 2023, best-known target | 58 | 18/174 | 12 / 2 | 0.050 |
+| MSE 2024, proven target | 8 | 13/24 | 6 / 3 | 0.001 |
+| MSE 2024, best-known target | 66 | 85/198 | 34 / 22 | 0.002 |
+| **all** | **141** | **129/423** | **57 / 30** | |
+
+- **MSE 2024 (weighted) is much closer than MSE 2023 (unweighted):**
+  - **2024:** median gap 0.2 %, 75th percentile 1.5 %; 98/222 runs at
+    target.
+  - **2023:** median gap 4.4 %, 75th percentile 8.1 %; 31/201 runs.
+- **Families solved in every run:**
+  - 2023: bcp, mbd, scheduling;
+  - 2024: causal-discovery, quantum-circuit;
+  - nearly: tcp 11/12, af-synthesis 13/15, reversi 9/12, lisbon-wedding
+    23/33, synplicate 23/33.
+- **Never at target, large gaps (median run):**
+  - **MSE 2023:** gen-hyper-tw +40 %, decision-tree +61 %,
+    logic-synthesis +15 %, optic +7 %;
+  - **MSE 2024:** decision-tree +46 %, correlation-clustering +12 %
+    (worst +188 %).
+- **Never at target, small gaps:** inconsistency-measurement, the
+  largest 2023 family: 0/57, median +6.3 %. BTBNSL: 0/30, +0.7 %.
+- **Reproducibility:** the 16 KS2 instances ran here under the same config
+  and seeds as KS2's `ks2_10` arm. Both reached the target in 26/48 runs,
+  with equal best cost in 44 of 48 pairs; wall-clock timing explains the
+  rest.
+- **Compute:** 78.6 h of wall time; the longest task took 908.8 s, within
+  `--time 00:20:00`.
+- **[inference] Where to look next:**
+  - the 2023 unweighted families, which are far from the target;
+  - the setcover-like slot starvation (per_polish, `LONG_CLAUSE_RULE_DESIGN.md`
+    §9) may also hold there. The per_polish check batch should include
+    some of them, not only KS2 + rail.

@@ -17,6 +17,29 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000000000000. Update 2026-10-21 (r17): read first
+
+**Open with `docs/current2/NOTES_2026-10-21_AGENDA_AND_STATS.md` §6, and tell
+the user the context** (the user asked: "remember to update me on context
+next time i work").
+
+**State:**
+- U30 and HMSE ran on `0877898` and were read: U30 957/957, HMSE 129/423
+  (`UNDER30_HARDMSE_RUN.md` §8).
+- The lean tables are committed (`7c5ecc8`) but NOT on the cluster, which
+  still has the old `.so`.
+
+**Next actions:**
+1. **Explain** the "monkey patch" decision (notes §4).
+2. **Build the per_polish batch** (notes §1): 24 instances × {200, 10} × 3
+   seeds = 144 tasks, with picks h003, h047, h011, h100, h095. Package it
+   with the lean code as one flat upload plus an arrange script. The user
+   then runs `build_native.sbatch` and submits.
+3. **Statistics and ρ** (notes §5): U30 is descriptive only. The effort
+   floor reaches into O900, and the options need a user decision.
+4. **When the user asks:** run MSE 2016 (notes §2), and check the larger
+   MSE 23/24 instances (notes §3).
+
 ## 00000000000000. Update 2026-10-21 (r16): read first -- ORDER MATTERS on the cluster
 
 **User 2026-10-21:** "I will run cluster tomorrow, get me the context tomorrow
@@ -31,6 +54,8 @@ native". Also: "if 10 doesnt win do it rule like 3".
   so the `.so` must be rebuilt.
 - Jobs read `src/` at run time, so uploading the new code while U30/HMSE
   tasks are pending or running would mix code versions.
+
+**Progress 2026-10-21 evening:** steps 1–2 are DONE. Both arrays ran on `0877898` and were read: U30 957/957, HMSE 129/423 (`UNDER30_HARDMSE_RUN.md` §8, N-2026-10-21-k). Next: step 3.
 
 **Steps, in this order:**
 1. **Run the original code first**, from `~/cluster_staging_maxsat_strong/scripts`

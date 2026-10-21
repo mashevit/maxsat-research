@@ -56,11 +56,61 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). **Batch read 2026-10-18: 15/18 (s253 0/3), N-2026-10-18-d.** §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
 | Stronger memetic built (`impl: v3`, tree `cluster_staging_maxsat_strong/`); smoke; batch S1 | [`../current2/STRONG_MEMETIC_S1_RUN.md`](../current2/STRONG_MEMETIC_S1_RUN.md) | All of B1–B5 built on the hard tree plus the kernel ports; v3 without keys = staging v2 / `impl: hard` exactly; C core = Python twin flip for flip. Smoke (60 s, seed 1): `allC` solves kernel s253 (5.8 s) and raw s256/s257 (n 64k) at c\*; mutation damage 200–640 → 7–12 clauses. Batch S1: 324 tasks, ≤ 86.4 CPU-h, commit `16589fb`. N-2026-10-18-c. |
 | Stronger memetic B1–B5 (tabu/CC, clause weighting, distance-aware mutation, partition crossover, compiled loop): motivation, mechanism, parameters, interactions, build plan for a third tree | [`../current2/STRONGER_MEMETIC_DESIGN.md`](../current2/STRONGER_MEMETIC_DESIGN.md) | Design only. SATLike weighting rules and parameters read from the full text; PX exactness derived (each clause's differing variables lie in one component). Interactions §6 fix the build order B3 → B1 → B2 → B4 → B5 and a leave-one-out batch (288 tasks, ≤ 76.8 CPU-h). Tree `cluster_staging_maxsat_strong/` proposed. N-2026-10-18-b. |
+| Agenda notes 2026-10-21; first ρ sketch (U30 out of ρ; effort floor) | [`../current2/NOTES_2026-10-21_AGENDA_AND_STATS.md`](../current2/NOTES_2026-10-21_AGENDA_AND_STATS.md) | U30 uniformly easy (83 % first-call); reasons to exclude it from ρ; floor caveat for O900; MSE 2016 and large-MSE notes; monkey-patch explanation pending. N-2026-10-21-l. |
 | Long-clause rule (lean v3 tables) for the setcover rail instances | [`../current2/LONG_CLAUSE_RULE_DESIGN.md`](../current2/LONG_CLAUSE_RULE_DESIGN.md) | Design only: trigger Σk(k−1) > 50M; CC/PX exact, walk same distribution; tests and decisions. N-2026-10-21-j. |
 | Batches U30 + HMSE: under-30 s pool and MSE hard-clause pool on the strong solver | [`../current2/UNDER30_HARDMSE_RUN.md`](../current2/UNDER30_HARDMSE_RUN.md) | U30 319 instances (957 tasks), HMSE 141 (423 tasks); selection, smoke, rail memory limit, flat upload + arrange scripts. N-2026-10-21-i. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-21-l — Agenda notes and first ρ sketch: U30 is uniformly easy for the memetic and stays out of ρ; the effort floor reaches into the O900 window [quote + verified + proposal]
+
+> "I do want to already start summing up statistics and rho. maybe if there is a reason that under 30s rc2 is also easy for my memetic to sketch the result in general, and to think of some reason to keep it out of rho statistics, maybe because of milisecond unmeasurable noise stastical." (user, 2026-10-21; full quote in the doc)
+
+- **[verified] U30 is easy for the memetic:**
+  - 83 % of runs (797/957) reach the optimum with the first polish call
+    (`total_flips` = 12,500);
+  - 229/319 instances have all three seeds at that floor.
+- **[verified] O900 soft:** 54 % of runs and 84/245 instances are at the
+  same floor.
+- **[proposal] Reasons to keep U30 out of ρ:**
+  - the pre-registered (30, 900] s window;
+  - tied effort at the one-call floor, with millisecond TTTs in the range
+    of fixed overheads;
+  - RC2 times under 1 s are dominated by start-up (149/319);
+  - no variance in success.
+  - Report U30 descriptively instead.
+- **[inference] The floor reaches into O900:** ρ with the strong solver
+  needs a finer effort measure or harder instances. The options are in the
+  doc, §5.4.
+- **Also noted:**
+  - the per_polish batch picks: h003, h047, h011, h100, h095;
+  - MSE 2016 to run;
+  - larger MSE 23/24 to check;
+  - the "monkey patch" decision (attribute caches on the WCNF object) to
+    explain.
+- **Evidence:** `docs/current2/NOTES_2026-10-21_AGENDA_AND_STATS.md`.
+
+### N-2026-10-21-k — U30 and HMSE read: every soft run with a proven optimum reached it (957/957; with O900 1,686/1,686); MSE hard-clause 129/423 at target, 0 infeasible [verified + inference]
+
+> "I copied results" (user, 2026-10-21)
+
+- **[verified] Provenance:** `0877898`; the src tree hash equals the
+  commit's. Integrity is clean on 1,380/1,380 records.
+- **[verified] U30:** 957/957 at the optimum; median TTT 0.033 s, max
+  2.16 s. The five new families are all 100 %.
+- **[verified] HMSE:** 129/423 runs at the target, 0 infeasible, none
+  below a best-known.
+  - MSE 2024: median relative gap 0.2 %, 98/222 runs at target.
+  - MSE 2023: 4.4 %, 31/201.
+  - Proven targets: 26/51; best-known only: 103/372.
+  - 16 KS2 instances: 26/48, the same as KS2's `ks2_10` arm, with equal
+    cost in 44/48 pairs.
+- **[inference]** The weak spots are the unweighted 2023 families
+  (gen-hyper-tw, decision-tree, logic-synthesis,
+  inconsistency-measurement) and decision-tree / correlation-clustering
+  in 2024. The per_polish check should include some of them.
+- **Evidence:** `docs/current2/UNDER30_HARDMSE_RUN.md` §8.
 
 ### N-2026-10-21-j — Long-clause rule designed: lean tables for the setcover rail instances, exact for CC and PX [quote + verified + proposal]
 
