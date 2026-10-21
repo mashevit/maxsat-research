@@ -12,7 +12,7 @@
 `scripts/make_hardmse_manifest.py`, and `scripts/make_flat_upload.py` for
 the upload folder.
 **Note:** N-2026-10-21-i.
-**Status:** prepared and dry-run; not submitted.
+**Status:** prepared, uploaded and verified on the cluster (`U30_OK`, `HMSE_OK`, 423 tasks); committed `0877898` (`MAXSAT_GIT_SHA=0877898`); to be submitted 2026-10-22.
 
 ## 1. Settings (both batches)
 
@@ -211,9 +211,9 @@ sha256sum -c --quiet scripts/manifest_under30.upload.sha256 && echo U30_OK
 sha256sum -c --quiet scripts/manifest_hardmse.upload.sha256 && echo HMSE_OK
 cd scripts && mkdir -p logs
 DRY_RUN=1 MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh
-MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=0877898 MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh
 DRY_RUN=1 MANIFEST=manifest_under30.tsv OUTDIR=results/under30/tasks bash submit_m2_memetic.sh
-MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_under30.tsv OUTDIR=results/under30/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=0877898 MANIFEST=manifest_under30.tsv OUTDIR=results/under30/tasks bash submit_m2_memetic.sh
 ```
 
 - **Dry runs on the workstation:** `sbatch --array=1-423%1000` (HMSE) and

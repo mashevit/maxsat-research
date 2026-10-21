@@ -31,8 +31,30 @@ alias, so every cluster step is a command the user runs on the login node.
   - Order: `bash arrange_u30_hmse.sh --apply`, then upload the 7
     `hmse2__*` files + `UPLOAD_MAP_hmse2.tsv`, then
     `bash arrange_hmse2.sh --apply`.
-  - Then submit with `MAXSAT_GIT_SHA` = the commit holding these files
-    (not yet committed).
+  - **Done on the cluster 2026-10-21:** both arranges passed (`U30_OK`,
+    `HMSE_OK`, HMSE manifest 423 tasks). Committed `0877898` and pushed.
+- **Tomorrow (user, 2026-10-21: "keep for tommorrow tasks on cluster"):**
+  1. Submit, from `~/cluster_staging_maxsat_strong/scripts` (mkdir -p logs);
+     a dry run first prints `--array=1-423%1000` / `1-957%1000`:
+     - `MAXSAT_GIT_SHA=0877898 MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh`
+     - `MAXSAT_GIT_SHA=0877898 MANIFEST=manifest_under30.tsv OUTDIR=results/under30/tasks bash submit_m2_memetic.sh`
+     - HMSE first. No `.so` rebuild is needed.
+  2. After the arrays: `sacct -j <jobid> --format=JobID%20,MaxRSS,Elapsed,State`
+     (login node). Shards record no memory, and the local smoke saw
+     only 30 s, not 900 s (Glucose's learned clauses and the KS2 cores
+     may grow).
+- **Next coding, with the user ("I do want to code with you some rule for
+  the rail instances. and think if there might be more breakthroughs like
+  it through ram"):**
+  - A rule for very long clauses in the v3 static tables
+    (`src/sat/ls_v3.py` `_V3Static`).
+    - The neighbour sets are ~k² per clause, and they are held up to four
+      times over: the sets, the sorted lists, the flat Python list in
+      `src/native/native.py` `NativeCore`, and the ctypes array.
+    - Users: CC tabu (`ls_v3.py` 374, 674) and walk mutation / PX
+      (`src/evo/v3.py` 195–236).
+  - A RAM audit of the other structures that grow with instance size or
+    run time, with a peak-memory field in the shard record.
 - **Workstation:** local smokes crashed WSL twice (OOM). Cap and serialize
   local runs (memory note `workstation-wsl-memory-limits`).
 
