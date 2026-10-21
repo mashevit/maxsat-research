@@ -5,8 +5,8 @@
 > evalmaxsat" (user, 2026-10-21)
 
 **Tree:** `cluster_staging_maxsat_strong/`. **Builder:**
-`scripts/make_oracle900_manifest.py`. Note N-2026-10-21-c. Status:
-**prepared and verified, not submitted.**
+`scripts/make_oracle900_manifest.py`. Notes N-2026-10-21-c, N-2026-10-21-f (readout). Status:
+**submitted and read 2026-10-21 (§7): 736/759; soft 729/729, MSE 7/30.**
 
 ## 1. Settings
 
@@ -156,3 +156,80 @@ IDS=<ids> RESUME=1 MAXSAT_GIT_SHA=097efb7 MANIFEST=manifest_oracle900.tsv OUTDIR
   feasibility.
 - **Not in this batch:** an EvalMaxSAT 900 s run on the 243 RC2-only
   instances. It is needed for an EvalMaxSAT comparison on the whole set.
+
+## 7. Readout (2026-10-21) [verified: 759 shard records]
+
+**Run:** Slurm job 23465318, submitted 2026-10-21 11:45 UTC,
+`MAXSAT_GIT_SHA=097efb7`. The C core was built on the cluster (gcc 11.5.0,
+`.so` f756b70e), and all 759 records used it. Results were copied to
+`results/oracle900/` (untracked).
+
+**Integrity:**
+- 759/759 `ok`, with no infra or invalid records.
+- No run went below the oracle, and every run stayed feasible (hv 0).
+- The maximum wall time was 900.2 s.
+- `stop_reason`: 736 target, 23 time cap.
+- Total wall time was **5.9 h**, of which the 30 MSE tasks took 5.9 h. This
+  is far below the 202 CPU-h worst case and inside the 10–30 h expected.
+
+**Tool gap:** `m2_results.py aggregate` stops with `KeyError:
+'analysis_group'`, because the new manifests have no such column.
+`pending` works, and `agg/tasks.csv` was written before the crash. The
+numbers below come from a scratch script over the records.
+
+| family | instances | runs at opt | all 3/3 | median TTT s | max TTT s | median RC2 s |
+|---|---:|---:|---:|---:|---:|---:|
+| uuf250 | 71 | 213/213 | 71 | 0.08 | 3.3 | 120.5 |
+| uuf225-960 | 60 | 180/180 | 60 | 0.05 | 1.3 | 103.4 |
+| calib_b | 53 | 159/159 | 53 | 0.03 | 0.3 | 156.6 |
+| uuf200-860 | 34 | 102/102 | 34 | 0.07 | 1.0 | 62.1 |
+| calib_a | 17 | 51/51 | 17 | 0.04 | 0.2 | 76.1 |
+| calib_2sat_sc2 | 6 | 18/18 | 6 | 0.75 | 6.1 | 118.5 |
+| calib_2sat_sc, hole9 | 2 | 6/6 | 2 | 0.02–0.19 | 0.4 | 63.5–539.9 |
+| MSE 2024 | 8 | 5/24 | 1 | 16.2 | 379.3 | (EvalMaxSAT) |
+| MSE 2023 | 2 | 2/6 | 0 | 13.0 | 17.2 | (EvalMaxSAT) |
+
+**Soft instances (243 non-MSE): 729/729 runs reached the optimum.**
+- TTT over all successes: median 0.05 s, 99th percentile 4.6 s.
+- The slowest soft instance is s253 (3.5–6.1 s, kernel time included). The
+  kern batch (v2) did not solve it after 190M flips (N-2026-10-18-d). Here
+  it is 3/3.
+- **[inference]** These runs exercise the LS core more than the EA:
+  - the median run made 1 child, and 54 % reached the optimum with the
+    first child;
+  - RC2's 30–900 s proof time does not make an instance hard for DLS+CC.
+- **Run-time choices** (first measured use of `auto_hparams/1` on this
+  pool):
+  - all 729 soft runs were class `soft_unweighted`;
+  - k ranged from 2 to 16, and 714 of the 729 runs had k < 16 (the
+    previously untested range);
+  - the kernel gate engaged on 60 runs; the screen skipped it on 669.
+- **Not a race:** TTT stops at a known target, while RC2's time includes
+  proving optimality, on different nodes. The ratio (median TTT / fastest
+  exact time, median 0.0005) only describes the runs.
+
+**MSE (10 instances): 7/30 runs reached the optimum. All 30 stayed
+feasible.**
+
+| instance | opt | best (s1, s2, s3) | at opt |
+|---|---:|---|---:|
+| ja-maxham 00000385 (23, also RC2 65 s) | 37 | 37, 37, 38 | 2/3 |
+| mbd-b14 (23) | 24 | 31, 28, 30 | 0/3 |
+| causal-discovery (24) | 91349 | 91349 ×3 | 3/3 |
+| preference_planning (24) | 257 | 275, 275, 257 | 1/3 |
+| ja-kemeny (24) | 554 | 556, 554, 556 | 1/3 |
+| lisbon-wedding 9-18 (24) | 395 | 407, 405, 406 | 0/3 |
+| quantum-circuit (24) | 24 | 39, 39, 39 | 0/3 |
+| MaxSATQueries (24) | 31514 | 31589, 38842, 43158 | 0/3 |
+| drmx-cryptogen 1 / 2 (24, soft weighted) | 800 | 825–832 | 0/6 |
+
+- The 7 successes: causal-discovery 3, ja-maxham 2, ja-kemeny 1 (seed 2),
+  preference_planning 1 (seed 3).
+- drmx-cryptogen is the only soft family that fails. It is the
+  `soft_weighted` class, and its rule was untested before this batch. It
+  made 17–21k children and ended 3–4 % above the optimum. **[inference]**
+  The rule for weighted soft-only instances is the weak spot, not the
+  hard-clause path.
+- Every hard-clause MSE instance here is also in batch KS2 (the `m40` arm
+  is this config). There, ks2 reaches the optimum 3/3 on mbd-b14 and
+  quantum-circuit (`KS2_CHECK_RUN.md` §6).

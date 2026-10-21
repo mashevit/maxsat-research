@@ -4,8 +4,8 @@
 
 **Tree:** `cluster_staging_maxsat_strong/`. **Builder:**
 `scripts/make_ks2check_manifest.py`. Motivation: N-2026-10-21-d (lisbon
-experiments). Note N-2026-10-21-e. Status: **prepared and verified, not
-submitted.**
+experiments). Notes N-2026-10-21-e, N-2026-10-21-g (readout). Status: **submitted and read
+2026-10-21 (§6): ks2_10 vs m10 13/0; rule not met at pop 40 (3 worse).**
 
 ## 1. What was built [verified: code, tests]
 
@@ -151,3 +151,80 @@ python3 scripts/m2_results.py aggregate --manifest scripts/manifest_ks2check.tsv
 - **If KS2 helps:** `hparams: auto` would set `keep_sat: ks2` (and
   population 10 if that effect holds too) on instances with hard clauses.
   That change waits for the readout and the user's go.
+
+## 6. Readout (2026-10-21) [verified: 192 shard records]
+
+**Run:** Slurm job submitted 2026-10-21 11:47 UTC, `MAXSAT_GIT_SHA=097efb7`,
+using the C core built for O900. Results were copied to
+`results/ks2check/` (untracked).
+
+**Integrity:**
+- 192/192 `ok`, all feasible (hv 0), none below the optimum.
+- Maximum wall time 900.4 s.
+- 75 runs reached the optimum (target); 117 hit the time cap.
+- `m2_results.py aggregate` has the same `analysis_group` crash as O900; the
+  numbers come from a scratch script.
+
+**Per instance** (best cost for seeds 1–3, and the median TTT in s where at
+least 2 of 3 runs reached the optimum):
+
+| k | instance | opt | m40 | m10 | ks2_40 | ks2_10 |
+|---|---|---:|---|---|---|---|
+| k01 | bcp-SU3 | 106 | 3/3, 314 s | 3/3, 136 s | 3/3, 15 s | 3/3, 11 s |
+| k02 | gen-hyper-tw | 5 | 7, 8, 9 | 8, 8, 7 | 7, 6, 6 | 7, 7, 6 |
+| k03 | inconsistency-measurement | 63 | 76, 75, 77 | 73, 73, 78 | **65, 64, 65** | **65, 64, 64** |
+| k04 | ja-maxham | 37 | 1/3 | 1/3 | 1/3 | **3/3, 8 s** |
+| k05 | mbd-b14 | 24 | 31, 28, 30 | 33, 26, 28 | **3/3, 91 s** | **3/3, 20 s** |
+| k06 | min-fill | 196 | 210, 201, 198 | 204, 214, 207 | 206, 217, 219 | 196, 197, 197 (1/3) |
+| k07 | optimizing-BDDs | 87 | 89, 87, 89 | 89, 89, 89 | 89, 87, 89 | 89, 89, 89 |
+| k08 | scheduling | 28 | 30, 31, 28 | 3/3, 365 s | **3/3, 34 s** | **3/3, 62 s** |
+| k09 | MaxSATQueries | 31514 | 31589, 38827, 43158 | 43875 ×2, 43743 | 43875, 38812, 43159 | 43875 ×3 |
+| k10 | af-synthesis | 117 | 123, 117, 120 | 120, 120, 123 | **3/3, 276 s** | **3/3, 408 s** |
+| k11 | causal-discovery | 91349 | 3/3, 15 s | 3/3, 11 s | 3/3, 7 s | 3/3, 8 s |
+| k12 | ja-kemeny | 554 | 556, 554, 556 | 558, 556, 562 | 556, 560, 564 | 556, 554, 556 |
+| k13 | lisbon-wedding 9-18 | 395 | 401, 410, 406 | 405, 405, 401 | 397, 396, 396 | 396, 396, 396 |
+| k14 | metro | 138 | 139, 152, 140 | 138, 139, 156 | **3/3, 210 s** | 139, 152, 138 |
+| k15 | preference_planning | 257 | 275, 275, 257 | 257, 275, 257 | 275, 275, 257 | 257, 275, 257 |
+| k16 | quantum-circuit | 24 | 39, 39, 39 | 54, 39, 30 | **3/3, 153 s** | **3/3, 28 s** |
+
+**Successes out of 48:** m40 12, m10 13, ks2_40 24, ks2_10 26.
+
+**Pre-registered rule (§5):** better/worse counts instance by instance.
+
+| comparison | better | worse | tie | worse on |
+|---|---:|---:|---:|---|
+| ks2_10 vs m10 | 13 | 0 | 3 | — |
+| ks2_40 vs m40 | 10 | 3 | 3 | min-fill, MaxSATQueries, ja-kemeny |
+| m10 vs m40 | 8 | 5 | 3 | min-fill, BDDs, MaxSATQueries, af-synthesis, ja-kemeny |
+| ks2_10 vs ks2_40 | 8 | 7 | 1 | — |
+
+- **KS2 helps: rule NOT met as written.**
+  - Pop 10 passes clearly (13 / 0).
+  - Pop 40 fails on one count: 3 worse against the allowed 2.
+  - Of the 3 at pop 40:
+    - MaxSATQueries stays at or near its Glucose start in every arm (best
+      31,589, otherwise 38–44k), so its ordering is noise;
+    - min-fill (206 vs 201) and ja-kemeny (556/560 vs 556/554) are small
+      losses.
+- **Population effect: none by the rule**, either with M or with ks2.
+- **[verified]** Where ks is inactive the arms are the same algorithm:
+  - BDDs: 0 ks calls;
+  - preference_planning: 6 ks calls, all fallbacks;
+  - at pop 40 both instances gave identical best costs under M and ks2.
+- **Diagnostics** (sums over 3 seeds):
+  - ks hit rate is 0.2–0.6 on the instances it unlocks: mbd, quantum,
+    bcp, af-synthesis, scheduling. The ks2 retry succeeds 0.5–1.0 there.
+  - Where ks2 reaches the optimum, it does so with far fewer children: 11–55
+    on bcp, mbd and scheduling, against 250–900 under M. Each move does
+    more.
+  - It hits only 0.03–0.10 where it does not help: lisbon, kemeny, causal,
+    inconsistency. Most calls there fall back to M (fallback share
+    0.64–0.90), yet lisbon and inconsistency still improve.
+- **Post-hoc [inference, not the pre-registered test]:**
+  - ks2_10 against today's default m40 is 13 better / 2 worse (BDDs, where
+    ks is inactive, and MaxSATQueries).
+  - Setting `keep_sat: ks2` with pop 10 for hard-clause instances in
+    `hparams: auto` is the change §5 anticipated.
+  - Because the rule failed at pop 40 by one instance, this is the user's
+    call. MaxSATQueries (stuck at the start in all arms) and min-fill are
+    the open cases.

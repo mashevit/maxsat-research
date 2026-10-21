@@ -1,0 +1,5 @@
+config_id,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+ks2check_ks2_10,48,26,0.542,460.6,26,0,22,0,0,0,0,0,0,24.0,211.5,12491.55,1.675,0.203,0.976
+ks2check_ks2_40,48,24,0.5,>900,24,0,24,0,0,0,0,0,0,7.0,242.0,12488.85,1.787,0.205,0.989
+ks2check_m10,48,13,0.271,>900,13,0,35,0,0,0,0,0,0,61.0,545.0,12488.55,1.111,0.301,0.952
+ks2check_m40,48,12,0.25,>900,12,0,36,0,0,0,0,0,0,14.0,504.5,12487.3,1.126,0.36,0.954

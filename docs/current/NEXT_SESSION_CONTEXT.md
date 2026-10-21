@@ -17,6 +17,28 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000000000. Update 2026-10-21 (r14): read first
+
+- **O900 and KS2 were submitted and read on 2026-10-21** (`097efb7`; C core
+  built on the cluster). Results are in
+  `cluster_staging_maxsat_strong/results/{oracle900,ks2check}/`, untracked.
+- **O900** (`ORACLE900_RUN.md` §7, N-2026-10-21-f):
+  - soft 729/729 runs at the optimum, median 0.05 s;
+  - MSE 7/30;
+  - drmx-cryptogen (soft weighted) 0/6.
+- **KS2** (`KS2_CHECK_RUN.md` §6, N-2026-10-21-g):
+  - successes m40 12, m10 13, ks2_40 24, ks2_10 26 of 48;
+  - the rule is met at pop 10 (13/0), not at pop 40 (10/3).
+- **User decisions 2026-10-21:**
+  - ks2 + pop 10 on hard instances: **built** as `auto_hparams/2`, R4;
+  - aggregate crash: **fixed**;
+  - EvalMaxSAT 900 s batch: **not wanted**;
+  - drmx: **investigated** (N-2026-10-21-h).
+  - Committed and pushed 2026-10-21. Tests: 371 passed / 20 skipped.
+- **No new `soft_weighted` rule** (user, 2026-10-21): the drmx options are
+  only noted in N-2026-10-21-h.
+- **Open:** the next batch on `/2`; it needs new upload hashes.
+
 ## 00000000000. Update 2026-10-21 (r13): read first
 
 - **User 2026-10-21:** skip S1. Run the strong solver only, with kernel on

@@ -60,6 +60,116 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-21-h — `auto_hparams/2` (ks2 + pop 10 on hard instances), aggregate fixed; drmx-cryptogen is a search limit, not a misclassification [quote + verified + inference + decision]
+
+> "use ks2 with pop10 on hard, fix crush, dont prepare 900s batch, look into soft rule for drmx-cryptgen" (user, 2026-10-21)
+
+- **[verified] `auto_hparams/2`:** new rule R4 sets `ea.pop_size` 10 and
+  `hard.moves.keep_sat: ks2` when the solved instance has hard clauses.
+  - `merge()` is now deep, so other `hard.moves` keys survive.
+  - Soft instances resolve exactly as under `/1`.
+  - `configs/strong/auto.yaml` was regenerated (header only).
+  - The preview prints pop and keep_sat.
+  - R4 smoke (real runner, C core, 120 s, seed 1): mbd-b14 reached 24 in
+    19.4 s, and quantum-circuit reached 24 in 106.8 s. Both are 0/3 under
+    `/1` in O900.
+- **[verified] `m2_results.py aggregate`:**
+  - Sidecars without `analysis_group`, `m` or `arm` now default to family,
+    "" and config_id.
+  - New columns `hp_pop_size` and `hp_keep_sat`.
+  - Re-run on O900 and KS2, the counts equal the scratch readout.
+  - Tests: +3 in `test_auto_hparams.py` (R4, deep merge, run-time values),
+    new `tests/test_m2_results.py`. Suite 371 passed / 20 skipped.
+  - Upload hashes for O900 and KS2 are now stale; a new batch regenerates
+    its own.
+- **[verified] drmx-cryptogen structure:**
+  - 1,600 vars.
+  - 1,600 positive unit clauses of weight 1 (the objective).
+  - 7,844 clauses of weight 1,601 = 1 + the total light weight, so in effect
+    they are hard: 200 units, 800 binary, 1,836 ternary, 5,008 of length 5.
+  - Optimum 800.
+  - The rule classes it `soft_weighted` (ζ 1650). Walk mutation k 16 breaks
+    about 25 heavy clauses per child (damage ≈ 40k).
+  - No other MSE instance here has such a tier. The only others,
+    causal-discovery and preference_planning, have trivial one-clause tiers.
+- **[verified] Workstation grid on drmx 1** (300 s, seeds 1–2, 8–10 runs in
+  parallel). Reference: the current rule gave 835 at 300 s; O900 gave
+  825–832 at 900 s.
+  - **Heavy tier made hard:**
+    - hard tree with ks2 + pop 10: 866–876 (279 of 300 s in SAT moves, 2 %
+      improving);
+    - no moves: 851–853;
+    - 20 moves per polish: 863;
+    - DLS only (`hard_mode: off`, PMS weights), pop 40 or 10: 838–849;
+    - the same with k 4: 857;
+    - WPMS weights (ζ 1, h_inc 3): 829.
+  - **Soft path:**
+    - k 4: 836–843;
+    - **1M flips per call (`flips_only`): 817, 820**;
+    - **`ls.weights: run`: 820, 820**;
+    - both together: 886–894 (worse).
+  - **900 s, both instances:**
+    - 1M flips: 815–818 (5 runs);
+    - `weights: run`: 811–820 (5 runs);
+    - 0/10 at 800.
+- **[inference]**
+  - Hardening is exact here, but it does not help: the instance is a
+    cardinality-style problem where one-literal SAT moves only swap.
+  - Longer DLS trajectories, through either knob, halve the gap (about 28 →
+    about 16) and then stall.
+  - drmx is a search limit for this LS; EvalMaxSAT proves it in 372–392 s.
+- **[decision, user 2026-10-21] No new `soft_weighted` rule.**
+  > "meanwhile i dont think new rule is justified"
+  - `ls.weights: run` and 1M flips per call stay recorded here as options.
+  - Evidence: one family, workstation only, still 0/10 at the optimum.
+  - Hardening dominating tiers is not adopted either: it is exact, but it
+    measured worse.
+- Scratch configs and records:
+  `/tmp/claude-1000/-home-mashe-maxsat-lab-new-maxsat-lab/e5beb1d1-73dd-43a5-bd42-58d37a46e4e9/scratchpad/drmx/`.
+
+### N-2026-10-21-g — Batch KS2 read: ks2 doubles MSE successes (12 → 24–26 of 48); the pre-registered rule holds at pop 10 (13/0), not at pop 40 (10/3) [verified + inference]
+
+> "copied results" (user, 2026-10-21)
+
+- **[verified]** 192/192 `ok`, all feasible, none below the optimum. Runs
+  at the optimum: m40 12, m10 13, ks2_40 24, ks2_10 26.
+  - ks2 reaches the optimum 3/3 in both populations on mbd-b14,
+    quantum-circuit, af-synthesis and scheduling. M gets at most 1/3 there.
+  - It is close on lisbon (396–397 vs 401–410) and inconsistency (64–65 vs
+    73–78).
+- **[verified] Rule (§5 of the run doc):**
+  - ks2_10 vs m10: better 13, worse 0;
+  - ks2_40 vs m40: better 10, worse 3 (min-fill, MaxSATQueries, ja-kemeny)
+    → **not met at pop 40**;
+  - population: no effect by the rule.
+- **[inference]** MaxSATQueries stays near its Glucose start in every arm,
+  so its ordering is noise. ks2_10 against today's default m40 is 13 / 2
+  (post hoc). Making ks2 (with pop 10) the `hparams: auto` default for
+  hard-clause instances is the user's call.
+- Record: `docs/current2/KS2_CHECK_RUN.md` §6.
+
+### N-2026-10-21-f — Batch O900 read: the strong solver reaches every soft oracle (729/729, median 0.05 s); MSE 7/30, drmx-cryptogen 0/6 [verified + inference]
+
+> "copied results" (user, 2026-10-21)
+
+- **[verified]** 759/759 `ok`, C core built on the cluster, 5.9 h wall time
+  in total.
+- **243 soft non-MSE instances: 729/729 runs reached the optimum.**
+  - TTT median 0.05 s, 99th percentile 4.6 s, maximum 6.1 s (s253).
+  - s253 was 0/3 under v2 after 190M flips (N-2026-10-18-d).
+- **MSE: 7/30.**
+  - Causal-discovery 3/3, ja-maxham 2/3, ja-kemeny and preference 1/3.
+  - mbd, quantum, lisbon and MaxSATQueries 0/3.
+  - The soft-weighted drmx-cryptogen is 0/6 at 825–832 vs 800.
+- **[verified]** `m2_results.py aggregate` crashes on these manifests
+  (`KeyError: 'analysis_group'`). `pending` works. Not fixed yet.
+- **[inference]**
+  - Instances that take RC2 30–900 s to prove are mostly one LS call for
+    DLS+CC: the median run made 1 child. This pool does not stress the EA.
+  - The weak spots are the `soft_weighted` rule (drmx) and the hard-clause
+    move, which batch KS2 addresses.
+- Record: `docs/current2/ORACLE900_RUN.md` §7.
+
 ### N-2026-10-21-e — KS2 built in the strong tree and a 192-task cluster check prepared [quote + verified + inference]
 
 > "prepare me ks2 check for cluster" (user, 2026-10-21)

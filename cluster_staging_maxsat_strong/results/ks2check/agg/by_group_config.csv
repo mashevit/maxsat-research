@@ -1,0 +1,9 @@
+config_id,analysis_group,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+ks2check_ks2_10,mse23-uw-small,24,13,0.542,404.7,13,0,11,0,0,0,0,0,0,12.5,110.5,12491.55,1.05,0.203,0.986
+ks2check_ks2_10,mse24-small,24,13,0.542,460.6,13,0,11,0,0,0,0,0,0,26.5,234.0,12491.8,2.035,0.202,0.976
+ks2check_ks2_40,mse23-uw-small,24,11,0.458,>900,11,0,13,0,0,0,0,0,0,7.0,242.0,12490.8,1.137,0.193,0.991
+ks2check_ks2_40,mse24-small,24,13,0.542,552.0,13,0,11,0,0,0,0,0,0,6.5,219.5,12483.55,2.077,0.205,0.989
+ks2check_m10,mse23-uw-small,24,7,0.292,>900,7,0,17,0,0,0,0,0,0,128.5,1154.0,12493.5,0.551,0.218,0.989
+ks2check_m10,mse24-small,24,6,0.25,>900,6,0,18,0,0,0,0,0,0,60.0,538.0,12479.85,1.652,0.301,0.952
+ks2check_m40,mse23-uw-small,24,6,0.25,>900,6,0,18,0,0,0,0,0,0,23.0,852.5,12489.25,0.971,0.36,0.954
+ks2check_m40,mse24-small,24,6,0.25,>900,6,0,18,0,0,0,0,0,0,12.0,432.0,12487.2,1.817,0.273,0.972

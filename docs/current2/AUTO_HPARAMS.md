@@ -1,4 +1,4 @@
-# Instance-aware hyperparameters for the strong solver (`auto_hparams/1`, 2026-10-21)
+# Instance-aware hyperparameters for the strong solver (`auto_hparams/2`, 2026-10-21)
 
 > "write preprocessing script that passes to solver optimal hyperparameters,
 > whether hard/soft or if small number of vars versus tens thousands of vars
@@ -12,6 +12,12 @@
 - `tests/test_auto_hparams.py`.
 
 The search code (EA, polish cores) is unchanged. Note N-2026-10-21-b.
+
+**Revisions:**
+- `/1` (2026-10-21): R0–R3. Batches O900 and KS2 ran on it (`097efb7`).
+- `/2` (2026-10-21, N-2026-10-21-h): R4 added, giving pop 10 and
+  `keep_sat: ks2` on hard instances. `merge()` is now deep. Soft instances
+  resolve exactly as under `/1`.
 
 ## 1. What it does: chosen at run time, in memory
 
@@ -63,6 +69,7 @@ from a paper, or inference.
 | R1 | `ea.mutation_k` | clamp(round(0.04 · n_eff), 2, 16) | k 16 measured (n ≥ 300); **the shrink below n 400 is inference, untested** |
 | R2 | B2 `dls_t, sp, zeta, h_inc` | by class, below | |
 | R3 | `ls_polish_flips` = `flip_budget` | max(12,500, min(c · n_eff, cap)); **default c = 0 → 12,500** | 12,500 measured for v3 (raw n 64k solved); c > 0 untested for v3 |
+| R4 (`/2`) | `ea.pop_size`, `hard.moves.keep_sat` | **10 and `ks2`** when the solved instance has hard clauses; otherwise unchanged (40, `none`) | measured: batch KS2. Runs at the optimum: m40 12, ks2_10 26 of 48. ks2_10 vs m10: 13 better / 0 worse; vs m40: 13 / 2. The pre-registered rule failed at pop 40 (10 / 3), and pop alone showed no effect. Pop 10 is the user's choice (2026-10-21). `KS2_CHECK_RUN.md` §6 |
 
 **R2 classes.** "Hard" is judged on the effective instance, as `hard_mode:
 auto` does. "Weighted" is judged on the original instance, because kernel
@@ -141,6 +148,13 @@ skipped. They cover:
 - the script.
 
 ## 5. Open
+
+- **R4 smoke [verified: workstation, `/2`, seed 1, 120 s, C core, stop at the
+  optimum]:** mbd-b14 reached 24 in 19.4 s, and quantum-circuit reached 24
+  in 106.8 s. Both are 0/3 under `/1` at 900 s (O900).
+- **Soft-weighted rule:** drmx-cryptogen is 0/6, and the rule is unchanged
+  (user, 2026-10-21). `ls.weights: run` or 1M flips per call gives 811–818
+  at 900 s, still 0/10 at 800 (N-2026-10-21-h).
 
 - The pool manifest waits on the four questions from 2026-10-21:
   - arms;
