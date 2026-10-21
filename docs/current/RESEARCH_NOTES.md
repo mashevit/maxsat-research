@@ -109,6 +109,16 @@ Never edit an old entry's claim in place. Add a dated correction under it.
     only 12, neither 25;
   - proposed: EvalMaxSAT 1 h on the 101 small-track instances not yet run
     (expected N ≈ 45–50), window (30, 3600] s, family/year strata.
+- **[verified] MSE 2016 history** (doc §9.1):
+  - no 3600 s run of any solver, and never the memetic;
+  - EvalMaxSAT: 12 rows at 60–1800 s, all timeouts (set-covering, one
+    Max-2-SAT);
+  - RC2 300 s preview: dimacs-mod and spinglass certified in 0.006–22 s;
+    bipartite max-cut capped.
+- **[inference] Prediction** (doc §9.2): an MSE ρ with variation on both
+  sides comes from the 2023/2024 hard instances: about 25–35 primary
+  points, CI about ±0.3–0.37. MSE 2016 mostly adds memetic floor ties.
+  The stronger result is the complementarity table.
 - **[verified] Non-trivial results:** the broadening was non-trivial only
   for v2 (M2: 5–9 of 70; calib_2sat_sc2: 6/6). Under v3, 0 soft instances
   with a proven optimum are non-trivial (1,686/1,686).

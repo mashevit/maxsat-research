@@ -405,6 +405,84 @@ proven optimum, including the 6 calib_2sat_sc2 instances and s253. That is
 why ρ with v3 has to move to MSE (§8.3), where both solvers do non-trivial
 work. The v2 M2 ρ stays as the record for the weaker solver.
 
+## 9. MSE 2016: what was ever run, and a prediction for an MSE-based ρ (2026-10-21, late)
+
+> "first check if there were runs in this project for mse2016 for 3600s, and
+> which runs were. also I think all exact solver runs we tried on mse2016
+> failed, but state your prediction if we can find enough corpus broadening
+> for rho from mse to find interesting result" (user, 2026-10-21)
+
+### 9.1 Runs on MSE 2016 [verified: result files and docs]
+
+**No 3600 s run of any solver has ever been made on MSE 2016.** What exists:
+
+| solver | where | instances | cap | outcome |
+|---|---|---|---|---|
+| EvalMaxSAT | `results/oracle_more_data.jsonl` (12 rows) | 10 set-covering (scpclr10–13, scpcyc06–11), 1 Max-2-SAT (abrame-habet 120v s2v120c1200-1), scpclr10 again | 60 s (10), 120 s (1), 1800 s (1) | **all timeouts, no bound** |
+| RC2 | workstation preview, 300 s (`docs/archive/CORPUS_MSE2016_ASSESSMENT.md` §3.3) | 13 of the 104-file sample | 300 s | bipartite maxcut 0.7 and 0.8: 10/10 capped; **certified:** dimacs-mod c-fat500-1 (0.006 s, c\* 2), p_hat300-1 (22.05 s, c\* 49), spinglass t3pm3-5555 (0.01 s, c\* 17) |
+| RC2 + EvalMaxSAT | same doc | 3 instances run under both | — | agree on c\* (4, 17, 49) |
+| RC2, 900 s cluster screen | sbatch archived in `scripts/archive/mse16/` | — | — | **never run** |
+| memetic | — | — | — | **never run** on MSE 2016 |
+
+- **Not all exact runs failed.** The crafted small max-cut ones (dimacs-mod,
+  spinglass) certify in 0.006–22 s, in the < 30 s floor region.
+- **The failures** are set-covering (EvalMaxSAT 60–1800 s), bipartite
+  max-cut (RC2 300 s) and one random Max-2-SAT (EvalMaxSAT 120 s).
+
+### 9.2 Prediction: can MSE give enough points for an interesting ρ? [inference]
+
+**Where both solvers vary is the MSE 2023/2024 hard-clause instances, not
+MSE 2016.**
+
+**MSE 2023/2024 small tracks (161 in the frame):**
+- **Proofs:** at the s1 rate (18/60, every proof ≥ 116 s, so all inside a
+  (30, 3600] window), expect **about 40–55 proofs in 1 h**.
+- **Memetic successes:** the memetic reached ≥ 1/3 on 11/18 of the proved
+  ones, so expect **about 25–35 points in the primary (successes-only) ρ**
+  and 40–55 in the sensitivity analysis.
+- **The bigger 2023/2024 files** may add 5–20 proofs (lower proof rate,
+  more memory). Speculative until the files and best-knowns are found
+  (§7.4).
+
+**MSE 2016 (856, all soft, mostly unweighted):**
+- **The exact side** will split. The crafted small max-cut and spinglass
+  instances are proved in seconds, below the floor. Set-covering,
+  bipartite max-cut and the larger random instances will mostly time out.
+  The (30, 3600] window may hold some tens of instances.
+- **The memetic side** will mostly sit at the floor on the proved ones:
+  soft, unweighted and small n, exactly the class where v3 went
+  1,686/1,686, mostly at the first call.
+- **So MSE 2016 likely adds points with exact-side variation but tied
+  memetic effort**, which is the degenerate picture again. Its value is
+  elsewhere: the memetic's costs on the unproved ones as anytime results.
+
+**Precision:** Spearman SE ≈ √((1 + ρ²/2)/(N − 3)), so the 95 % CI half-width
+is about ±0.37 at N = 30 and ±0.29 at N = 50.
+- **Family clustering lowers the effective N:** judgment-aggregation and
+  inconsistency-measurement make up 45 of the 141 HMSE instances.
+- **Detectable:** |ρ| of about 0.4 or more.
+- **Not possible:** a tight "near zero" (orthogonality) claim.
+
+**Expected outcome:**
+- **ρ:** a low or moderate pooled ρ with a wide CI (preview +0.23 at
+  N = 11; −0.06 in the sensitivity analysis), reported as exploratory with
+  per-year and per-family breakdowns.
+- **The stronger result will be the complementarity itself:**
+  - the 2×2 table (§8.2), where each solver reaches instances the other
+    does not;
+  - large per-instance mismatches: bcp, EvalMaxSAT 1,836 s vs memetic ERT
+    11 s; scheduling, 2,036 s vs 54 s; lisbon-wedding 9-18, 116 s vs 0/3;
+    gen-hyper-tw b01, 3,476 s vs 0/3.
+  - That is the "complementary hardness" story, on real benchmark
+    families rather than random ones, answering the range-restriction
+    objection (`more_data/CORPUS_BROADENING_HANDOFF.md`).
+
+**Recommendation:**
+1. Run EvalMaxSAT 1 h on the 101 small-track instances not yet run first:
+   about 101 CPU-h, and it decides N.
+2. Run MSE 2016 as a stratified subset, not all 856, aimed at the window.
+3. Pre-register the §8.3 ρ before step 1's results come in.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
