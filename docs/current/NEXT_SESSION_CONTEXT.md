@@ -37,8 +37,14 @@ next time i work").
    then runs `build_native.sbatch` and submits.
 3. **Statistics and ρ** (notes §5): U30 is descriptive only. The effort
    floor reaches into O900, and the options need a user decision.
-4. **When the user asks:** run MSE 2016 (notes §2), and check the larger
-   MSE 23/24 instances (notes §3).
+4. **Research (notes §7.4):**
+   - optima and best-knowns for the bigger MSE 2023/2024 files and for
+     MSE 2016;
+   - which MSE track our files come from.
+   Then plan the EvalMaxSAT 1 h arrays (§7.2: MSE 2016 and the bigger
+   MSE 2023/2024).
+5. **Settle option 1** (the first-reach flip counter: implement, defer or
+   drop) before any code. The ρ is computed in (30, 900] s (notes §7.1).
 
 ## 00000000000000. Update 2026-10-21 (r16): read first -- ORDER MATTERS on the cluster
 

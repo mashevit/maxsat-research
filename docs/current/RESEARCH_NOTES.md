@@ -90,6 +90,28 @@ Never edit an old entry's claim in place. Add a dated correction under it.
   - the "monkey patch" decision (attribute caches on the WCNF object) to
     explain.
 - **Evidence:** `docs/current2/NOTES_2026-10-21_AGENDA_AND_STATS.md`.
+- **[decision/plan, user, late 2026-10-21]** (doc §7):
+  - the memetic ρ is computed inside the RC2 window, (30, 900] s;
+  - option 1 (the first-reach flip counter) is wanted but may not be
+    implemented; settle before coding;
+  - EvalMaxSAT 1 h arrays (up to 1,000 jobs) on MSE 2016 and the bigger
+    MSE 2023/2024 files;
+  - a possible second ρ against EvalMaxSAT under 1 h on MSE (verify the
+    track);
+  - research optima and best-knowns for the bigger MSE files and for MSE
+    2016 next session.
+- **[verified + proposal] ρ on MSE** (doc §8):
+  - the memetic ERT is 8.8–2,060 s on the EvalMaxSAT-proved instances, so
+    there is no floor;
+  - preview ρ: +0.23 (N = 11) and −0.06 (N = 18 sensitivity); N far too
+    small;
+  - on 53 shared instances: proved & reached 11, proved only 5, reached
+    only 12, neither 25;
+  - proposed: EvalMaxSAT 1 h on the 101 small-track instances not yet run
+    (expected N ≈ 45–50), window (30, 3600] s, family/year strata.
+- **[verified] Non-trivial results:** the broadening was non-trivial only
+  for v2 (M2: 5–9 of 70; calib_2sat_sc2: 6/6). Under v3, 0 soft instances
+  with a proven optimum are non-trivial (1,686/1,686).
 
 ### N-2026-10-21-k — U30 and HMSE read: every soft run with a proven optimum reached it (957/957; with O900 1,686/1,686); MSE hard-clause 129/423 at target, 0 infeasible [verified + inference]
 

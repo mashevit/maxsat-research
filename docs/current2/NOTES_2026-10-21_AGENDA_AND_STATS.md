@@ -226,6 +226,185 @@ evidence that the easy region is easy for both solvers.
    each ρ.
 4. The decision on option 1, 2 or 3 above.
 
+## 7. User decisions and plans after §5.4 (2026-10-21, late)
+
+> "note in some doc I would like to implement 1, and run evalmaxsat with 1
+> hour array of 1000 jobs on 2016 and on the bigger 23/24 instances, I will
+> compare rho of memetic inside under 900s , but i think indeed above 30s
+> and eventually not implement the per flip resolution, and I might compare
+> rho to Evalmaxsat under hour in the mse instances, which I think are from
+> anytime track, but we will need to verify it, we have optimums for 24/23
+> mse, we need to get them for the bigger instances as well, for 2016, I
+> think there are no optimum, you might do research on it tomorrow," (user,
+> 2026-10-21)
+
+**7.1 ρ on the RC2 window: the primary plan.**
+- The memetic ρ is computed inside the RC2 window, **above 30 s and under
+  900 s**, as pre-registered. U30 stays out (§5.3).
+- **Option 1 (the first-reach flip counter) is open.** The user would
+  like to implement it, but may in the end not implement it ("eventually
+  not implement the per flip resolution").
+  - **To settle with the user before any code:** implement, defer, or
+    drop.
+  - **If dropped:** ρ is computed on the existing effort measures, and the
+    tie share at the one-call floor (§5.4: 84/245 O900 soft instances) is
+    reported next to each ρ.
+
+**7.2 EvalMaxSAT, 1 hour, arrays of up to 1,000 jobs:**
+- **(a) MSE 2016 (all-soft):** `data/more_data/`, 856 files, or a chosen
+  subset.
+- **(b) The bigger MSE 2023/2024 instances** (§3), once found and
+  downloaded.
+- **Settings:** 3600 s per job, as batch s1 (`MSE_EVALMAXSAT_3600.md`);
+  driver `cluster_staging_maxsat/scripts/evalmaxsat_array.sbatch`.
+- **Planning needs:**
+  - the cluster memory per job for the large files;
+  - the binary on the cluster
+    (`~/cluster_staging_maxsat_evo/EvalMaxSAT/build/main/EvalMaxSAT_bin`);
+  - the GPL-3.0 licence and citation (N-2026-10-21-a);
+  - 856 × 1 h ≈ 856 CPU-h worst case for MSE 2016 alone.
+
+**7.3 A second ρ: memetic vs EvalMaxSAT under one hour, on MSE instances
+(possible).**
+- **Exact side:** EvalMaxSAT's time to prove the optimum when it is under
+  1 h.
+- **Memetic side:** its effort to reach that optimum.
+- **To verify:**
+  - which MSE track our 2023/2024 files come from. The user thinks
+    anytime; the MSE 2024 best-known table flags all 91 as anytime
+    (`MSE_EVALMAXSAT_3600.md` §3), and MSE 2023 "uw-small" has no flags,
+    so check it;
+  - what "optimum" means per track. Anytime-track best-knowns are not
+    proofs;
+  - which instances EvalMaxSAT proves in under 1 h.
+
+**7.4 Optima and best-knowns: research for the next session.**
+- **MSE 2023/2024 small:** we have per-file best-known tables
+  (`data/raw/mse_2024/bestknown_mse23.csv`, `bestknown_mse24.csv`). 17 of
+  the 141 HMSE instances are proven by our own runs. Note the user's word
+  "optimums": most are best-knowns, not proofs.
+- **The bigger MSE 2023/2024 instances:** best-knowns or optima are needed
+  (evaluation results tables, the anytime and exact tracks).
+- **MSE 2016:** probably no published optima (the user thinks none).
+  Research what the 2016 evaluation published (per-instance best costs?
+  solver results?), and what later work (papers, MaxSAT-instance
+  repositories) reports.
+- **Sources** must be cited and verified; record them in RESEARCH_NOTES.
+
+## 8. Proposal: ρ on MSE, memetic against EvalMaxSAT (2026-10-21, late) [verified data; proposal]
+
+> "try to solve my problem for rho statistics: my anytime solver performs
+> also on mse in much more instances than the evalmaxsat, although the
+> evalmaxsat was run only on 60 instances ... compare rho on these, and
+> whatever evalmaxsat solves within hour from mse 2016' to my memetic 900s.
+> the implemention for the rail instances is not must for this rho ... tell
+> me if there were some non trivial results from the satlib or our corpus
+> broadening" (user, 2026-10-21)
+
+### 8.1 On MSE the effort floor is gone (preview, existing data)
+
+The instances EvalMaxSAT s1 proved in < 3600 s: 18, of which 16 have hard
+clauses and 2 are drmx (soft).
+- **Memetic ERT_s at 900 s, 3 seeds:** HMSE for the hard ones, O900 for
+  drmx. It ranges from **8.8 s to 2,060 s** where it succeeds.
+- **11/18 instances** have ≥ 1 memetic success, and 7 have none. No
+  instance sits at a one-call floor.
+- **Preview ρ** (Spearman; EvalMaxSAT time vs memetic ERT_s; exploratory,
+  N tiny):
+  - primary, successes only: N = 11, ρ = +0.23;
+  - sensitivity, zero-success top-tied: N = 18, ρ = −0.06.
+  - These show only that the method has variation on both axes. N is far
+    too small for any claim.
+
+### 8.2 Complementarity: proved by EvalMaxSAT in 1 h vs reached by the memetic in 900 s
+
+On the 53 HMSE instances that EvalMaxSAT s1 also ran:
+
+| | memetic reached the target (≥ 1/3) | memetic did not |
+|---|---:|---:|
+| **EvalMaxSAT proved (< 1 h)** | 11 | 5 |
+| **EvalMaxSAT did not** | 12 | 25 |
+
+- **Memetic 23/53 vs EvalMaxSAT 16/53:** about 1.4×, not 2×.
+- **Not the same task:** "reached" means reaching the year's best-known,
+  which is not a proof. "Proved" means optimal and certified.
+- **Each finds instances the other misses:** 12 memetic-only, 5
+  EvalMaxSAT-only. This is a second, separate result: an
+  anytime-vs-exact complementarity table. It is not ρ.
+- **The other 88 HMSE instances:** EvalMaxSAT never ran them. The memetic
+  reached the target on 34 of them (57/141 overall).
+
+### 8.3 Proposed ρ design on MSE (to pre-register before the new EvalMaxSAT runs)
+
+**Data to collect:**
+- **EvalMaxSAT 1 h, the MSE 2023/2024 small tracks:**
+  - the 101 frame instances not in s1 (161 frame − 60), plus the 5 with
+    best-known −1 if wanted;
+  - one array, ≤ 101 CPU-h worst case;
+  - expected proofs: about 30 % (s1 rate 18/60), so roughly 30 more and
+    **N ≈ 45–50** in all.
+- **EvalMaxSAT 1 h, MSE 2016:** 856 files, or a stratified subset.
+  - Every instance it proves gets memetic runs, 3 seeds × 900 s, stop at
+    the proven optimum.
+- **The memetic on MSE 2023/2024:** HMSE already has it for all 141 hard
+  instances, plus drmx in O900. No rerun is needed, except for the rail
+  instances, which need the lean code. Exact solvers do not prove them, so
+  they do not enter ρ (user).
+
+**Definition:**
+- **x:** EvalMaxSAT's proof time.
+- **y:** the memetic ERT_s to the proven optimum (900 s budget; failures
+  charged 900 s).
+- **Unit:** one point per instance.
+
+**Window (the analogue of RC2's):**
+- EvalMaxSAT proof time in **(30, 3600] s**.
+- Proofs in < 30 s are reported descriptively, for the same floor and
+  start-up reasons as U30 (§5.3).
+- Every s1 proof so far is ≥ 116 s.
+
+**Conventions:** the pre-registered ones (§5):
+- zero-success instances excluded in the primary analysis, top-tied in
+  the sensitivity analysis;
+- BCa bootstrap, B = 10,000.
+
+**Additional, because of MSE's structure:**
+- **Family clustering:** judgment-aggregation and
+  inconsistency-measurement are large families. Report a
+  family-stratified bootstrap, and ρ within the larger families.
+- **Year:** MSE 2023 is unweighted, MSE 2024 weighted. Report ρ per year
+  next to the pooled value.
+- **The 2×2 table (§8.2)** is reported with ρ.
+
+**Budget asymmetry:** 900 s for the memetic, 3600 s for EvalMaxSAT. Ranks
+are unaffected, but the memetic's success rate is capped by its shorter
+budget. State it.
+
+**Open:**
+- the track of our files (§7.3);
+- best-knowns for the bigger files (§7.4);
+- whether MSE 2016 has known optima (research next session).
+
+### 8.4 Non-trivial results from SATLIB and the corpus broadening [verified: docs]
+
+The pre-registered Q2 rule counts an instance as non-trivial for the
+memetic if success < 3/3 or median TTT ≥ 45 s.
+
+| set | solver | non-trivial (Q2) | source |
+|---|---|---|---|
+| calib_a/b (the corpus broadening, M2 full pool, 70 instances) | v2 `memetic_deeppolish` | **5** (0.5 s arm: #7, 9, 38, 39, 47) / **9** (3.5 s arm). The jointly non-trivial strip is narrow: 3-SAT n 250 α 4.26/4.35 and n 150 α 4.8; 2-SAT n 400 α 2.0–2.15 borderline | `docs/M2_FULL_POOL_READOUT_AND_STATE.md` |
+| calib_2sat_sc2 (large-n Max-2-SAT, 6 eligible) | v2, both arms | **6/6** non-trivial; s253 unsolved even on its kernel (v2) | `CALIB_2SAT_SC.md` §13; `KERNEL_MEMETIC_RUN.md` §6 |
+| SATLIB (95 RC2-eligible) | — | never run on the v2 memetic (RC2 only) | `SATLIB_BENCH_INTAKE.md` |
+| everything soft with a proven optimum (O900 soft 243 + U30 319) | **v3 strong** | **0**: 1,686/1,686 runs at the optimum; max TTT 6.1 s (s253) in O900, 2.16 s in U30 | `ORACLE900_RUN.md` §7; `UNDER30_HARDMSE_RUN.md` §8 |
+| MSE drmx-cryptogen (soft, weighted) | v3 | non-trivial (0/6) | O900 |
+| MSE hard-clause (HMSE) | v3 | 84/141 never reached the target; many reached only after hundreds of seconds | `UNDER30_HARDMSE_RUN.md` §8 |
+
+**[inference]** The broadening did find a non-trivial region, but only for
+the v2 solver. The strong solver erased it on every soft instance with a
+proven optimum, including the 6 calib_2sat_sc2 instances and s253. That is
+why ρ with v3 has to move to MSE (§8.3), where both solvers do non-trivial
+work. The v2 M2 ρ stays as the record for the weaker solver.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
@@ -241,5 +420,9 @@ evidence that the easy region is easy for both solvers.
   3. the user uploads and arranges, runs `build_native.sbatch`, then
      submits;
   4. §5.5: start the statistics table and the floor analysis;
-  5. §2/§3: the MSE 2016 plan and the large-MSE check, when the user
-     asks.
+  5. §7.4: research optima and best-knowns for the bigger MSE 2023/2024
+     files and for MSE 2016, plus which MSE track our files come from;
+     then plan the EvalMaxSAT 1 h arrays (§7.2).
+  6. §7.1: settle option 1 (implement, defer or drop) before any code.
+  7. §8.3: pre-register the MSE ρ design with the user, then the EvalMaxSAT
+     1 h array on the 101 small-track instances not yet run (and MSE 2016).
