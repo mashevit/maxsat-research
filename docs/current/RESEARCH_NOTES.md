@@ -109,6 +109,14 @@ Never edit an old entry's claim in place. Add a dated correction under it.
     only 12, neither 25;
   - proposed: EvalMaxSAT 1 h on the 101 small-track instances not yet run
     (expected N ≈ 45–50), window (30, 3600] s, family/year strata.
+- **[verified, web] The full MSE 2023/2024 sets** (doc §10):
+  - 2023: exact 572 unweighted + 558 weighted (Google Drive), anytime 160 +
+    179 (Helsinki);
+  - 2024: exact 553 + 571, anytime 216 + 229 (Helsinki, 1.7–4.5 GB zips);
+  - our best-cost tables are byte-identical to the published full-set
+    tables;
+  - the 2024 exact per-instance solve times (CSV) give 280 VBS proofs in
+    (30, 3600] s.
 - **[verified] MSE 2016 history** (doc §9.1):
   - no 3600 s run of any solver, and never the memetic;
   - EvalMaxSAT: 12 rows at 60–1800 s, all timeouts (set-covering, one

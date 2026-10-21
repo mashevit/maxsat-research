@@ -45,6 +45,17 @@ next time i work").
    MSE 2023/2024).
 5. **Settle option 1** (the first-reach flip counter: implement, defer or
    drop) before any code. The ρ is computed in (30, 900] s (notes §7.1).
+6. **MSE full sets found** (notes §10):
+   - links and sizes are recorded;
+   - our best-cost tables equal the published full-set tables;
+   - MSE 2024 publishes exact-solver times per instance: 280 VBS proofs in
+     (30, 3600] s, 650 in ≤ 30 s.
+   Plan with the user: the ρ design on published times, the downloads,
+   the memetic runs (about 224 CPU-h for the 2024 window), a size census,
+   and parsing 2023's tables.
+7. **≤ 30 s exact instances may count** (notes §11, user). Only by a
+   pre-registered rule on the exact side (a wider window, or a
+   complementarity map), never by filtering on memetic difficulty.
 
 ## 00000000000000. Update 2026-10-21 (r16): read first -- ORDER MATTERS on the cluster
 

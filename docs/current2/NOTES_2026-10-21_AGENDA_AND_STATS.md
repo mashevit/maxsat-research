@@ -483,6 +483,114 @@ is about ±0.37 at N = 30 and ±0.29 at N = 50.
 2. Run MSE 2016 as a stratified subset, not all 856, aimed at the window.
 3. Pre-register the §8.3 ρ before step 1's results come in.
 
+## 10. The full MSE 2023/2024 sets on the web (2026-10-21, late) [verified: web, 2026-10-21]
+
+> "try to find the mse23/24 full sets on web" (user, 2026-10-21)
+
+**Benchmark sets.** The pages are at maxsat-evaluations.github.io/2023/benchmarks.html
+and, for 2024, the source file `2024/contents/contents_benchmarks.html` in the
+`maxsat-evaluations/maxsat-evaluations.github.io` repository.
+
+| year | set | instances | download | zip size |
+|---|---|---:|---|---:|
+| 2023 | exact, unweighted | 572 | Google Drive (`drive.google.com/file/d/13qDbScs9jU1VaUaq4L7qSGEUrHxC9t6d`) | ? |
+| 2023 | exact, weighted | 558 | Google Drive (`drive.google.com/file/d/1pKuQkuTZr7CO3GXmOGRvrMeLTOaw9Fl6`) | ? |
+| 2023 | anytime, unweighted | 160 | `www.cs.helsinki.fi/group/coreo/MSE2023-anytime-instances/MSE2023-anytime-UW-benchmarks.zip` | 2.2 GB |
+| 2023 | anytime, weighted | 179 | `…/MSE2023-anytime-instances/MSE2023-anytime-W-benchmarks.zip` | 5.5 GB |
+| 2024 | exact, unweighted | 553 | `www.cs.helsinki.fi/group/coreo/MSE2024-instances/mse24-exact-unweighted.zip` | 2.0 GB |
+| 2024 | exact, weighted | 571 | `…/MSE2024-instances/mse24-exact-weighted.zip` | 4.5 GB |
+| 2024 | anytime, unweighted | 216 | `…/MSE2024-instances/mse24-anytime-unweighted.zip` | 1.7 GB |
+| 2024 | anytime, weighted | 229 | `…/MSE2024-instances/mse24-anytime-weighted.zip` | 4.3 GB |
+
+All Helsinki links answered HTTP 200 on 2026-10-21. The sizes are the
+`Content-Length` of the zips.
+
+**Best-known costs: we already have them for the full sets.**
+- `data/raw/mse_2024/best_costs.csv` is **byte-identical** to the published
+  2023 `results/anytime/best_costs.csv`: 2,780 instances, "all benchmarks in
+  the complete set".
+- `data/raw/mse_2024/best_costs (1).csv` is byte-identical to the published
+  2024 `results/anytime/best_costs.csv`.
+  - It has 1,124 instances: 553 unweighted + 571 weighted, which is the
+    exact-track set.
+  - 445 of them carry the "any-time?" flag True, which is 216 + 229, so
+    the anytime set is a subset.
+  - 4 have −1 (unknown).
+- So **the bigger instances already have best-knowns.** The track question
+  (§7.3) is answered for 2024: every file in our `mse24-small` is in the
+  table with its flag.
+
+**Proven optima and exact solve times are published for 2024.**
+`2024/results/exact/{unweighted,weighted}.csv` gives each exact solver's
+time per instance (1 h limit), or FAILED. The solvers include EvalMaxSAT
+(plain, weighted only), EvalMaxSAT-SBVA, EvalMaxSAT-SBVA-saveCores, and a
+VBS column.
+
+| 2024 exact track | instances | proved by some solver (VBS) | VBS ≤ 30 s | VBS in (30, 3600] s |
+|---|---:|---:|---:|---:|
+| unweighted | 553 | 458 | 307 | **151** |
+| weighted | 571 | 472 | 343 | **129** |
+
+- **Caveat:** the EvalMaxSAT-SBVA variants show about 194 s even on
+  instances the VBS solves in milliseconds (SBVA preprocessing), so their
+  times overstate hardness. Use the VBS, or plain EvalMaxSAT (weighted),
+  or our own EvalMaxSAT runs.
+- **2023:** the exact per-instance results exist as `table-all.html` and
+  `unweighted.js` / `weighted.js` (no CSV); not yet parsed.
+
+**What this changes for ρ (§8, §9) [inference]:**
+- **More points:** MSE 2024 alone offers **about 280 instances proved in
+  (30, 3600] s** by the VBS, against the 40–55 projected in §9.2 from our
+  own EvalMaxSAT runs. 2023 adds about as many once parsed.
+- **The exact-side x can be read from the published tables.** No new
+  exact runs are needed, at the cost of competition hardware and the VBS
+  definition. Our own EvalMaxSAT 1 h runs then become a check on a
+  subsample, not the main data.
+- **The memetic must run on these instances:** 3 seeds × 900 s, stopping
+  at the proven optimum.
+  - Worst case for the 2024 window alone: 280 × 3 × 960 s ≈ 224 CPU-h.
+  - Files are large (the GB zips). Measure sizes and memory first: the
+    lean tables cover long clauses, but the RAM audit is still open.
+- **Next session:** download, or select from the published tables first
+  and fetch only the chosen files; size census; parse the 2023 exact
+  tables; a ρ design on the (30, 3600] VBS window, pre-registered before
+  any memetic runs.
+
+## 11. Exact-easy instances (≤ 30 s) can count too (user, 2026-10-21, late)
+
+> "also note we can use under 30s exact too, if our solver is complimentary
+> on them but finishes under 900s" (user, 2026-10-21)
+
+**The idea.** An instance the exact solvers prove in ≤ 30 s, but where the
+memetic needs real effort and still finishes within 900 s, is
+**informative**: easy to prove, hard to search, the complementary
+corner. §5.3 excluded U30 because the memetic was at its **floor** there
+(tied effort). That reason does not apply where the memetic is off the
+floor. On MSE, the VBS proves 650 of the 2024 exact-track instances in
+≤ 30 s (307 unweighted + 343 weighted).
+
+**Caution: how such instances enter must not depend on the memetic
+outcome** [inference, standard statistics].
+- **The problem:** choosing "the ≤ 30 s instances where the memetic
+  struggles" selects on y. That builds the complementarity into the
+  sample and biases ρ downward (toward "orthogonal").
+- **Ways to keep it valid** (choose one before the memetic runs):
+  1. **Widen the pre-registered window to (0, 3600] s on the exact side.**
+     Include every proved instance, whatever the memetic does, and report
+     the share of memetic floor ties next to ρ, as in §5.4. The exclusion
+     rule then depends only on x.
+  2. **Keep (30, 3600] for the primary ρ, and add the ≤ 30 s instances as
+     a pre-registered second analysis.**
+     - A 2D "complementarity map" (exact time × memetic ERT), counting
+       instances in each quadrant: exact-easy & memetic-hard, and so on.
+     - Instances are entered by x alone, the memetic quadrant is a result,
+       and nothing is filtered on it.
+  3. **Define "off the floor" on instance features before seeing memetic
+     results** (e.g. n, hard-clause count). This is weaker; only if 1 or 2
+     do not fit.
+- **The U30 soft-only instances** are a different case. The memetic was at
+  its floor on 83 % of runs there, so they stay descriptive.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
@@ -502,5 +610,10 @@ is about ±0.37 at N = 30 and ±0.29 at N = 50.
      files and for MSE 2016, plus which MSE track our files come from;
      then plan the EvalMaxSAT 1 h arrays (§7.2).
   6. §7.1: settle option 1 (implement, defer or drop) before any code.
-  7. §8.3: pre-register the MSE ρ design with the user, then the EvalMaxSAT
-     1 h array on the 101 small-track instances not yet run (and MSE 2016).
+  7. §10 supersedes much of §8.3/§9.2: published MSE 2024 exact-track
+     times give about 280 proofs in (30, 3600] s. Decide the ρ design on them (VBS or
+     EvalMaxSAT), parse 2023's tables, and plan downloads, memetic runs and a size
+     census.
+  8. §11: the ≤ 30 s exact instances may enter, but only by a rule on x (widen
+     the window, or a pre-registered complementarity map), never by filtering on
+     memetic difficulty.
