@@ -67,6 +67,9 @@ next time i work").
 7. **≤ 30 s exact instances may count** (notes §11, user). Only by a
    pre-registered rule on the exact side (a wider window, or a
    complementarity map), never by filtering on memetic difficulty.
+9. **Bigger MSE submissions split by memory** (notes §14, user): 3–4
+   manifests at 8, 16, 32 and maybe 64 GB, binned by `sizes.tsv`; one
+   `sbatch --mem=…` per manifest (the command line overrides `#SBATCH --mem=8G`).
 
 ## 00000000000000. Update 2026-10-21 (r16): read first -- ORDER MATTERS on the cluster
 

@@ -691,6 +691,29 @@ copies in `cluster_staging_maxsat_strong/scripts/`.
     is network I/O, no Python), then
     `sbatch --export=ALL,STEPS=test,extract,sizes download_mse_full.sbatch`.
 
+## 14. Submitting the bigger MSE instances: split by memory (user, 2026-10-21, late)
+
+> "when i submit the bigger mse instances, to split them in 3-4 manifests,
+> with 8gb, 16gb 32gb, and maybe 64gb ram in sbatch" (user, 2026-10-21)
+
+- **Rule:** the bigger MSE 2023/2024 instances are not one array. They go
+  into 3–4 manifests by memory need, each with its own `--mem`:
+  - 8 GB (today's default in `tier2_memetic_array.sbatch`);
+  - 16 GB;
+  - 32 GB;
+  - maybe 64 GB, only if the census shows instances that need it and the
+    cluster has nodes for it.
+- **How to bin:** by the decompressed `.wcnf` size from
+  `~/mse_full/sizes.tsv` (§13). The size-to-RAM thresholds are not set
+  yet; calibrate them on a few instances first (the MSE rail already
+  exceeded 3.6 GB on the workstation). Above the largest bin, the
+  instance is left out and reported, not silently dropped.
+- **Sbatch:** one submission per manifest. `--mem` given on the `sbatch`
+  command line overrides the `#SBATCH --mem=8G` line, so one script can
+  serve all bins, e.g. `sbatch --mem=32G --array=1-N ... tier2_memetic_array.sbatch`.
+- **Why:** one 8 GB array cannot hold the big instances, and one 64 GB
+  array would waste memory and queue slots on the small ones.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
@@ -719,3 +742,5 @@ copies in `cluster_staging_maxsat_strong/scripts/`.
      memetic difficulty.
   9. §13: the user downloads the four exact zips on the cluster (`download_mse_full.sh`),
      then `sizes.tsv` comes back for the size census and the choice of what to decompress.
+  10. §14: when submitting the bigger MSE instances, split them into 3–4 manifests
+     by memory (8 / 16 / 32 GB, maybe 64 GB), one `sbatch --mem=…` per manifest.
