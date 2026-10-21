@@ -30,6 +30,20 @@ tree are logged in PROVENANCE.md.
      Accepted when the cost does not get worse, or with probability `noise`.
   The SAT solver only ever sees hard clauses, assumptions and phases: it is
   given no objective information (plan §8.4 "roles" rule).
+
+  Keep-satisfied moves (opt-in `hard.moves.keep_sat`, strong tree 2026-10-21;
+  docs/current2/KS2_CHECK_RUN.md, N-2026-10-21-d, repo)
+  7. `ks`: when the drawn soft clause is a unit, the move first assumes its
+     literal TOGETHER WITH every currently satisfied unit soft literal. A model
+     then satisfies the target and keeps every satisfied unit; when all soft
+     clauses are units the move strictly lowers the cost. Acceptance is move
+     6's rule. On UNSAT or a budget stop it falls back to move 6 unchanged.
+  8. `ks2`: as `ks`, but on UNSAT it reads Glucose's core over the
+     assumptions and, when the target is in it, retries once without the
+     kept literals the core names; only then does it fall back to move 6.
+  Default `none`: move 6 exactly as before (same calls, same RNG draws).
+  Assumptions are literals of soft clauses, as move 6 already assumes; the
+  solver still sees no weights.
 """
 from __future__ import annotations
 
@@ -42,6 +56,7 @@ from .population import hash_assign, jw_priors
 from sat.walksat_v2 import walksat_polish_v2
 
 PHASE_MODES = ("jw", "random")
+KEEP_SAT_MODES = ("none", "ks", "ks2")
 
 
 def hard_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -50,6 +65,9 @@ def hard_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     if phases not in PHASE_MODES:
         raise ValueError(f"hard.phases must be one of {PHASE_MODES}, got {phases!r}")
     mv = h.get("moves") or {}
+    keep_sat = str(mv.get("keep_sat", "none")).lower()
+    if keep_sat not in KEEP_SAT_MODES:
+        raise ValueError(f"hard.moves.keep_sat must be one of {KEEP_SAT_MODES}, got {keep_sat!r}")
     return {
         "phases": phases,
         # Glucose calls allowed per member before duplicates are accepted.
@@ -62,6 +80,7 @@ def hard_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
         # `max_budget_misses` times is set aside for the rest of the run.
         "move_conf_budget": int(mv.get("conf_budget", 5000)),
         "move_max_budget_misses": int(mv.get("max_budget_misses", 3)),
+        "move_keep_sat": keep_sat,
     }
 
 
@@ -109,6 +128,15 @@ class HardStats:
     moves_accepted: int = 0
     moves_improving: int = 0
     move_s: float = 0.0
+    # Keep-satisfied moves (hard.moves.keep_sat ks / ks2); all 0 when none.
+    ks_calls: int = 0                  # moves that tried the keep-satisfied call first
+    ks_sat: int = 0                    # ... and got a model (strictly improving)
+    ks_unsat: int = 0
+    ks_budget: int = 0                 # stopped by the conflict budget (no proof)
+    ks_core_len_sum: int = 0           # ks2: summed core sizes on UNSAT
+    ks2_retries: int = 0               # ks2: retries without the core's kept literals
+    ks2_sat: int = 0
+    ks_fallbacks: int = 0              # moves that went on to move 6
     incumbent_infeasible_events: int = 0   # must stay 0 once a feasible member exists
     hard_feasible_final: Optional[bool] = None
 
@@ -171,6 +199,10 @@ class HardSAT:
             if v <= n:
                 a[v] = lit > 0
         return "sat", a
+
+    def core(self) -> List[int]:
+        """The assumption literals of the last UNSAT answer (Glucose's core)."""
+        return list(self.s.get_core() or [])
 
     def close(self) -> None:
         if self.s is not None:
@@ -281,9 +313,42 @@ def repair(x: List[bool], sat: HardSAT, deadline: float, st: HardStats) -> Optio
     return y
 
 
+def _keep_sat_move(cur: List[bool], soft: SoftView, sat: HardSAT, lit: int, mode: str,
+                   deadline: float, conf_budget: Optional[int], st: HardStats) -> Optional[List[bool]]:
+    """Moves 7/8: the target unit literal plus every satisfied unit soft literal."""
+    keep = tuple(c[0] for _, c in soft.clauses
+                 if len(c) == 1 and (cur[c[0]] if c[0] > 0 else not cur[-c[0]]))
+    st.ks_calls += 1
+    status, y = sat.model(cur, (lit,) + keep, deadline, conf_budget)
+    st.move_calls += 1
+    if status == "sat":
+        st.ks_sat += 1
+        return y
+    if status == "budget":
+        st.ks_budget += 1
+        return None
+    if status != "unsat":
+        return None
+    st.ks_unsat += 1
+    if mode != "ks2":
+        return None
+    core = set(sat.core())
+    st.ks_core_len_sum += len(core)
+    if lit not in core or len(core) < 2:
+        return None
+    st.ks2_retries += 1
+    status, y = sat.model(cur, (lit,) + tuple(l for l in keep if l not in core), deadline, conf_budget)
+    st.move_calls += 1
+    if status == "sat":
+        st.ks2_sat += 1
+        return y
+    return None
+
+
 def feasible_moves(x: List[bool], soft: SoftView, sat: HardSAT, rng, n_moves: int,
                    noise: float, deadline: float, st: HardStats,
-                   conf_budget: Optional[int] = None, max_misses: int = 3) -> List[bool]:
+                   conf_budget: Optional[int] = None, max_misses: int = 3,
+                   keep_sat: str = "none") -> List[bool]:
     """Up to `n_moves` moves M from a hard-feasible x; returns the best state seen.
 
     One move: draw an unsatisfied soft clause with probability proportional to
@@ -310,6 +375,23 @@ def feasible_moves(x: List[bool], soft: SoftView, sat: HardSAT, rng, n_moves: in
             if acc >= r:
                 break
         st.moves_tried += 1
+        if keep_sat != "none" and len(lits) == 1:
+            cand = _keep_sat_move(cur, soft, sat, lits[0], keep_sat, deadline, conf_budget, st)
+            if cand is not None:
+                # Same acceptance as move 6. With only unit soft clauses the
+                # model is strictly better; a non-unit soft clause is not kept
+                # and can still break.
+                st.moves_sat += 1
+                c = soft.cost(cand)
+                if c <= cur_cost or rng.random() < noise:
+                    st.moves_accepted += 1
+                    if c < cur_cost:
+                        st.moves_improving += 1
+                    cur, cur_cost = cand, c
+                    if cur_cost < best_cost:
+                        best, best_cost = cur, cur_cost
+                continue
+            st.ks_fallbacks += 1
         order = list(lits)
         rng.shuffle(order)
         cand = None

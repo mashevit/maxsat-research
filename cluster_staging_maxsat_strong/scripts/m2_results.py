@@ -174,6 +174,16 @@ def _v3_cols(v3: Optional[dict]) -> Dict[str, Any]:
     return {f"v3_{k}": v3.get(k) for k in keys}
 
 
+def _hp_cols(hp: Optional[dict]) -> Dict[str, Any]:
+    hp = hp or {}
+    f, ov = hp.get("features") or {}, hp.get("overrides") or {}
+    ea, ls = ov.get("ea") or {}, ov.get("ls") or {}
+    return {"hp_class": hp.get("class"), "hp_n_eff": f.get("n_eff"), "hp_mutation_k": ea.get("mutation_k"),
+            "hp_dls_t": ls.get("dls_t"), "hp_dls_zeta": ls.get("dls_zeta"), "hp_dls_h_inc": ls.get("dls_h_inc"),
+            "hp_ls_polish_flips": ls.get("ls_polish_flips"), "hp_resolved_config_hash": hp.get("resolved_config_hash"),
+            "hp_s": hp.get("hparams_s")}
+
+
 def evaluate(manifest: str, outdir: str) -> List[Dict[str, Any]]:
     out = []
     for t in load_tasks(manifest):
@@ -199,6 +209,8 @@ def evaluate(manifest: str, outdir: str) -> List[Dict[str, Any]]:
             preprocess_s=r.get("preprocess_s"),
             # impl v3 diagnostics (shard schema 5); null elsewhere.
             **_v3_cols(r.get("v3")),
+            # `hparams: auto` (shard schema 6): what the job chose; null elsewhere.
+            **_hp_cols(r.get("hparams")),
         ))
     return out
 

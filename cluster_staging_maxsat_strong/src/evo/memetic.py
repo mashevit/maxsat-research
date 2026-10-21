@@ -336,7 +336,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                     child_bits = feasible_moves(child_bits, soft_view, sat, rng,
                                                 hc["moves_per_polish"], hc["move_noise"],
                                                 slot_end, hstats, hc["move_conf_budget"],
-                                                hc["move_max_budget_misses"])
+                                                hc["move_max_budget_misses"], hc["move_keep_sat"])
                 ls_rest = dict(ls_call, time_limit_s=max(0.0, slot_end - time.time()))
                 if polish_v3 is not None:
                     child_bits, flips_t1, noops = polish_v3(child_bits, ls_rest,

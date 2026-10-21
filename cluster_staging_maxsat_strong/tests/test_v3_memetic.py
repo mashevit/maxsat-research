@@ -352,7 +352,7 @@ def test_shard_records_v3_and_refuses_v3_keys_under_v2(tmp_path):
     rc = shard.main(["--instance", path, "--config", str(cfgp), "--seed", "1", "--budget-s", "5",
                      "--out", str(out)])
     r = json.loads(out.read_text().strip().splitlines()[-1])
-    assert rc == 0 and r["status"] == "ok" and r["schema_version"] == 5
+    assert rc == 0 and r["status"] == "ok" and r["schema_version"] == 6
     assert r["memetic_impl"] in ("v3", None) and r["preprocess"] is not None
     if r["memetic_impl"] == "v3":
         assert r["v3"]["hard_mode"] in ("on", "off")

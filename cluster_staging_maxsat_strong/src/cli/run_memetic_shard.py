@@ -73,6 +73,8 @@ try:
     from sat.cnf import WCNF
     from sat import kernel as kern
     from evo import v3 as evo_v3
+    from evo import auto_hparams as ahp
+    from evo.hard import hard_cfg
     from evo.impl_v2 import memetic_impl
 except Exception:  # pragma: no cover - path fixup for `python src/cli/...`
     _here = os.path.abspath(__file__)
@@ -82,6 +84,8 @@ except Exception:  # pragma: no cover - path fixup for `python src/cli/...`
     from sat.cnf import WCNF  # type: ignore
     from sat import kernel as kern  # type: ignore
     from evo import v3 as evo_v3  # type: ignore
+    from evo import auto_hparams as ahp  # type: ignore
+    from evo.hard import hard_cfg  # type: ignore
     from evo.impl_v2 import memetic_impl  # type: ignore
 
 try:
@@ -106,7 +110,13 @@ except Exception:
 #    hard_mode, mutation damage, PX components, polish core counters,
 #    ls_native) and `native_build` (gcc version and .so hash when ls.native).
 #    All null for v1/v2. Every version-4 field is unchanged.
-SHARD_SCHEMA_VERSION = 5
+# 6 (2026-10-21): additive `hparams` -- null unless the config has
+#    `hparams: auto` (src/evo/auto_hparams.py): then the rule set, the class and
+#    features of the solved instance, the overrides merged into the config in
+#    memory, the reasons, `resolved_config_hash` and `hparams_s`. `config` and
+#    `config_hash` stay the config as submitted (the batch's one file).
+#    Every version-5 field is unchanged.
+SHARD_SCHEMA_VERSION = 6
 
 DEFAULT_SOLVER = "memetic_ea"
 KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
@@ -338,6 +348,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         preprocess = kern.preprocess_mode(cfg)
         if preprocess != "none":
             kern.gate_params(cfg)
+        # `hard:` keys (src/evo/hard.hard_cfg), checked now rather than when the
+        # first child reaches the moves.
+        hard_cfg(cfg)
+        hp_opts = ahp.hparams_opts(cfg)
+        if hp_opts is not None:
+            # The rules set keys of the EA path only.
+            if solver != DEFAULT_SOLVER:
+                raise ValueError(f"hparams: auto needs solver {DEFAULT_SOLVER}, not {solver}")
+            # Every value the rules can choose must also be a valid config: check
+            # the extreme classes now, so a bad combination fails before the run.
+            for cls in ahp.DLS_BY_CLASS:
+                t, sp, z, h, _ = ahp.DLS_BY_CLASS[cls]
+                evo_v3.check_cfg(ahp.merge(cfg, {"ls": {"dls_t": t, "dls_sp": sp, "dls_zeta": z or 50,
+                                                        "dls_h_inc": h}, "ea": {"mutation_k": 2}}), "v3")
     except ValueError as e:
         print(f"FATAL: {e} in {args.config}.", file=sys.stderr)
         return 2
@@ -433,6 +457,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "restarts": None,
         "flips_in_target_restart": None,
         "total_flips": None,
+        # `hparams: auto` (schema 6; src/evo/auto_hparams.Resolved.record()).
+        "hparams": None,
         # Preprocessing (schema 4; src/sat/kernel.py). `preprocess` is null
         # when the config has none, else the gate's decision: kernel |
         # kernel_empty | skipped_screen | skipped_gain | skipped_length |
@@ -481,7 +507,10 @@ def main(argv: Optional[List[str]] = None) -> int:
               f"stop={rec['stop_reason']} t_target={rec['time_to_target_s']} "
               f"restarts={rec['restarts']} flips={rec['total_flips']}"
               + (f" pre={rec['preprocess']} kernel_n={rec['kernel_n_vars']} pre_s={rec['preprocess_s']}"
-                 if rec["preprocess"] is not None else ""))
+                 if rec["preprocess"] is not None else "")
+              + (f" hp={rec['hparams']['class']} k={rec['hparams']['overrides']['ea']['mutation_k']}"
+                 f" zeta={rec['hparams']['overrides']['ls']['dls_zeta']}"
+                 if rec["hparams"] is not None else ""))
         return 0 if s == "ok" else 1
 
     if not os.path.isfile(inst):
@@ -524,6 +553,15 @@ def main(argv: Optional[List[str]] = None) -> int:
                 run_wcnf = kernel.wcnf
                 if target_cost is not None:
                     run_target = target_cost - kernel.const
+        if hp_opts is not None:
+            # Instance-aware values, chosen on the instance the EA solves and
+            # merged in memory. Their time counts like the gate's.
+            hp = ahp.resolve(cfg, wcnf, run_wcnf, rec["preprocess"] or "none")
+            rec["hparams"] = hp.record()
+            evo_v3.check_cfg(hp.cfg, "v3")
+            pre_s += hp.seconds
+            run_cfg = dict(hp.cfg, time_limit_s=max(0.0, float(args.budget_s) - pre_s))
+            rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
         if kernel is not None and kernel.wcnf.n_vars == 0:
             # Every variable eliminated: the lifted assignment is optimal.
             reached = run_target is not None and run_target >= 0
@@ -575,7 +613,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     rec["best_soft_weight_reported"] = float(res.get("best_soft_weight", 0.0))
     rec["stop_reason"] = res.get("stop_reason")
     ttt = res.get("time_to_target_s")
-    # On the kernel path the solver's clock started after the gate.
+    # On the kernel path the solver's clock started after the gate (and after
+    # the hparams choice, when the config has `hparams: auto`).
     rec["time_to_target_s"] = None if ttt is None else round(float(ttt) + pre_s, 3)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["memetic_impl"] = res.get("impl")

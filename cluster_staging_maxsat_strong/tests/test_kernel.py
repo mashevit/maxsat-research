@@ -186,7 +186,7 @@ def run(tmp_path, inst, cfg, *extra):
 def test_shard_kernel_path_reaches_the_optimum_scored_on_the_original(tmp_path):
     inst, opt, kn = sparse_instance(tmp_path)
     rc, r = run(tmp_path, inst, dict(CFG, preprocess="kernel"), "--oracle-cost", str(opt), "--stop-at-oracle")
-    assert rc == 0 and r["status"] == "ok" and r["schema_version"] == 5
+    assert rc == 0 and r["status"] == "ok" and r["schema_version"] == 6
     assert r["preprocess"] == "kernel" and r["kernel_n_vars"] == kn and r["n_vars"] == 60
     assert r["stop_reason"] == "target" and r["best_cost"] == opt and r["is_optimal"]
     assert r["best_cost"] == r["kernel_best_cost"] + r["kernel_const"]

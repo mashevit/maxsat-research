@@ -117,7 +117,8 @@ def test_live_new_dialect_soft_only(tmp_path):
 
 
 @needs_bin
-@pytest.mark.skipif(not os.path.isdir(MSE23), reason="MSE 2023 instances not staged")
+@pytest.mark.skipif(not os.path.isfile(os.path.join(MSE23, "setcover-sts-data.135.wcnf")),
+                    reason="MSE 2023 instance not staged (this tree stages only the batch's MSE files)")
 def test_live_sigterm_gives_verified_upper_bound():
     # RC2 is 4+ above best-known here after 1800 s; EvalMaxSAT will not prove it in 5 s
     p = os.path.join(MSE23, "setcover-sts-data.135.wcnf")

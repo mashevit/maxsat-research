@@ -67,3 +67,48 @@ passed, 24 skipped**:
 
 **Hashes:** `scripts/manifest_strong_s1.upload.sha256` lists the sha256 of every
 file the cluster run needs (code, configs, scripts, manifest, instances).
+
+## Changes after creation
+
+### 2026-10-21: instance-aware hyperparameters, chosen at run time (`auto_hparams/1`)
+
+User [quote]: "write preprocessing script that passes to solver optimal
+hyperparameters, whether hard/soft or if small number of vars versus tens
+thousands of vars and clauses", then "build the run-time version" (no
+per-instance config files). Record: `docs/current2/AUTO_HPARAMS.md`.
+
+| file | change |
+|---|---|
+| `src/evo/auto_hparams.py` | **new.** Rules R0–R3 with evidence tags. `resolve()` measures the instance the EA solves (kernel when the gate passes) and merges the chosen values into the config in memory; `preview()` for the workstation. |
+| `src/cli/run_memetic_shard.py` | `hparams: auto` resolved after the gate, validated, time counted in the budget. Schema **6**: additive `hparams` (null otherwise). Bad `hparams` configs → exit 2. |
+| `configs/strong/auto.yaml` | **new.** The one batch config (BASE + `hparams: auto`). |
+| `scripts/auto_hparams.py` | **new.** `--write-base`, `--check`, preview (`--instance`, `--list`, `--map`). |
+| `scripts/m2_results.py` | `hp_*` columns from the record's `hparams`. |
+| `tests/test_auto_hparams.py` | **new.** 22 tests. `tests/test_v3_memetic.py`, `tests/test_kernel.py`: schema 5 → 6. |
+
+**Tests:** 351 passed, 24 skipped.
+
+### 2026-10-21: batch O900 (`docs/current2/ORACLE900_RUN.md`)
+
+| file | change |
+|---|---|
+| `scripts/make_oracle900_manifest.py` | **new.** `--select` (per-formula selection from the staging tree's RC2 / EvalMaxSAT rows; copies instances into `data/`), then the manifest, sidecar, hashes, rsync list; `--check`. |
+| `scripts/instances_oracle900.csv`, `scripts/manifest_oracle900.*`, `scripts/rsync_files_oracle900.txt` | **new.** 253 instances, 759 tasks, 299 upload hashes. |
+| `data/` | 253 instances copied from `cluster_staging_maxsat/data/` (sha256-checked; not in git). |
+| `tests/test_oracle_evalmaxsat.py` | The live-SIGTERM test skips on its own instance file, not on the MSE 2023 folder (this tree now stages 2 of its files). |
+
+**Tests:** 355 passed, 20 skipped (the 4 newly running MSE-data tests pass).
+
+### 2026-10-21: keep-satisfied moves and batch KS2 (`docs/current2/KS2_CHECK_RUN.md`)
+
+| file | change |
+|---|---|
+| `src/evo/hard.py` | `hard.moves.keep_sat: none \| ks \| ks2` (moves 7–8), `HardSAT.core()`, 8 zero-by-default `HardStats` counters. Default `none` = move M exactly. |
+| `src/evo/memetic.py` | passes `move_keep_sat` to `feasible_moves`. |
+| `src/cli/run_memetic_shard.py` | validates `hard:` keys (`hard_cfg`) before the run. |
+| `tests/test_keep_sat.py` | **new.** 14 tests. |
+| `scripts/make_ks2check_manifest.py`, `configs/strong/ks2check_*.yaml`, `scripts/instances_ks2check.csv`, `scripts/manifest_ks2check.*`, `scripts/rsync_files_ks2check.txt` | **new.** 16 instances, 192 tasks, 66 upload hashes. |
+| `scripts/manifest_oracle900.upload.sha256`, `scripts/rsync_files_oracle900.txt` | regenerated (src changed); `--check` and `sha256sum -c` pass. |
+| `data/` | 8 more MSE 2023/2024 instances (sha256-checked; not in git). |
+
+**Tests:** 369 passed, 20 skipped.
