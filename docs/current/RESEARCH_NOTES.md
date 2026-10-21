@@ -60,6 +60,147 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-21-e — KS2 built in the strong tree and a 192-task cluster check prepared [quote + verified + inference]
+
+> "prepare me ks2 check for cluster" (user, 2026-10-21)
+
+- **[verified]** `hard.moves.keep_sat: none | ks | ks2` is in
+  `src/evo/hard.py` (default `none` = today's move, byte-identical). 14 new
+  tests; suite 369 passed / 20 skipped. In-tree ks2 on lisbon, 120 s:
+  400 vs 423.
+- **[verified]** Batch KS2: the 16 MSE instances with hard clauses and an
+  EvalMaxSAT-proven optimum × {M, ks2} × pop {40, 10} × 3 seeds = 192
+  tasks, ≤ 51.2 CPU-h. Smoke (ks2_10, 60 s, 48 runs): all feasible,
+  ≤ 1.6 GB. Record: `docs/current2/KS2_CHECK_RUN.md`; pre-registered rule
+  in §5.
+- **[inference]** ks does nothing where the soft clauses are not units
+  (optimizing-BDDs, preference_planning); the batch measures M there.
+
+### N-2026-10-21-d — lisbon-wedding: origin, who solved it, and workstation experiments; slot length does not help, a keep-satisfied SAT move does [quote + source + verified + inference]
+
+> "what do you think can enhance lisbon wedding? does the rc2/evalmaxsat solved it, from what aggregation is it? can we enhance the hyperparameter, with you doing experiments now - for more than 3.5 seconds, in cases with hundreds thousand clauses like libon wedding" (user, 2026-10-21)
+
+- **[source]** R. Martins and J. Sherry, "Lisbon Wedding: Seating
+  arrangements using MaxSAT", *MaxSAT Evaluation 2017: Solver and Benchmark
+  Descriptions*, Univ. Helsinki B-2017-2, pp. 25–26 (justinesherry.com/papers/martins-mse17.pdf).
+  - Guest-at-table variables; exactly one table per guest; table sizes
+    between l and u; conflicting guests apart; a seated guest implies their
+    labels at the table.
+  - Soft: minimise weighted labels per table (unit soft clauses).
+  - Built with Open-WBO: ladder, modulo-totalizer and generalised-totalizer
+    encodings.
+  - 9-18: 30,553 vars, 204,985 hard, 396 unit soft clauses, 3 weights
+    (1–100).
+- **[verified]** EvalMaxSAT proved 395 in 116.3 s (s1). It timed out at
+  3600 s on lisbon 4-17 and 6-19. RC2 never ran on MSE 2024.
+- **[verified]** Experiments: workstation, 300 s, stop at 395, C core,
+  `hparams: auto`, 8–12 runs in parallel.
+  - **Today's move M** (11 runs: slot 3.5/10/30/60 s, pop 4/10/40, conflict
+    budget 50k, noise 0): 413–440.
+    - Slot length gives no gain: about 4,000 SAT moves per 300 s whatever
+      the slot. The slot only redistributes them among children.
+    - Pop 10 is slightly better than 40 (413, 418 vs 425, 432; 9 vs 2
+      generations).
+  - **Keep-satisfied move** (scratch patch, tree untouched): assume the
+    target soft literal plus every currently satisfied unit soft; fall back
+    to M on UNSAT.
+    - KS: 399, 399.
+    - KS2 (on UNSAT, drop the core's kept literals and retry once): 397, 398,
+      397 (pop 10), 400 (pop 40).
+    - About 2× the moves per second, because the UNSAT calls are fast.
+  - **Other large MSE, seed 1, pop 10, M vs KS2:**
+    - mbd-b14: 33 vs **24 = opt (72 s)**;
+    - quantum-circuit: 51 vs **24 = opt (288 s)**;
+    - ja-kemeny: 558 vs 562;
+    - causal and preference: both reach the optimum;
+    - MaxSATQueries: both stay at the Glucose start, 43,875 (opt 31,514).
+- **[verified, not a bug]** `best_soft_weight_reported` is the satisfied
+  soft weight on the hard path. Reported + `best_cost` = 97,392 = the total
+  in all three MaxSATQueries runs.
+- **[inference]** On encoded industrial instances the hard machinery is
+  bound by SAT-call throughput; the move operator matters, not the slot.
+  KS2 is not yet in the tree; it needs implementation, tests and 3-seed
+  runs.
+
+### N-2026-10-21-c — Batch O900 prepared: strong solver on 253 instances with an optimum proven in < 900 s; selection per formula [quote + verified + inference]
+
+> "strong solver only, instances rc2 is above 30s, kernel on, prepare with oracle on, manifest for instances we have oracle in 900s, from rc2 or evalmaxsat" (user, 2026-10-21)
+
+- **[verified]** Selection: RC2's fastest certified run in [30, 900) s, or
+  EvalMaxSAT optimal in < 900 s (unless RC2 < 30 s). 253 instances (RC2 243,
+  EvalMaxSAT 9, both 1), 759 tasks, ≤ 202 CPU-h. Record:
+  `docs/current2/ORACLE900_RUN.md`.
+- **[verified]** File-level dedupe was not enough. SATLIB's normalised
+  uuf200 files and an older raw copy are the same formulas with different
+  bytes: 4 were selected twice, and 2 entered via the raw copy at 31–36 s
+  although RC2 takes < 30 s on the SATLIB copy. The rules now apply per
+  parsed formula.
+- **[verified] Smoke** (seed 1, 60 s): 84/84 soft instances at the oracle in
+  ≤ 3.7 s; MSE 3/10 at the oracle, all feasible. On lisbon-wedding,
+  feasible moves M take every slot, so the B1–B5 polish makes 0 flips there.
+
+### N-2026-10-21-b — Instance-aware hyperparameters for v3 (`auto_hparams/1`), chosen at run time: rules, evidence, pool dry run [quote + verified + inference]
+
+> "write preprocessing script that passes to solver optimal hyperparameters, whether hard/soft or if small number of vars versus tens thousands of vars and clauses" (user, 2026-10-21)
+
+- Built in `cluster_staging_maxsat_strong/` and chosen **at run time**
+  (user: "build the run-time version"). A config `hparams: auto` makes the
+  shard runner choose the values after its gate and merge them in memory;
+  one batch config, `configs/strong/auto.yaml`; record field `hparams`
+  (schema 6). 22 tests; suite 351 passed / 24 skipped. Record:
+  `docs/current2/AUTO_HPARAMS.md`. Search code unchanged.
+- **[verified]** Real 60 s runs with the C core: the choice takes 0.1–6 ms.
+  s256 (n 64,000 → kernel 572) reaches 13 in 0.42 s, uuf200-022 reaches 1 in
+  0.06 s, ja-385 (hard) ends at 38 vs 37, feasible.
+- **[verified]** Sizes are taken on the instance the EA solves (the kernel
+  when the gate passes). "Weighted" is judged on the original instance:
+  kernel merging made 21 unweighted instances look weighted, a bug found in
+  the dry run and fixed.
+- **[verified] Dry run on the 582-instance pool:** 25 distinct configs. Class:
+  572 soft unweighted, 6 hard weighted, 2 hard unweighted, 2 soft weighted.
+  Kernel on 85 instances. k = 16 on only 21 instances.
+- **[inference]** The flips per call stay 12,500: Stage L1's 0.8–1.6M was
+  measured under 2 % mutation, and B3 removes the n-proportional repair. The
+  k(n) shrink below n 400 and the SATLike classes for MSE are untested here.
+
+### N-2026-10-21-a — EvalMaxSAT in a publication: licence, what to cite; the "solved < 900 s" pool counted [source + verified + proposal]
+
+> "check the web, If I can use like this EvalMAxSat in my research which might be published, what I need to cite" (user, 2026-10-21)
+
+- **[verified: local copy]** `solver_EvalMaxSat/EvalMaxSAT/` is an unmodified
+  clone of github.com/FlorentAvellaneda/EvalMaxSAT, commit `94e6774`
+  (2025-11-05). LICENSE is GPL-3.0. Bundled: CaDiCaL, MCQD, CLI11 (also
+  MaLib and glucose under `lib/`).
+- **[source + inference, not legal advice]** GPL-3.0 restricts distributing
+  the program or derived code, not running it. Running the unmodified binary
+  as a baseline and publishing its results needs no permission. Obligations
+  arise only if a modified EvalMaxSAT is shipped (e.g. in an artifact
+  repository): then its source goes with it, under GPL-3.0. Our driver
+  (`oracle_evalmaxsat.py`) calls the binary as a separate process and is not
+  a derived work of it [inference].
+- **What to cite:**
+  - EvalMaxSAT: F. Avellaneda, "A short description of the solver
+    EvalMaxSAT", *MaxSAT Evaluation 2020: Solver and Benchmark
+    Descriptions*, p. 8 [source: citing papers and Google Scholar; volume
+    series and number not verified]. The MSE 2023 descriptions volume
+    (Berg, Järvisalo, Martins, Niskanen, eds., University of Helsinki) holds
+    an `EvalMaxSAT_2023` description [source: file name in the PDF; text not
+    read]. Cite the year that matches the version, plus the commit hash.
+  - The README credits CaDiCaL (Biere et al., SAT Competition 2020), OLL
+    (Morgado, Dodaro, Marques-Silva, CP 2014), and the PySAT totalizer
+    (Ignatiev, Morgado, Marques-Silva, SAT 2018). RC2 (Ignatiev, Morgado,
+    Marques-Silva, JSAT 2019) and PySAT are cited anyway, because RC2 is the
+    other reference solver.
+- **[verified: profile rows]** Pool "proven optimal by RC2 in < 900 s":
+  838 profiled instance paths, 606 certified < 900 s, of which 26 have cost
+  0. After dropping cost 0 and deduplicating by content: **573 instances**
+  (149 under 1 s, 174 at 1–30 s, 201 at 30–300 s, 49 at 300–900 s).
+  EvalMaxSAT (s1, 60 MSE tasks) proved optimal in < 900 s on **10** (2 mse23,
+  8 mse24). RC2 has 1 MSE 2023 instance < 900 s (ja-maxham, also solved by
+  EvalMaxSAT). Union ≈ **582**.
+- **[verified]** EvalMaxSAT has run only on those 60 MSE tasks. A comparison
+  with EvalMaxSAT on the whole pool needs an EvalMaxSAT run on it.
+
 ### N-2026-10-18-d — Kern batch read: 15/18, prediction held exactly; s253 0/3 after 190M flips on 434 variables [verified]
 
 > "yes read out the kern results" (user, 2026-10-18)

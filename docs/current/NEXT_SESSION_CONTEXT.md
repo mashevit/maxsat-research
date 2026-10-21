@@ -17,6 +17,28 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000000000. Update 2026-10-21 (r13): read first
+
+- **User 2026-10-21:** skip S1. Run the strong solver only, with kernel on
+  and stop at the oracle, on every instance with an optimum proven in
+  < 900 s, from RC2 (fastest run ≥ 30 s) or EvalMaxSAT. The eventual target
+  is a comparison with EvalMaxSAT.
+- **Built, committed and pushed 2026-10-21 (`097efb7`):**
+  - instance-aware hyperparameters chosen at run time: `hparams: auto`,
+    shard schema 6 (`docs/current2/AUTO_HPARAMS.md`, N-2026-10-21-b);
+  - batch O900: 253 instances, 759 tasks, prepared and verified, not
+    submitted (`docs/current2/ORACLE900_RUN.md`, N-2026-10-21-c).
+- **Also prepared:** batch KS2, keep-satisfied SAT moves. lisbon-wedding
+  experiments (N-2026-10-21-d) showed that the slot length does not help and
+  the move does. 192 tasks (`docs/current2/KS2_CHECK_RUN.md`,
+  N-2026-10-21-e).
+- **Next:** rsync → `sbatch build_native.sbatch` (never
+  built on the cluster) → submit O900 and/or KS2 with
+  `MAXSAT_GIT_SHA=097efb7` → readouts.
+- **EvalMaxSAT:** licence GPL-3.0 and citations in N-2026-10-21-a. An
+  EvalMaxSAT 900 s run on the 243 RC2-only instances is not prepared; ask
+  before building it.
+
 ## 0000000000. Update 2026-10-18 (r12): read first
 
 **Milestone A built** (user's go, 2026-10-18; `docs/current2/KERNEL_MEMETIC_RUN.md`,

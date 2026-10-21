@@ -23,6 +23,9 @@ will put new docs from now").
 
 | document | created | what it is |
 |---|---|---|
+| [`KS2_CHECK_RUN.md`](KS2_CHECK_RUN.md) | 2026-10-21 | Keep-satisfied SAT moves (`hard.moves.keep_sat: ks2`) built and tested; batch KS2: move {M, ks2} × pop {40, 10} on the 16 MSE instances with hard clauses and a proven optimum, 192 tasks; smoke, commands, pre-registered reading. Prepared, not submitted. N-2026-10-21-e. |
+| [`ORACLE900_RUN.md`](ORACLE900_RUN.md) | 2026-10-21 | Batch O900: the strong solver (`configs/strong/auto.yaml`, `hparams: auto`) on 253 instances with an optimum proven in < 900 s (RC2 ≥ 30 s, or EvalMaxSAT), 759 tasks; per-formula selection, smoke, upload, commands. Prepared, not submitted. N-2026-10-21-c. |
+| [`AUTO_HPARAMS.md`](AUTO_HPARAMS.md) | 2026-10-21 | Instance-aware v3 hyperparameters (`auto_hparams/1`), chosen at run time inside each job (`hparams: auto`, schema 6): rules R0–R3 by hard/soft, weights and effective size (kernel when the gate passes), evidence per value, dry run on the 582-instance pool, CLI. N-2026-10-21-b. |
 | [`STRONG_MEMETIC_S1_RUN.md`](STRONG_MEMETIC_S1_RUN.md) | 2026-10-18 | The stronger memetic built (`impl: v3`, B1–B5, tree `cluster_staging_maxsat_strong/`): deviations, tests, speed, smoke, batch S1 (324 tasks), upload and commands. N-2026-10-18-c. |
 | [`STRONGER_MEMETIC_DESIGN.md`](STRONGER_MEMETIC_DESIGN.md) | 2026-10-18 | Stronger memetic B1–B5: motivation, how each works (sources checked), parameters, the interactions between them, and the build plan for the third tree `cluster_staging_maxsat_strong/` (S1–S7) plus a leave-one-out batch. N-2026-10-18-b. |
 | [`KERNEL_MEMETIC_RUN.md`](KERNEL_MEMETIC_RUN.md) | 2026-10-18 | Milestone A: the kernel module, gate and shard fields; smoke; the 18-task calib_2sat_sc2 batch (upload list, commands); §5 the proposed stronger memetic (direction B). N-2026-10-18-a. |
