@@ -117,6 +117,12 @@ Never edit an old entry's claim in place. Add a dated correction under it.
     tables;
   - the 2024 exact per-instance solve times (CSV) give 280 VBS proofs in
     (30, 3600] s.
+- **[verified] MSE 2024 HMSE joined to the published VBS times** (doc §12):
+  - 0 instances ≤ 30 s, 45 in (30, 3600] s, 29 unproved;
+  - memetic ERT of successes 7.4–2,566 s, median 244 s, so off the floor;
+  - the memetic reached the best-known on 12 of the 29 unproved;
+  - preview ρ: −0.08 (N = 28) and +0.11 (N = 45 sensitivity), CIs about
+    ±0.35.
 - **[verified] MSE 2016 history** (doc §9.1):
   - no 3600 s run of any solver, and never the memetic;
   - EvalMaxSAT: 12 rows at 60–1800 s, all timeouts (set-covering, one

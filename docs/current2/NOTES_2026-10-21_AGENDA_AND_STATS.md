@@ -591,6 +591,40 @@ outcome** [inference, standard statistics].
 - **The U30 soft-only instances** are a different case. The memetic was at
   its floor on 83 % of runs there, so they stay descriptive.
 
+## 12. Evidence: MSE is off the memetic floor; preview ρ against the published VBS times (2026-10-21, late) [verified: HMSE records + MSE 2024 exact CSVs; exploratory]
+
+> "I think in mse there will be more work than in U30" (user, 2026-10-21)
+
+**Join:** all 74 MSE 2024 HMSE instances are in the published 2024
+exact-track tables (VBS = fastest exact solver, 1 h).
+
+| VBS band | instances | memetic ≥ 1/3 at target | memetic ERT_s of successes |
+|---|---:|---:|---|
+| ≤ 30 s | **0** | — | — |
+| (30, 3600] s | 45 | 28 | min 7.4, median 244, max 2,566 |
+| not proved in 1 h | 29 | **12** | min 53, median 166, max 1,073 |
+
+- **Off the floor:** on MSE the memetic's effort is far from it. The
+  fastest success needs 7.4 s and the median is 244 s, against U30's
+  median TTT of 0.033 s. That supports the user's expectation.
+- **Not yet tested: the ≤ 30 s exact instances.** Our small 2024 files
+  contain none; they are anytime-track instances. A memetic sample is
+  needed.
+  - **[inference]** Hard-clause runs have a higher floor of their own:
+    Glucose start, then 3.5 s slots. So "off the floor" there must be
+    judged against the hard-path minimum (first slot), not against
+    milliseconds.
+- **Complementarity on unproved instances:** on the 29 instances no MSE
+  2024 exact solver proved within 1 h, the memetic reached the year's
+  best-known on 12.
+- **Preview ρ** (Spearman; x = VBS time, y = memetic ERT_s; VBS window
+  (30, 3600]; percentile bootstrap; exploratory, calibration seeds):
+  - primary, successes only: N = 28, **ρ = −0.08**, 95 % CI [−0.46, +0.31];
+  - sensitivity, zero-success top-tied: N = 45, **ρ = +0.11**, CI
+    [−0.21, +0.39].
+  - Consistent with §9.2: low ρ, wide CI. N grows with the full 2024
+    window (about 280) and 2023.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
