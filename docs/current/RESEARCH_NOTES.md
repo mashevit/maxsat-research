@@ -56,9 +56,52 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). **Batch read 2026-10-18: 15/18 (s253 0/3), N-2026-10-18-d.** §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
 | Stronger memetic built (`impl: v3`, tree `cluster_staging_maxsat_strong/`); smoke; batch S1 | [`../current2/STRONG_MEMETIC_S1_RUN.md`](../current2/STRONG_MEMETIC_S1_RUN.md) | All of B1–B5 built on the hard tree plus the kernel ports; v3 without keys = staging v2 / `impl: hard` exactly; C core = Python twin flip for flip. Smoke (60 s, seed 1): `allC` solves kernel s253 (5.8 s) and raw s256/s257 (n 64k) at c\*; mutation damage 200–640 → 7–12 clauses. Batch S1: 324 tasks, ≤ 86.4 CPU-h, commit `16589fb`. N-2026-10-18-c. |
 | Stronger memetic B1–B5 (tabu/CC, clause weighting, distance-aware mutation, partition crossover, compiled loop): motivation, mechanism, parameters, interactions, build plan for a third tree | [`../current2/STRONGER_MEMETIC_DESIGN.md`](../current2/STRONGER_MEMETIC_DESIGN.md) | Design only. SATLike weighting rules and parameters read from the full text; PX exactness derived (each clause's differing variables lie in one component). Interactions §6 fix the build order B3 → B1 → B2 → B4 → B5 and a leave-one-out batch (288 tasks, ≤ 76.8 CPU-h). Tree `cluster_staging_maxsat_strong/` proposed. N-2026-10-18-b. |
+| Batches U30 + HMSE: under-30 s pool and MSE hard-clause pool on the strong solver | [`../current2/UNDER30_HARDMSE_RUN.md`](../current2/UNDER30_HARDMSE_RUN.md) | U30 319 instances (957 tasks), HMSE 141 (423 tasks); selection, smoke, rail memory limit, flat upload + arrange scripts. N-2026-10-21-i. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-21-i — Batches U30 (319 instances proved in < 30 s) and HMSE (141 MSE hard-clause instances) prepared; setcover rail is too dense for the v3 tables; upload without rsync [quote + verified + decision]
+
+> "write manifest for the hard clauses, and manifest for the not-run on memetic under 30s rc2 or EvalMaxSat, put all the new files except in needed dirs, like data or scripts or code, the files I dont have on cluster. make copy of them in some tmp folder so i can move it to mobaexterm, then I give you tree from there and you give me script back there to arrange them in folders. because I dont use rsync" (user, 2026-10-21)
+>
+> "drop the 3 rail instances, regenerate hmse manifest" (user, 2026-10-21)
+
+- **[verified] U30:** per-formula selection.
+  - Rule: fastest proof < 30 s, optimum > 0, no hard clauses, not in O900.
+  - Result: 319 instances, 957 tasks. Every source is RC2.
+  - Five families are new to the strong solver: jnh, unsat_uuf_diff,
+    dubois, pret, bf.
+  - Smoke: 24/24 at the oracle in ≤ 0.33 s.
+  - 25 formulas proved only in 959–3078 s are in neither O900 nor U30.
+- **[verified] HMSE:** MSE 2023/2024 files with hard clauses and a
+  best-known.
+  - Excluded: best-known −1 (5), soft-only (17), and the 3 setcover rail
+    files.
+  - Result: 141 instances, 423 tasks. Targets: 17 proven, 124
+    best-known-only.
+  - Config: the same `configs/strong/auto.yaml` (`auto_hparams/2`).
+- **[verified] Setcover rail:**
+  - Hard clauses of 7,753–8,919 variables make the v3 neighbour sets
+    (`ls_v3._V3Static`) 0.64–1.14 billion entries. The next densest
+    instance has 37M.
+  - Measured: 7.3 GB at 34–38 s, still building, then `MemoryError`.
+  - No exact solver has proved them: EvalMaxSAT timed out on rail507, and
+    the other two were outside the s1 sample.
+  - A long-clause cap on the neighbour lists is a possible later fix.
+- **[verified] Local smokes crashed WSL twice:**
+  - The OOM killer struck inside init.scope, and the distro shut down.
+  - Cause 1: 7 parallel runs at 7.8 GB.
+  - Cause 2: two Claude sessions reran rail at once.
+  - Local runs are now capped and serialized; memory note
+    `workstation-wsl-memory-limits`.
+- **[decision] Upload without rsync:**
+  - `scripts/make_flat_upload.py` copies the needed files that the
+    cluster lacks into one flat folder with a map.
+  - `tmp/arrange_u30_hmse.sh` and `tmp/arrange_hmse2.sh` (shell only,
+    tested on a mock home) move them into the tree and check them with
+    `sha256sum -c`.
+- **Evidence:** `docs/current2/UNDER30_HARDMSE_RUN.md`.
 
 ### N-2026-10-21-h — `auto_hparams/2` (ks2 + pop 10 on hard instances), aggregate fixed; drmx-cryptogen is a search limit, not a misclassification [quote + verified + inference + decision]
 

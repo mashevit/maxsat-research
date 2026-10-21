@@ -17,6 +17,25 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000000000. Update 2026-10-21 (r15): read first
+
+- **Prepared, not submitted:** batches U30 and HMSE
+  (`docs/current2/UNDER30_HARDMSE_RUN.md`, N-2026-10-21-i).
+  - U30: 319 instances proved in < 30 s, 957 tasks.
+  - HMSE: 141 MSE hard-clause instances, 423 tasks; the 3 setcover rail
+    files are too dense for the v3 tables and were dropped.
+  - Both use `configs/strong/auto.yaml`; `src/` is identical to `abfbf88`.
+- **Upload is without rsync:**
+  - The user dropped 465 files + `UPLOAD_MAP.tsv` flat into `~` on the
+    cluster.
+  - Order: `bash arrange_u30_hmse.sh --apply`, then upload the 7
+    `hmse2__*` files + `UPLOAD_MAP_hmse2.tsv`, then
+    `bash arrange_hmse2.sh --apply`.
+  - Then submit with `MAXSAT_GIT_SHA` = the commit holding these files
+    (not yet committed).
+- **Workstation:** local smokes crashed WSL twice (OOM). Cap and serialize
+  local runs (memory note `workstation-wsl-memory-limits`).
+
 ## 000000000000. Update 2026-10-21 (r14): read first
 
 - **O900 and KS2 were submitted and read on 2026-10-21** (`097efb7`; C core
