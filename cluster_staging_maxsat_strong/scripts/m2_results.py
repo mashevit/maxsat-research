@@ -80,6 +80,12 @@ def load_tasks(manifest: str) -> List[Dict[str, str]]:
         lines = [l.rstrip("\n").split("\t") for l in f if l.strip()]
     if len(lines) != len(tasks) or any(l[0] != t["job_id"] for l, t in zip(lines, tasks)):
         raise SystemExit(f"FATAL: {manifest} and {side} disagree -- regenerate both")
+    # The grouping columns of the M2 sidecars. Later builders (make_oracle900_manifest,
+    # make_ks2check_manifest) do not write them: group by family, one arm per config.
+    for t in tasks:
+        t.setdefault("analysis_group", t.get("family") or "all")
+        t.setdefault("m", "")
+        t.setdefault("arm", t["config_id"])
     return tasks
 
 
@@ -180,7 +186,9 @@ def _hp_cols(hp: Optional[dict]) -> Dict[str, Any]:
     ea, ls = ov.get("ea") or {}, ov.get("ls") or {}
     return {"hp_class": hp.get("class"), "hp_n_eff": f.get("n_eff"), "hp_mutation_k": ea.get("mutation_k"),
             "hp_dls_t": ls.get("dls_t"), "hp_dls_zeta": ls.get("dls_zeta"), "hp_dls_h_inc": ls.get("dls_h_inc"),
-            "hp_ls_polish_flips": ls.get("ls_polish_flips"), "hp_resolved_config_hash": hp.get("resolved_config_hash"),
+            "hp_ls_polish_flips": ls.get("ls_polish_flips"), "hp_pop_size": ea.get("pop_size"),
+            "hp_keep_sat": ((ov.get("hard") or {}).get("moves") or {}).get("keep_sat"),
+            "hp_resolved_config_hash": hp.get("resolved_config_hash"),
             "hp_s": hp.get("hparams_s")}
 
 

@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.join(TREE, "scripts"))
 from sat.cnf import WCNF  # noqa: E402
 from evo import auto_hparams as ahp  # noqa: E402
 from evo.v3 import v3_cfg  # noqa: E402
+from evo.hard import hard_cfg  # noqa: E402
 
 
 def make_wcnf(tmp_path, name, n, k, m_soft, m_hard=0, w_max=1, w_min=1, seed=0):
@@ -118,6 +119,24 @@ def test_class_picks_b2_values(tmp_path, m_hard, w_min, w_max, cls, dls):
     got = (ls["dls_t"], ls["dls_sp"], ls["dls_zeta"], ls["dls_h_inc"])
     assert got == (dls or (15, 0.01, max(50, 49 + r.feats.soft_w_max_eff), 1))
     v3_cfg(r.cfg)
+    # R4: pop 10 and ks2 moves exactly when the solved instance has hard clauses.
+    hard = cls.startswith("hard")
+    assert r.cfg["ea"]["pop_size"] == (10 if hard else 40)
+    assert ("hard" in r.overrides) == hard
+    if hard:
+        assert r.cfg["hard"] == {"moves": {"keep_sat": "ks2"}}
+        assert hard_cfg(r.cfg)["move_keep_sat"] == "ks2"
+    else:
+        assert "hard" not in r.cfg
+
+
+def test_merge_is_deep_and_keeps_other_hard_keys():
+    cfg = {"ea": {"pop_size": 40, "elitism": True},
+           "hard": {"phases": "random", "moves": {"per_polish": 50, "keep_sat": "none"}}}
+    out = ahp.merge(cfg, {"ea": {"pop_size": 10}, "hard": {"moves": {"keep_sat": "ks2"}}})
+    assert out == {"ea": {"pop_size": 10, "elitism": True},
+                   "hard": {"phases": "random", "moves": {"per_polish": 50, "keep_sat": "ks2"}}}
+    assert cfg["hard"]["moves"]["keep_sat"] == "none"          # the input is not changed
 
 
 def test_flips_c_sets_flips_only_on_soft_but_not_on_hard(tmp_path):
@@ -180,6 +199,9 @@ def test_shard_run_uses_the_chosen_values(tmp_path, monkeypatch):
     assert rec["status"] == "error" and "stop after capturing" in rec["error"]
     ls = seen["cfg"]["ls"]
     assert (ls["dls_t"], ls["dls_zeta"], ls["dls_h_inc"]) == (15, 1, 3)          # hard_weighted
+    assert seen["cfg"]["ea"]["pop_size"] == 10                                  # R4
+    assert hard_cfg(seen["cfg"])["move_keep_sat"] == "ks2"
+    assert rec["config"]["ea"]["pop_size"] == 6      # the record keeps the submitted config (small_run_cfg)
     assert seen["cfg"]["ea"]["mutation_k"] == ahp.mutation_k(60)
     # the hparams time is inside the budget, like the gate's
     pre = rec["preprocess_s"] + rec["hparams"]["hparams_s"]

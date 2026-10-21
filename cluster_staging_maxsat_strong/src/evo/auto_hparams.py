@@ -1,4 +1,4 @@
-"""Instance-aware hyperparameters for `impl: v3` (rule set `auto_hparams/1`, 2026-10-21).
+"""Instance-aware hyperparameters for `impl: v3` (rule set `auto_hparams/2`, 2026-10-21).
 
 RUN TIME (the normal use). A config with `hparams: auto` makes the shard
 runner (src/cli/run_memetic_shard.py) call `resolve()` right after the kernel
@@ -59,8 +59,17 @@ Rules (evidence tag in brackets; "measured" = our runs, "source" = paper):
       call ends on flips only (`polish_cap: flips_only`, as in Stage L1); hard
       instances keep the 3.5 s slot, because feasible moves M share it.
       [measured at 12,500; c > 0 untested for v3]
-  Hard-tree keys (Glucose phases, repair R, moves M) keep their defaults
+  R4  hard clauses in the solved instance (`hard_mode: auto` engages the hard
+      tree): ea.pop_size = 10 and hard.moves.keep_sat = ks2. [measured: batch
+      KS2, 16 MSE instances x 3 seeds, 900 s: runs at the optimum m40 12,
+      ks2_10 26 of 48; ks2_10 vs m10 better on 13, worse on 0; vs m40 (the
+      /1 choice) better on 13, worse on 2. The pre-registered rule failed at
+      pop 40 (10/3), and pop alone showed no effect; pop 10 is the user's
+      choice, 2026-10-21. KS2_CHECK_RUN.md section 6]
+  Other hard-tree keys (Glucose phases, repair R, moves M) keep their defaults
   (src/evo/hard.hard_cfg), the values H3 accepted.
+
+  /1 -> /2 (2026-10-21): R4 added; soft instances resolve exactly as under /1.
 """
 from __future__ import annotations
 
@@ -74,13 +83,15 @@ from typing import Any, Dict, Optional, Tuple
 from sat import kernel as kern
 from sat.cnf import WCNF
 
-RULESET = "auto_hparams/1"
+RULESET = "auto_hparams/2"
 HPARAM_MODES = ("none", "auto")
 
 GATE = {"screen_min": 0.2, "gain_min": 0.2}
 FLIPS_FLOOR = 12_500
 FLIPS_CAP_DEFAULT = 1_600_000
 HEAVY_SOFT_MEAN = 10_000
+HARD_POP_SIZE = 10           # R4
+HARD_KEEP_SAT = "ks2"         # R4
 
 BASE: Dict[str, Any] = {  # make_strong_manifest.py BASE + allC (B1-B5); R0
     "impl": "v3",
@@ -200,7 +211,7 @@ def polish_flips(n_eff: int, c: float, cap: int) -> int:
 
 def choose(f: Features, flips_c: float = 0.0,
            flips_cap: int = FLIPS_CAP_DEFAULT) -> Tuple[Dict[str, Any], Dict[str, str]]:
-    """(overrides as a nested {"ea": {...}, "ls": {...}}, reason per key)."""
+    """(overrides as a nested {"ea": {...}, "ls": {...}[, "hard": {...}]}, reason per key)."""
     k = mutation_k(f.n_eff)
     t, sp, zeta, h_inc, ev = DLS_BY_CLASS[f.cls]
     if zeta is None:
@@ -211,19 +222,33 @@ def choose(f: Features, flips_c: float = 0.0,
                           "ls_polish_flips": flips, "flip_budget": flips}
     if flips_c > 0 and f.n_hard_eff == 0:
         ls["polish_cap"] = "flips_only"
+    out: Dict[str, Any] = {"ea": ea, "ls": ls}
+    if f.n_hard_eff > 0:
+        ea["pop_size"] = HARD_POP_SIZE
+        out["hard"] = {"moves": {"keep_sat": HARD_KEEP_SAT}}
     why = {
         "ea.mutation_k": f"R1 clamp(round(0.04*{f.n_eff}), 2, 16) = {k}",
         "ls.dls_*": f"R2 class {f.cls}: t {t}, sp {sp}, zeta {zeta}, h_inc {h_inc} [{ev}]",
         "ls.ls_polish_flips": (f"R3 max({FLIPS_FLOOR}, min({flips_c}*{f.n_eff}, {flips_cap})) = {flips}"
                                + (", polish_cap flips_only" if "polish_cap" in ls else "")),
     }
-    return {"ea": ea, "ls": ls}, why
+    if "hard" in out:
+        why["ea.pop_size+hard.moves.keep_sat"] = (f"R4 hard clauses in the solved instance: pop "
+                                                  f"{HARD_POP_SIZE}, keep_sat {HARD_KEEP_SAT}")
+    return out, why
 
 
 def merge(cfg: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:
+    """Deep merge: an override sets its leaf keys and keeps the config's other keys
+    (hard.moves.keep_sat leaves hard.moves.per_polish etc. alone)."""
+    def into(dst: Dict[str, Any], src: Dict[str, Any]) -> None:
+        for k, v in src.items():
+            if isinstance(v, dict) and isinstance(dst.get(k), dict):
+                into(dst[k], v)
+            else:
+                dst[k] = copy.deepcopy(v)
     out = copy.deepcopy(cfg)
-    for sec, kv in overrides.items():
-        out.setdefault(sec, {}).update(kv)
+    into(out, overrides)
     return out
 
 
