@@ -22,10 +22,29 @@ typedef struct {
     const int64_t *w;                            /* m, 0 for hard clauses */
     const int32_t *occ_off, *occ_ci, *occ_d;     /* var v: [occ_off[v], occ_off[v+1]), v in 1..n */
     const int32_t *cvd_off, *cvd_u, *cvd_d;      /* clause c: (u, d), u ascending */
-    const int32_t *nb_off, *nb;                  /* var v: sorted neighbours */
+    const int32_t *nb_off, *nb;                  /* var v: sorted neighbours; NULL = lean tables */
     int64_t total_soft;
     int32_t has_hard;
+    const int32_t *aocc_off, *aocc_ci;           /* lean: var v: every clause containing it */
+    const int32_t *cv_off, *cv_u;                /* lean: clause c: its distinct variables */
 } Inst;
+
+/* CC after flipping v (docs/current2/LONG_CLAUSE_RULE_DESIGN.md L1): every variable
+ * sharing a clause with v becomes free, v itself blocked. Full tables walk nbrs; lean
+ * ones walk v's clauses, which reaches the same set plus v, cleared last -- the same
+ * conf state either way. */
+static inline void cc_touch(const Inst *I, uint8_t *conf, int32_t v) {
+    if (I->nb_off) {
+        conf[v] = 0;
+        for (int32_t k = I->nb_off[v]; k < I->nb_off[v + 1]; k++) conf[I->nb[k]] = 1;
+    } else {
+        for (int32_t k = I->aocc_off[v]; k < I->aocc_off[v + 1]; k++) {
+            int32_t ci = I->aocc_ci[k];
+            for (int32_t q = I->cv_off[ci]; q < I->cv_off[ci + 1]; q++) conf[I->cv_u[q]] = 1;
+        }
+        conf[v] = 0;
+    }
+}
 
 /* ---------------------------------------------------------------- rng */
 typedef struct { uint64_t s[4]; } Rng;
@@ -233,7 +252,7 @@ int ls_walksat(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, doub
             vec_push(&trail, v);
             if (tabu_on) {
                 last_flip[v] = num_flips;
-                if (use_cc) { conf[v] = 0; for (int32_t k = I->nb_off[v]; k < I->nb_off[v + 1]; k++) conf[I->nb[k]] = 1; }
+                if (use_cc) cc_touch(I, conf, v);
                 else tabu_until[v] = num_flips + tenure + (tenure_rand > 0 ? randbelow(&R, tenure_rand + 1) : 0);
             }
         }
@@ -388,7 +407,7 @@ int ls_dls(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, double t
         applied++;
         vec_push(&trail, bv);
         last_flip[bv] = steps;
-        if (cc) { conf[bv] = 0; for (int32_t k = I->nb_off[bv]; k < I->nb_off[bv + 1]; k++) conf[I->nb[k]] = 1; }
+        if (cc) cc_touch(I, conf, bv);
         int64_t hv = S.nfh;
         if (hv < best_hv || (hv == best_hv && S.usw < best_unsat)) { best_hv = hv; best_unsat = S.usw; trail.len = 0; }
     }

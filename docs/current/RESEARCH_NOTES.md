@@ -56,10 +56,47 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Kernelised memetic (direction A): module, gate, 18-task batch; proposed stronger memetic (direction B) | [`../current2/KERNEL_MEMETIC_RUN.md`](../current2/KERNEL_MEMETIC_RUN.md) | `src/sat/kernel.py` + opt-in `preprocess: kernel` in the shard (schema 4); exactness checked by brute force for every kernel assignment. Smoke: 5/6 eligible instances at c\* in ≤ 1.5 s including kernelising; s253 open (15 vs 14). **Batch read 2026-10-18: 15/18 (s253 0/3), N-2026-10-18-d.** §5: B1 tabu, B2 clause weighting, B3 distance-aware mutation, B4 partition crossover, B5 compiled loop. N-2026-10-18-a. |
 | Stronger memetic built (`impl: v3`, tree `cluster_staging_maxsat_strong/`); smoke; batch S1 | [`../current2/STRONG_MEMETIC_S1_RUN.md`](../current2/STRONG_MEMETIC_S1_RUN.md) | All of B1–B5 built on the hard tree plus the kernel ports; v3 without keys = staging v2 / `impl: hard` exactly; C core = Python twin flip for flip. Smoke (60 s, seed 1): `allC` solves kernel s253 (5.8 s) and raw s256/s257 (n 64k) at c\*; mutation damage 200–640 → 7–12 clauses. Batch S1: 324 tasks, ≤ 86.4 CPU-h, commit `16589fb`. N-2026-10-18-c. |
 | Stronger memetic B1–B5 (tabu/CC, clause weighting, distance-aware mutation, partition crossover, compiled loop): motivation, mechanism, parameters, interactions, build plan for a third tree | [`../current2/STRONGER_MEMETIC_DESIGN.md`](../current2/STRONGER_MEMETIC_DESIGN.md) | Design only. SATLike weighting rules and parameters read from the full text; PX exactness derived (each clause's differing variables lie in one component). Interactions §6 fix the build order B3 → B1 → B2 → B4 → B5 and a leave-one-out batch (288 tasks, ≤ 76.8 CPU-h). Tree `cluster_staging_maxsat_strong/` proposed. N-2026-10-18-b. |
+| Long-clause rule (lean v3 tables) for the setcover rail instances | [`../current2/LONG_CLAUSE_RULE_DESIGN.md`](../current2/LONG_CLAUSE_RULE_DESIGN.md) | Design only: trigger Σk(k−1) > 50M; CC/PX exact, walk same distribution; tests and decisions. N-2026-10-21-j. |
 | Batches U30 + HMSE: under-30 s pool and MSE hard-clause pool on the strong solver | [`../current2/UNDER30_HARDMSE_RUN.md`](../current2/UNDER30_HARDMSE_RUN.md) | U30 319 instances (957 tasks), HMSE 141 (423 tasks); selection, smoke, rail memory limit, flat upload + arrange scripts. N-2026-10-21-i. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-21-j — Long-clause rule designed: lean tables for the setcover rail instances, exact for CC and PX [quote + verified + proposal]
+
+> "start with the rail rule design" (user, 2026-10-21)
+
+- **[verified] Table cost:** the v3 neighbour tables cost 61–72 bytes per
+  entry while built.
+  - optic: 7.65M entries, +522 MB.
+  - af-synthesis: 24.7M entries, +1,433 MB.
+  - The Σk(k−1) bound is at most 36.9M on all 735 non-rail instances we
+    have, against 641M–1,143M on rail.
+- **[verified] Rail structure:** 507–582 rows of 610–807 variables on
+  average (max 8,919). Each variable is in 6.5–7.2 rows (max 12).
+- **[proposal] Lean mode above 50M:**
+  - CC by walking the flipped variable's clauses: the same conf state,
+    the same run.
+  - PX components by union–find over clauses: the same components.
+  - Walk mutation by rejection sampling: the same distribution, a
+    different random stream.
+  - Tests, smoke and a 9-task batch are planned.
+- **Evidence:** `docs/current2/LONG_CLAUSE_RULE_DESIGN.md`.
+- **[verified] Built 2026-10-21 as recommended** (user: "do the recommended,
+  dont do peak memory").
+  - Tests: 28 new; full suite 403 passed / 16 skipped; all existing
+    equality tests unchanged.
+  - Rail smoke, 60 s: peak 221–284 MB (was over 7.3 GB). Cost
+    513/603/654 against best-known 174/182/211.
+  - 57 of 60 s went to feasible SAT moves, with 0 polish flips.
+  - The C source changed, so the cluster `.so` needs a rebuild.
+- **[verified] `hard.moves.per_polish` on rail** (user: "run the per_polish
+  test on the rails"; 60 s, seed 1):
+  - default 200: cost 513 / 603 / 654, polish 0 flips;
+  - 50: 224 / 221 / 275;
+  - 10: 218 / 216 / 265, against best-known 174 / 182 / 211.
+  - Reserving slot time for the polish cuts the cost 2.3–2.8×.
+  - **[inference]** One seed at 60 s, rail only; design doc §9.
 
 ### N-2026-10-21-i — Batches U30 (319 instances proved in < 30 s) and HMSE (141 MSE hard-clause instances) prepared; setcover rail is too dense for the v3 tables; upload without rsync [quote + verified + decision]
 

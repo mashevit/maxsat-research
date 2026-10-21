@@ -9,7 +9,7 @@ from .population import init_hard_satisfied
 from .hard import (HardSAT, HardStats, SoftView, feasible_moves, glucose_init, hard_cfg,
                    repair, short_polish_hard)
 from .v3 import (PolishV3, V3Stats, check_cfg, custom_polish, mutate_v3, partition_crossover,
-                 resolve_hard_mode)
+                 resolve_hard_mode, set_nbrs_mode)
 from llm.advisor import LLMAdvisor, apply_advice
 from llm.providers.noop import NoopProvider
 # or: from llm.providers.ollama import OllamaProvider
@@ -54,6 +54,13 @@ def _ls_budget(cfg: Dict[str, Any]) -> Dict[str, Any]:
     return budget
 
 
+def _v3_dict(v3s: "V3Stats | None", wcnf) -> "Dict[str, Any] | None":
+    if v3s is None:
+        return None
+    v3s.note_nbrs(wcnf)
+    return v3s.as_dict()
+
+
 def _hard_abort(wcnf, hstats: HardStats, elapsed: float, impl: str = "hard",
                 v3s: "V3Stats | None" = None) -> Dict[str, Any]:
     """`impl: hard` without a hard-feasible start: the hard clauses are
@@ -70,7 +77,7 @@ def _hard_abort(wcnf, hstats: HardStats, elapsed: float, impl: str = "hard",
         "elapsed_sec": float(max(1e-9, elapsed)), "total_flips": 0, "flips_per_sec": 0.0,
         "restarts": 0, "final_noise": 0.0, "stop_reason": hstats.status,
         "time_to_target_s": None, "impl": impl, "hard": hstats.as_dict(),
-        "v3": v3s.as_dict() if v3s is not None else None,
+        "v3": _v3_dict(v3s, wcnf),
         "meta": {"ea_generations": 0, "children": 0, "assign_bits": bits,
                  "dimacs": "v " + " ".join(str(-i) for i in range(1, len(a))) + " 0",
                  "true_vars": []},
@@ -122,6 +129,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     impl0 = memetic_impl(cfg)
     vc = check_cfg(cfg, impl0)
     v3s = V3Stats() if vc is not None else None
+    if vc is not None:
+        set_nbrs_mode(wcnf, vc["nbrs"])   # before any v3 table is built for this instance
     hard_mode = impl0 == "hard" or (vc is not None and resolve_hard_mode(vc, wcnf))
     if v3s is not None:
         v3s.d["hard_mode"] = "on" if hard_mode else "off"
@@ -453,7 +462,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
         "impl": impl,
         "hard": hstats.as_dict() if hard_mode else None,
-        "v3": v3s.as_dict() if v3s is not None else None,
+        "v3": _v3_dict(v3s, wcnf),
         "meta": {"ea_generations": gen, "children": total_children, **exports,},
         "satisfied_clauses": {
             "total": total_clauses,

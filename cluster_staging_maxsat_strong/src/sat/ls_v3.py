@@ -47,23 +47,50 @@ IMPL_DLS = "dls_v3/1"
 TABU_MODES = ("none", "tenure", "cc")
 
 _V3_ATTR = "_ls_v3_static"
+_MODE_ATTR = "_ls_v3_nbrs_mode"
+
+# Neighbour tables (docs/current2/LONG_CLAUSE_RULE_DESIGN.md). `nbrs` costs
+# k(k-1) entries per clause of k variables, 61-72 bytes each while built; the
+# setcover rail instances (rows of up to 8,919 variables) would need tens of GB.
+# Above NBRS_MAX the instance runs "lean": no `nbrs`; CC and PX read the clauses
+# instead (same results), walk mutation samples a neighbour by rejection (same
+# distribution, other random stream). Every other instance we have has a bound
+# of at most 36.9M, so `auto` keeps them on the full tables, unchanged.
+NBRS_MODES = ("auto", "full", "lean")
+NBRS_MAX = 50_000_000
 
 
 class _V3Static:
-    """Neighbour lists (CC, PX, walk mutation) and per-clause (var, d) lists (DLS)."""
+    """Per-clause (var, d) lists (DLS) and, by mode, the neighbour lists (CC, PX,
+    walk mutation) or their lean replacement: aocc[v], every clause containing v
+    (ascending), and cv[c], the distinct variables of clause c (ascending)."""
 
-    __slots__ = ("m", "nbrs", "cvd")
+    __slots__ = ("m", "nbrs", "cvd", "requested", "mode", "bound", "aocc", "cv")
 
-    def __init__(self, cnf) -> None:
+    def __init__(self, cnf, requested: str = "auto") -> None:
         st = _static_for(cnf)
         n, m = st.n, st.m
         self.m = m
+        self.requested = requested
         # cvd[c] = [(u, d)], u ascending, d = (#pos - #neg) occurrences of u in c, d != 0
         cvd: List[List[tuple]] = [[] for _ in range(m)]
         for v in range(1, n + 1):
             for ci, d in st.occ[v]:
                 cvd[ci].append((v, d))
         self.cvd = cvd
+        # The variables of each clause as `nbrs` sees them (every literal, d == 0 included).
+        cvs = [sorted({a for a in (abs(l) for l in st.lits[ci]) if 0 < a <= n}) for ci in range(m)]
+        self.bound = sum(len(vs) * (len(vs) - 1) for vs in cvs)
+        self.mode = requested if requested != "auto" else ("lean" if self.bound > NBRS_MAX else "full")
+        self.nbrs = self.aocc = self.cv = None
+        if self.mode == "lean":
+            aocc: List[List[int]] = [[] for _ in range(n + 1)]
+            for ci, vs in enumerate(cvs):
+                for a in vs:
+                    aocc[a].append(ci)
+            self.aocc, self.cv = aocc, cvs
+            return
+        del cvs
         nb: List[set] = [set() for _ in range(n + 1)]
         for ci in range(m):
             vs = {abs(l) for l in st.lits[ci]}
@@ -73,15 +100,47 @@ class _V3Static:
         self.nbrs = [sorted(s) for s in nb]
 
 
+def set_nbrs_mode(cnf, mode: str) -> None:
+    """Choose the neighbour-table mode of `cnf` (ls.nbrs) before its tables are built;
+    a cached table built under another request is dropped."""
+    mode = str(mode).lower()
+    if mode not in NBRS_MODES:
+        raise ValueError(f"ls.nbrs must be one of {NBRS_MODES}, got {mode!r}")
+    try:
+        setattr(cnf, _MODE_ATTR, mode)
+    except AttributeError:
+        return
+    x = getattr(cnf, _V3_ATTR, None)
+    if x is not None and x.requested != mode:
+        delattr(cnf, _V3_ATTR)
+
+
 def v3_static(cnf) -> _V3Static:
     x = getattr(cnf, _V3_ATTR, None)
-    if x is None or x.m != len(getattr(cnf, "clauses", ())):
-        x = _V3Static(cnf)
+    req = getattr(cnf, _MODE_ATTR, "auto")
+    if x is None or x.m != len(getattr(cnf, "clauses", ())) or x.requested != req:
+        x = _V3Static(cnf, req)
         try:
             setattr(cnf, _V3_ATTR, x)
         except AttributeError:
             pass
     return x
+
+
+def nbrs_info(cnf):
+    """(mode, bound) of the tables built for `cnf`, or (None, None) if none were built."""
+    x = getattr(cnf, _V3_ATTR, None)
+    return (x.mode, x.bound) if x is not None else (None, None)
+
+
+def cc_touch_lean(x: _V3Static, conf: List[bool], v: int) -> None:
+    """CC after flipping v, from the clauses: conf[u] = True for every u sharing a
+    clause with v, then conf[v] = False -- the state the `nbrs` loop leaves."""
+    cv = x.cv
+    for ci in x.aocc[v]:
+        for u in cv[ci]:
+            conf[u] = True
+    conf[v] = False
 
 
 # ----------------------------------------------------------------------------- B1
@@ -116,7 +175,9 @@ def walksat_v3(
 
     tabu_on = tabu != "none"
     use_cc = tabu == "cc"
-    nbrs = v3_static(cnf).nbrs if use_cc else None
+    x3 = v3_static(cnf) if use_cc else None
+    nbrs = x3.nbrs if use_cc else None
+    cc_lean = use_cc and nbrs is None
     last_flip = [-1] * (n + 1)
     tabu_until = [0] * (n + 1)
     conf = [True] * (n + 1)
@@ -369,7 +430,9 @@ def walksat_v3(
                 trace.append((num_flips, v, how))
             if tabu_on:
                 last_flip[v] = num_flips
-                if use_cc:
+                if cc_lean:
+                    cc_touch_lean(x3, conf, v)
+                elif use_cc:
                     conf[v] = False
                     for u in nbrs[v]:
                         conf[u] = True
@@ -447,6 +510,7 @@ def dls_v3(
     x3 = v3_static(cnf)
     cvd = x3.cvd
     nbrs = x3.nbrs if cc else None
+    cc_lean = cc and nbrs is None
     conf = [True] * (n + 1)
     ccb = 0
     randbelow = rng.randbelow
@@ -669,7 +733,9 @@ def dls_v3(
         applied += 1
         trail.append(bv)
         last_flip[bv] = steps
-        if cc:
+        if cc_lean:
+            cc_touch_lean(x3, conf, bv)
+        elif cc:
             conf[bv] = False
             for u in nbrs[bv]:
                 conf[u] = True

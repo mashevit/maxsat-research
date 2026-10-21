@@ -68,6 +68,9 @@ class _Inst(C.Structure):
         ("cvd_off", C.POINTER(C.c_int32)), ("cvd_u", C.POINTER(C.c_int32)), ("cvd_d", C.POINTER(C.c_int32)),
         ("nb_off", C.POINTER(C.c_int32)), ("nb", C.POINTER(C.c_int32)),
         ("total_soft", C.c_int64), ("has_hard", C.c_int32),
+        # lean tables (nb_off == NULL): aocc = every clause of v, cv = distinct variables of c
+        ("aocc_off", C.POINTER(C.c_int32)), ("aocc_ci", C.POINTER(C.c_int32)),
+        ("cv_off", C.POINTER(C.c_int32)), ("cv_u", C.POINTER(C.c_int32)),
     ]
 
 
@@ -114,6 +117,7 @@ class NativeCore:
         st, x = _static_for(wcnf), v3_static(wcnf)
         n, m = st.n, st.m
         self.n, self.m = n, m
+        self.x = x   # the tables this core was flattened from (load_native rebuilds if they change)
         lit_off, lits = [0], []
         for c in range(m):
             lits.extend(st.lits[c])
@@ -131,9 +135,18 @@ class NativeCore:
                 cvd_d.append(d)
             cvd_off.append(len(cvd_u))
         nb_off, nb = [0, 0], []
-        for v in range(1, n + 1):
-            nb.extend(x.nbrs[v])
-            nb_off.append(len(nb))
+        aocc_off, aocc_ci, cv_off, cv_u = [0, 0], [], [0], []
+        if x.nbrs is not None:
+            for v in range(1, n + 1):
+                nb.extend(x.nbrs[v])
+                nb_off.append(len(nb))
+        else:   # lean: CC reads the clauses (ls_core.c cc_touch)
+            for v in range(1, n + 1):
+                aocc_ci.extend(x.aocc[v])
+                aocc_off.append(len(aocc_ci))
+            for c in range(m):
+                cv_u.extend(x.cv[c])
+                cv_off.append(len(cv_u))
         # keep the buffers alive as attributes
         self._bufs = [
             _arr(C.c_int32, lit_off), _arr(C.c_int32, lits),
@@ -141,10 +154,16 @@ class NativeCore:
             _arr(C.c_int32, occ_off), _arr(C.c_int32, occ_ci), _arr(C.c_int32, occ_d),
             _arr(C.c_int32, cvd_off), _arr(C.c_int32, cvd_u), _arr(C.c_int32, cvd_d),
             _arr(C.c_int32, nb_off), _arr(C.c_int32, nb),
+            _arr(C.c_int32, aocc_off), _arr(C.c_int32, aocc_ci), _arr(C.c_int32, cv_off), _arr(C.c_int32, cv_u),
         ]
         b = self._bufs
-        self.inst = _Inst(n, m, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11],
-                          int(st.total_soft), 1 if st.has_hard else 0)
+        lean = x.nbrs is None
+        I32P = C.POINTER(C.c_int32)
+        self.inst = _Inst(n, m, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9],
+                          I32P() if lean else b[10], I32P() if lean else b[11],
+                          int(st.total_soft), 1 if st.has_hard else 0,
+                          b[12] if lean else I32P(), b[13] if lean else I32P(),
+                          b[14] if lean else I32P(), b[15] if lean else I32P())
         self.total_soft = int(st.total_soft)
 
     # ------------------------------------------------------------------ cores
@@ -211,8 +230,9 @@ class NativeCore:
 
 
 def load_native(wcnf) -> NativeCore:
+    from sat.ls_v3 import v3_static
     core = getattr(wcnf, NativeCore._ATTR, None)
-    if core is None:
+    if core is None or core.x is not v3_static(wcnf):
         core = NativeCore(wcnf)
         try:
             setattr(wcnf, NativeCore._ATTR, core)

@@ -17,6 +17,52 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000000000000. Update 2026-10-21 (r16): read first -- ORDER MATTERS on the cluster
+
+**User 2026-10-21:** "I will run cluster tomorrow, get me the context tomorrow
+that first i need to run the original code, and then upload code, and compile
+native". Also: "if 10 doesnt win do it rule like 3".
+
+**Two code states:**
+- **`0877898`** is already on the cluster and verified (`U30_OK`,
+  `HMSE_OK`). The U30/HMSE batches belong to it.
+- **The lean-table code** (long-clause rule, `LONG_CLAUSE_RULE_DESIGN.md`)
+  is committed after it and is NOT on the cluster. It changes `ls_core.c`,
+  so the `.so` must be rebuilt.
+- Jobs read `src/` at run time, so uploading the new code while U30/HMSE
+  tasks are pending or running would mix code versions.
+
+**Steps, in this order:**
+1. **Run the original code first**, from `~/cluster_staging_maxsat_strong/scripts`
+   (`mkdir -p logs`):
+   - `DRY_RUN=1 MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh`
+     (expect `--array=1-423%1000`);
+   - `MAXSAT_GIT_SHA=0877898 MANIFEST=manifest_hardmse.tsv OUTDIR=results/hardmse/tasks bash submit_m2_memetic.sh`;
+   - the same for U30: `manifest_under30.tsv`, `results/under30/tasks`,
+     `--array=1-957%1000`.
+2. **Wait until both arrays have finished** (`squeue -u $USER` empty for
+   them). Then copy the results to the workstation for the readouts.
+3. **Upload the lean code:**
+   - make a flat upload with `scripts/make_flat_upload.py`, with a new
+     prefix and map name, and `--have` = the lists already on the
+     cluster;
+   - write an arrange script, as `tmp/arrange_hmse2.sh`;
+   - the user drops the files into `~` and runs it.
+4. **Compile native:** `cd scripts && sbatch build_native.sbatch`, then
+   `cat logs/build-native-*.out` and expect `BUILD_OK`. Without it,
+   `ls.native: true` jobs exit 2.
+5. **The per_polish check batch** (user-approved plan, not yet built):
+   - `hard.moves.per_polish` {200, 10} on the 16 KS2 instances plus the 3
+     rail instances, 3 seeds × 900 s, about 114 tasks, on the lean
+     commit;
+   - **if 10 wins broadly:** new rule R5 in `auto_hparams`;
+   - **if 10 does not win:** a rail-only rule ("lean tables → per_polish
+     10"; user: "if 10 doesnt win do it rule like 3").
+   - It can be prepared before step 3, so it travels in the same upload.
+
+**Why per_polish 10** (design doc §9, rail, seed 1, 60 s): cost 513/603/654
+at 200 against 218/216/265 at 10; best-known 174/182/211.
+
 ## 0000000000000. Update 2026-10-21 (r15): read first
 
 - **Prepared, not submitted:** batches U30 and HMSE

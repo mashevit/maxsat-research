@@ -21,14 +21,18 @@ exact equality. Each component is opt-in:
     dls_t (15), dls_sp (0.01), dls_zeta (50), dls_h_inc (1)
     weights: call | run                      dls: reset per call, or one vector per run
     native: false | true                     the C core (src/native); true = required
+    nbrs: auto | full | lean                 neighbour tables (sat/ls_v3.py): auto = lean iff
+                                             sum k(k-1) > NBRS_MAX (docs/current2/LONG_CLAUSE_RULE_DESIGN.md)
 
 Unknown values and v3 keys under another `impl` are refused (ValueError).
 """
 from __future__ import annotations
 
+from bisect import bisect_left
 from typing import Any, Dict, List, Optional, Tuple
 
-from sat.ls_v3 import TABU_MODES, dls_v3, init_dynamic_weights, v3_static, walksat_v3
+from sat.ls_v3 import (NBRS_MODES, TABU_MODES, dls_v3, init_dynamic_weights, nbrs_info, set_nbrs_mode,
+                       v3_static, walksat_v3)
 from sat.rng import MTRng, PortableRng
 
 HARD_MODES = ("auto", "on", "off")
@@ -40,7 +44,7 @@ WEIGHTS = ("call", "run")
 
 _EA_KEYS = ("mutation", "mutation_k", "crossover", "px_min_q", "px_fallback", "diag_every")
 _LS_KEYS = ("core", "tabu", "tabu_tenure", "tabu_tenure_rand", "dls_t", "dls_sp", "dls_zeta",
-            "dls_h_inc", "weights", "native")
+            "dls_h_inc", "weights", "native", "nbrs")
 
 
 def _pick(d: Dict[str, Any], key: str, allowed, default: str) -> str:
@@ -78,6 +82,7 @@ def v3_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
         "dls_h_inc": int(ls.get("dls_h_inc", 1)),
         "weights": _pick(ls, "weights", WEIGHTS, "call"),
         "native": bool(ls.get("native", False)),
+        "nbrs": _pick(ls, "nbrs", NBRS_MODES, "auto"),
     }
     if c["mutation_k"] < 1 or c["tabu_tenure"] < 0 or c["tabu_tenure_rand"] < 0 or c["dls_t"] < 1:
         raise ValueError("mutation_k >= 1, tabu_tenure >= 0, tabu_tenure_rand >= 0, dls_t >= 1 required")
@@ -128,7 +133,12 @@ class V3Stats:
             "px_child_equals_parent": 0,
             "tabu_skips": 0, "tabu_aspirations": 0, "tabu_all_blocked": 0,
             "dls_stuck": 0, "dls_smooths": 0, "dls_cc_blocked": 0, "polish_core": None, "ls_native": False,
+            "nbrs_mode": None, "nbrs_bound": None,
         }
+
+    def note_nbrs(self, wcnf) -> None:
+        """Record the neighbour-table mode and bound, if the run built the tables."""
+        self.d["nbrs_mode"], self.d["nbrs_bound"] = nbrs_info(wcnf)
 
     def as_dict(self) -> Dict[str, Any]:
         d = dict(self.d)
@@ -192,7 +202,8 @@ def mutate_v3(child: List[bool], vc: Dict[str, Any], wcnf, rng, p1, p2, guard, s
             else:
                 refused += 1
     else:  # walk
-        nbrs = v3_static(wcnf).nbrs
+        x = v3_static(wcnf)
+        nbrs = x.nbrs
         seen = set()
         v = rng.randrange(1, n + 1)
         steps = 0
@@ -204,11 +215,46 @@ def mutate_v3(child: List[bool], vc: Dict[str, Any], wcnf, rng, p1, p2, guard, s
                     flips += 1
                 else:
                     refused += 1
-            nb = nbrs[v]
-            v = nb[rng.randrange(len(nb))] if nb else rng.randrange(1, n + 1)
+            if nbrs is None:
+                u = lean_neighbour(x, v, rng)
+                v = u if u is not None else rng.randrange(1, n + 1)
+            else:
+                nb = nbrs[v]
+                v = nb[rng.randrange(len(nb))] if nb else rng.randrange(1, n + 1)
     stats.d["mutation_flips_sum"] += flips
     stats.d["mutation_refused"] += refused
     return flips
+
+
+def _in_sorted(a: List[int], u: int) -> bool:
+    i = bisect_left(a, u)
+    return i < len(a) and a[i] == u
+
+
+def lean_neighbour(x, v: int, rng) -> Optional[int]:
+    """A neighbour of v drawn uniformly, as `nbrs[v][rng.randrange(len(nbrs[v]))]`
+    would be, from the lean tables (LONG_CLAUSE_RULE_DESIGN.md L3): draw a clause c
+    containing v with probability proportional to its other variables, then one of
+    them uniformly; u is then drawn with probability proportional to mult(u), the
+    number of v's clauses containing u, so accept it with probability 1/mult(u).
+    None when v shares no clause with another variable."""
+    occ, cv = x.aocc[v], x.cv
+    wts = [len(cv[ci]) - 1 for ci in occ]
+    tot = sum(wts)
+    if tot == 0:
+        return None
+    while True:
+        r = rng.randrange(tot)
+        for ci, wt in zip(occ, wts):
+            if r < wt:
+                break
+            r -= wt
+        vs = cv[ci]
+        j = rng.randrange(wt)
+        u = vs[j if j < bisect_left(vs, v) else j + 1]
+        mult = sum(1 for cj in occ if _in_sorted(cv[cj], u))
+        if mult == 1 or rng.random() * mult < 1.0:
+            return u
 
 
 # ---------------------------------------------------------------- B4 crossover
@@ -218,12 +264,15 @@ def px_components(A: List[bool], B: List[bool], wcnf, return_map: bool = False):
     variables where A and B differ, in increasing order of their first variable.
     With return_map, also comp_of[v] (1-based component id, 0 outside D)."""
     n = wcnf.n_vars
-    nbrs = v3_static(wcnf).nbrs
+    x = v3_static(wcnf)
+    nbrs = x.nbrs
     comp_of = [0] * (n + 1)   # 0 = not in D / unvisited
     indiff = [False] * (n + 1)
     for v in range(1, n + 1):
         if A[v] != B[v]:
             indiff[v] = True
+    if nbrs is None:
+        return _px_components_lean(x, indiff, comp_of, n, return_map)
     comps: List[List[int]] = []
     for v in range(1, n + 1):
         if indiff[v] and not comp_of[v]:
@@ -239,6 +288,50 @@ def px_components(A: List[bool], B: List[bool], wcnf, return_map: bool = False):
                         stack.append(x)
             comp.sort()
             comps.append(comp)
+    return (comps, comp_of) if return_map else comps
+
+
+def _px_components_lean(x, indiff: List[bool], comp_of: List[int], n: int, return_map: bool):
+    """px_components from the clauses (lean tables): union-find over the D-variables
+    of every clause touching D. "Share a clause, both in D" is exactly the edge set
+    the BFS above follows, so the components are the same; they are numbered by
+    their smallest variable and sorted, as the BFS returns them."""
+    parent = list(range(n + 1))
+
+    def find(a: int) -> int:
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    done = bytearray(x.m)
+    cv = x.cv
+    for v in range(1, n + 1):
+        if not indiff[v]:
+            continue
+        for ci in x.aocc[v]:
+            if done[ci]:
+                continue
+            done[ci] = 1
+            r0 = find(v)
+            for u in cv[ci]:
+                if indiff[u]:
+                    ru = find(u)
+                    if ru != r0:
+                        if ru < r0:
+                            ru, r0 = r0, ru
+                        parent[ru] = r0
+    comps: List[List[int]] = []
+    cid_of_root: Dict[int, int] = {}
+    for v in range(1, n + 1):          # ascending: a component's id is set at its smallest variable
+        if indiff[v]:
+            r = find(v)
+            cid = cid_of_root.get(r)
+            if cid is None:
+                cid = cid_of_root[r] = len(comps) + 1
+                comps.append([])
+            comp_of[v] = cid
+            comps[cid - 1].append(v)      # appended in ascending order: already sorted
     return (comps, comp_of) if return_map else comps
 
 
