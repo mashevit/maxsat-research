@@ -59,9 +59,21 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Agenda notes 2026-10-21; first ρ sketch (U30 out of ρ; effort floor) | [`../current2/NOTES_2026-10-21_AGENDA_AND_STATS.md`](../current2/NOTES_2026-10-21_AGENDA_AND_STATS.md) | U30 uniformly easy (83 % first-call); reasons to exclude it from ρ; floor caveat for O900; MSE 2016 and large-MSE notes; monkey-patch explanation pending. N-2026-10-21-l. |
 | Long-clause rule (lean v3 tables) for the setcover rail instances | [`../current2/LONG_CLAUSE_RULE_DESIGN.md`](../current2/LONG_CLAUSE_RULE_DESIGN.md) | Design only: trigger Σk(k−1) > 50M; CC/PX exact, walk same distribution; tests and decisions. N-2026-10-21-j. |
 | Batches U30 + HMSE: under-30 s pool and MSE hard-clause pool on the strong solver | [`../current2/UNDER30_HARDMSE_RUN.md`](../current2/UNDER30_HARDMSE_RUN.md) | U30 319 instances (957 tasks), HMSE 141 (423 tasks); selection, smoke, rail memory limit, flat upload + arrange scripts. N-2026-10-21-i. |
+| Prior work: orthogonality of anytime (local search) and exact solvers; passing the exact optimum to the anytime solver | [`../current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md`](../current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md) | Closest precedent is SAT: Hoos & Stützle (TR-99-06 / KI-99), R-Novelty+ vs Satz on uf100-430, correlation 0.26. IRoTS (Smyth, Hoos & Stützle 2003) takes its MaxSAT target from complete solvers but correlates local search with local search only. No MaxSAT study of exact proof time vs anytime time to the optimum was found. N-2026-10-24-a. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-24-a — Prior work on anytime-vs-exact orthogonality: the closest precedent is SAT (correlation 0.26); the oracle-as-target method is IRoTS's; no MaxSAT study found [quote + verified + inference]
+
+> "check if something like I want to do check orthogonality of anytime to exact sover - anytime : custom memetic, local search, exact RC2 or EvalMAxSAt - if something was done, mainly the pass to anytime of oracle time" (user, 2026-10-24)
+
+- **[verified] Hoos & Stützle, "Systematic vs. Local Search for SAT"** (TR-99-06): on 1000 uf100-430 instances, the cost of R-Novelty+ (expected flips) and of Satz (search steps) correlate with 0.26, "only very slightly correlated". The coefficient type is not stated.
+- **[verified] Smyth, Hoos & Stützle, IRoTS (2003)** give the local search the optimum from the complete solvers maxsat/wmaxsat and measure the run-time distribution to reach it, as our `STOP_AT_ORACLE` does. They correlate IRoTS with GLS2 only, not with exact time.
+- **[verified] Not found:** a MaxSAT correlation of exact proof time with anytime time to the optimum, or an anytime budget set to the exact solver's runtime. This was a web search, not a full survey.
+- **[inference] Caveat for the write-up:** the exact time includes proving optimality, while our ERT covers only finding the optimum. In SAT both costs end at the same event.
+- **[verified] Not recorded now:** EvalMaxSAT's time to its first optimum `o` line. `oracle_evalmaxsat.py` reads stdout only after the process exits.
+- Note: `docs/current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md`.
 
 ### N-2026-10-21-l — Agenda notes and first ρ sketch: U30 is uniformly easy for the memetic and stays out of ρ; the effort floor reaches into the O900 window [quote + verified + proposal]
 
