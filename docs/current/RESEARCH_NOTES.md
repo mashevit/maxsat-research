@@ -64,6 +64,17 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-d — MSE 2023/2024 exact tracks publish proven optima and per-instance EvalMaxSAT times; our own EvalMaxSAT runs are the cleaner ρ x [quote + verified + inference + proposal]
+
+> "are there aggregated results ot this solver somewhere? I can run it if there are less than 1000 instances in one wave on cluster for hour" (user, 2026-10-25)
+
+- **[verified] Optima:** the 2023 exact table prints "time (cost)", with 912 proven and no conflicts between solvers. In 2024, 930 instances are proven, with values from `best_costs.csv`. 43 of the 912 2023 costs differ from the 2023 `best_costs.csv`.
+- **[verified] EvalMaxSAT per instance:** 2023 plain and SCIP (425–442 solved per track); 2024 plain (weighted only) and SBVA variants (404–435).
+- **[verified] 2024 plateau:** on VBS < 1 s instances, EvalMaxSAT-SBVA (UW) has median 180 s.
+- **[verified] Disagreement with ours:** our `94e6774` binary disagrees in both directions on shared instances (lisbon 116 s against 850 s; rail507 timeout against 518 s).
+- **[proposal]** Run our EvalMaxSAT for 1 h on VBS-proved instances: wave 2024 = 930, wave 2023 ≤ 620 after CRC dedup. Worst case 1,550 CPU-h.
+- Note: `docs/current2/MSE_PUBLISHED_EXACT_RESULTS.md`; data: `data/raw/mse_results/`.
+
 ### N-2026-10-25-c — Rail-only rule built: `auto_hparams/3` R5 sets per_polish 10 on hard instances with lean v3 tables [quote + verified]
 
 > "yes build the rail-only rule" (user, 2026-10-25)
