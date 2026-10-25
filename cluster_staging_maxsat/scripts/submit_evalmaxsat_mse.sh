@@ -9,7 +9,7 @@
 #   DRY_RUN=1 bash submit_evalmaxsat_mse.sh     # checks + print the sbatch command
 #   SMOKE=1 bash submit_evalmaxsat_mse.sh       # 2 tasks, 600 s cap: ja-00000385 (optimum 37; 109 s alone and
 #                                               # 293 s on a loaded workstation) and setcover-sts-data.135 (SIGTERM stop)
-#   CHECK_SMOKE=1 bash submit_evalmaxsat_mse.sh # after the smoke: read its 2 rows (grep only)
+#   CHECK_SMOKE=1 bash submit_evalmaxsat_mse.sh # after the smoke: read its 2 rows (grep only; same OUTDIR as the smoke)
 #   bash submit_evalmaxsat_mse.sh               # sample s1: 60 tasks, %1000, 3600 s + 120 s
 #   IDS=1-30 bash submit_evalmaxsat_mse.sh      # only these ids (e.g. MSE 2023 = 1-30, MSE 2024 = 31-60)
 #   RESUME=1 bash submit_evalmaxsat_mse.sh      # resubmit all; tasks with a final row exit at once
@@ -28,7 +28,7 @@ ROOT="$(cd .. && pwd)"
 
 SMOKE="${SMOKE:-0}"
 if [[ "${CHECK_SMOKE:-0}" == "1" ]]; then
-    D="${ROOT}/results/smoke_evalmaxsat_mse"
+    D="${ROOT}/${OUTDIR:-results/smoke_evalmaxsat_mse}"   # OUTDIR as given to the SMOKE=1 submit
     fails=0
     for t in 1 2; do
         f="${D}/task_${t}.jsonl"

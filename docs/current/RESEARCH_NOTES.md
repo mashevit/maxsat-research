@@ -64,6 +64,15 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-f — EvalMaxSAT 2026: the official static competition binary, smoke-tested; memory bins for the 2026 manifests from EvalMaxSAT's published peaks [quote + verified + proposal]
+
+> "do option 1, use static binary if you reason we dont need local compilation" (user, 2026-10-25)
+
+- **[verified] The binary:** statically linked (GCC 15.2; Boost/GMP/MPFR/SoPlex inside). It was launched with no options in MSE 2026. A source build needs a C++23 toolchain and GMP/MPFR/Boost static libraries, so the binary is used as is: identical to what was timed.
+- **[verified] Workstation smoke through our wrapper:** ja-maxham optimum 37 verified in 78 s (exit 30); sts-data.135 SIGTERM incumbent verified (exit 10). Reads plain or gzip, not `.xz`.
+- **[proposal]** Memory bins for both manifests: EvalMaxSAT's published peak at 75 % of 8/16/32/64 GB, memout → 64. MSE 2026 gives 1,074 / 31 / 34 / 77.
+- Note: `docs/current2/EVALMAXSAT_2026_INSTALL.md`.
+
 ### N-2026-10-25-e — MSE 2025 was not held; MSE 2026 is on Zenodo with optima, per-instance EvalMaxSAT results and the EvalMaxSAT source: the better primary ρ benchmark, MSE 2023 as replication [quote + verified + inference]
 
 - **[verified]** Zenodo 21358014 (CC-BY-4.0): exact sets of 607 + 609 instances; 952 published optima; per-run CSV with cpu, memory and verified.

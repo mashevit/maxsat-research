@@ -36,7 +36,9 @@ alias, so every cluster step is a command the user runs on the login node.
     cs.helsinki.fi was down, and a workstation retry job writes to
     `/home/mashe/maxsat-lab_new/mse24_zips/`.
   - **Next milestones (each after the user's go):**
-    1. build EvalMaxSAT 2026 on the cluster;
+    1. EvalMaxSAT 2026: **prepared 2026-10-25** as the official static binary
+       (`EVALMAXSAT_2026_INSTALL.md`); the user uploads `tmp/upload_ems26/`,
+       installs, and runs the smoke;
     2. a decompress + hash job;
     3. the manifests (EvalMaxSAT 1 h, memetic 3 seeds);
     4. the ρ pre-registration.
