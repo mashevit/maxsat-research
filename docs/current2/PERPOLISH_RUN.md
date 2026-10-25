@@ -6,8 +6,7 @@
 `scripts/make_perpolish_manifest.py`. **Motivation:** the rail probe
 (`LONG_CLAUSE_RULE_DESIGN.md` §9). **Plan:** `NOTES_2026-10-21_AGENDA_AND_STATS.md`
 §1. **Note:** N-2026-10-25-a.
-**Status:** prepared and verified; committed and pushed 2026-10-25 as `2763872` (use it as `MAXSAT_GIT_SHA`). Not uploaded, not
-submitted.
+**Status:** committed and pushed 2026-10-25 as `2763872`; uploaded, arranged, C core rebuilt (BUILD_OK) and **submitted 2026-10-25** (user). Readout pending.
 
 ## 1. Why [verified: workstation, LONG_CLAUSE_RULE_DESIGN.md §9]
 
@@ -151,7 +150,7 @@ python3 scripts/m2_results.py pending --manifest scripts/manifest_perpolish.tsv 
 python3 scripts/m2_results.py aggregate --manifest scripts/manifest_perpolish.tsv --outdir results/perpolish/tasks
 ```
 
-## 5. Pre-registered reading (proposal, to confirm before submission)
+## 5. Pre-registered reading (confirmed by the user, 2026-10-25: "the decision rule is fine, confirmed")
 
 **Per instance and arm:**
 - successes / 3 (target reached);
@@ -169,14 +168,27 @@ Otherwise the instance is a tie.
 1. **"10 wins broadly"** means: on the 21 non-rail instances (KS2 16 + HMSE
    5), `pp10` is better on **≥ 8** and worse on **≤ 2**. This is KS2's
    ≥ 6/16 and ≤ 2/16, scaled to 21.
+   - **Success gate (user, 2026-10-25, set before any result was seen):**
+     "if there are not enough got to optimum I dont want general rule 10
+     instead 200". On the same 21 instances, `pp10` must also:
+     - reach the target in **more runs in total** than `pp200` (out of 63
+       each); and
+     - have fewer successes than `pp200` on **at most 2** instances.
+     Wins on cost or time alone cannot carry the general rule.
    - **Then:** rule R5 of `auto_hparams` (`/3`) sets `per_polish` 10 on
      every instance with hard clauses.
-2. **Otherwise, if `pp10` is better on ≥ 2 of the 3 rail instances and worse
-   on none:**
+2. **Otherwise** (including when only the success gate fails), **if `pp10`
+   is better on ≥ 2 of the 3 rail instances and worse on none:**
    - a rail-only rule R5′, "lean tables → `per_polish` 10".
 3. **Otherwise:** no rule. Report the result.
 
 **Either rule waits for the readout and the user's go.**
+
+**`sacct` gives no memory on this cluster** (2026-10-25): for HMSE/U30
+(23475119, 23475734), MaxRSS is blank on every step, `.batch` included, and
+only Elapsed and State are filled. No memory measurement is wanted
+(user, 2026-10-25): run at 8 GB and rerun any task that dies for a system
+reason with more `--mem` (notes §14).
 
 **Diagnostics:**
 - children per run;

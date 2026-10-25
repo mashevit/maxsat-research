@@ -71,7 +71,8 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 - **[verified] Batch:** 16 KS2 + 3 setcover rail + 5 HMSE picks (h003, h047, h011, h100, h095) × {200, 10} × 3 seeds = 144 tasks, 900 s, stop at the target; both arms on `auto_hparams/2` (R4 pop 10 + ks2).
 - **[verified] Smoke (20 s):** the settings reach the solver; rail507 runs lean at 289 MB; lisbon-wedding at 10 makes 67 children against 6 at 200.
 - **[verified] Upload:** 15 files (`tmp/upload_pp10/`, `arrange_pp10.sh` tested on a mock tree); the C core must be rebuilt, and a stale `.so` is refused (exit 2).
-- **[proposal] Reading:** R5 (per_polish 10 on every hard instance) if 10 is better on ≥ 8 and worse on ≤ 2 of the 21 non-rail instances; else a rail-only rule if 10 is better on ≥ 2 of 3 rail and worse on none; to confirm before submission.
+- **[decision] Reading (confirmed by the user, 2026-10-25):** R5 (per_polish 10 on every hard instance) if 10 is better on ≥ 8 and worse on ≤ 2 of the 21 non-rail instances, and (success gate, user, before results) reaches the target in more of the 63 runs than 200, with fewer successes on at most 2 instances; else a rail-only rule if 10 is better on ≥ 2 of 3 rail and worse on none.
+- **[verified] `sacct` MaxRSS is blank** for the HMSE/U30 arrays (every step), so the cluster's accounting gives no peak memory; another source is needed for the RAM audit and the MSE memory bins.
 - Note: `docs/current2/PERPOLISH_RUN.md`.
 
 ### N-2026-10-24-a — Prior work on anytime-vs-exact orthogonality: the closest precedent is SAT (correlation 0.26); the oracle-as-target method is IRoTS's; no MaxSAT study found [quote + verified + inference]

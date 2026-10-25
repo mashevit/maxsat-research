@@ -714,6 +714,27 @@ copies in `cluster_staging_maxsat_strong/scripts/`.
 - **Why:** one 8 GB array cannot hold the big instances, and one 64 GB
   array would waste memory and queue slots on the small ones.
 
+**Superseded (user, 2026-10-25):** no memory measurement in advance.
+
+> "I dont need ahead ram measurement, if we cant guess by instance sizes -
+> we can run first with 8gb, and what crushed under given time because of
+> system suspect to give it more RAM" (user, 2026-10-25)
+
+- **First pass:** every bigger MSE instance runs at the default 8 GB,
+  unless its size alone makes the need obvious. Then it goes straight into
+  a 16 or 32 GB manifest.
+- **Escalation:** a task that dies before its time is up, for a system
+  reason, is rerun with more memory:
+  - `sacct` State `OUT_OF_MEMORY`, or `FAILED`/`CANCELLED` with no shard
+    record or with a `MemoryError` in the log;
+  - the ids come from `m2_results.py pending`, as `infra_missing` or
+    `infra_*`;
+  - the rerun uses the same script:
+    `IDS=<ids> RESUME=1 ... bash submit_m2_memetic.sh -- --mem=16G`, then
+    32G, then maybe 64G.
+- **Dropped:** the RAM audit (`sacct` MaxRSS is blank on this cluster
+  anyway, 2026-10-25) and the `/usr/bin/time` idea.
+
 ## 6. Context for the next session (read first)
 
 - **Committed:** `7c5ecc8` (lean tables), then this commit (U30/HMSE
