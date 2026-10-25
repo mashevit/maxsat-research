@@ -1,0 +1,86 @@
+# File list for batch PP10 (144 tasks; docs/current2/PERPOLISH_RUN.md, repo).
+# Paths relative to cluster_staging_maxsat_strong/. Destination: ~/cluster_staging_maxsat_strong/.
+# After the upload: sha256sum -c scripts/manifest_perpolish.upload.sha256 on the login node.
+#
+# 1. code (src/, including the C core source: REBUILD it with scripts/build_native.sbatch,
+#    the lean tables changed ls_core.c)
+src/__init__.py
+src/cli/__init__.py
+src/cli/oracle_evalmaxsat.py
+src/cli/profile_hardness.py
+src/cli/run_memetic_shard.py
+src/cli/run_opt_rc2.py
+src/cli/solve_rc2_anytime.py
+src/evo/__init__.py
+src/evo/auto_hparams.py
+src/evo/hard.py
+src/evo/impl_v2.py
+src/evo/memetic.py
+src/evo/multistart.py
+src/evo/operators.py
+src/evo/population.py
+src/evo/v3.py
+src/llm/__init__.py
+src/llm/advisor.py
+src/llm/prompt.py
+src/llm/providers/__init__.py
+src/llm/providers/noop.py
+src/llm/providers/ollama.py
+src/native/__init__.py
+src/native/native.py
+src/sat/__init__.py
+src/sat/cnf.py
+src/sat/kernel.py
+src/sat/ls_v3.py
+src/sat/rng.py
+src/sat/state.py
+src/sat/walksat.py
+src/sat/walksat_v2.py
+src/native/ls_core.c
+# 2. configs (one per arm)
+configs/strong/perpolish_pp200.yaml
+configs/strong/perpolish_pp10.yaml
+# 3. driver, submit, build, results, manifest
+scripts/tier2_memetic_array.sbatch
+scripts/submit_m2_memetic.sh
+scripts/build_native.sh
+scripts/build_native.sbatch
+scripts/m2_results.py
+scripts/auto_hparams.py
+scripts/make_oracle900_manifest.py
+scripts/make_under30_manifest.py
+scripts/make_hardmse_manifest.py
+scripts/make_ks2check_manifest.py
+scripts/make_perpolish_manifest.py
+scripts/make_flat_upload.py
+scripts/instances_perpolish.csv
+scripts/manifest_perpolish.tsv
+scripts/manifest_perpolish.tasks.csv
+scripts/manifest_perpolish.sha256
+scripts/manifest_perpolish.upload.sha256
+scripts/rsync_files_perpolish.txt
+# 4. instances (24)
+data/raw/mse_2024/mse23-uw-small/bcp-SU3__simp-genos.haps.9.wcnf
+data/raw/mse_2024/mse23-uw-small/gen-hyper-tw-GenHyperTW_b01.wcnf
+data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-contension-B-3-stb_696_368.tgf.pl.wcnf
+data/raw/mse_2024/mse23-uw-small/judgment-aggregation-ja-maxham-preflib-00049-00000385.wcnf
+data/raw/mse_2024/mse23-uw-small/mbd-b14_C-mbd14-0277.wcnf
+data/raw/mse_2024/mse23-uw-small/min-fill-MinFill_R0_myciel5.wcnf
+data/raw/mse_2024/mse23-uw-small/optimizing-BDDs-australian-credit-un-wcnf_incomplete_improved_1_2019_2.wcnf
+data/raw/mse_2024/mse23-uw-small/scheduling-cnf_small.wcnf
+data/raw/mse_2024/mse24-small/MaxSATQueriesinInterpretableClassifiers_wt-compas_train_2_CNF_3_15.wcnf
+data/raw/mse_2024/mse24-small/af-synthesis_wt-af-synthesis_stb_50_40_8.wcnf
+data/raw/mse_2024/mse24-small/causal-discovery_wt-causal_Bands_6_277.wcnf
+data/raw/mse_2024/mse24-small/judgment-aggregation-ja-kemeny-preflib-00049-00000353.wcnf
+data/raw/mse_2024/mse24-small/lisbon-wedding_wt-lisbon-wedding-9-18.wcnf
+data/raw/mse_2024/mse24-small/metro_wt-metro_8_8_5_20_10_6_500_1_3.lp.sm-extracted.wcnf
+data/raw/mse_2024/mse24-small/preference_planning_wt-WCNF_pathways_p16.wcnf
+data/raw/mse_2024/mse24-small/quantum-circuit-qgan_6_15_ibmq-casablanca_7.wcnf
+data/raw/mse_2024/mse24-small/setcover_wt-rail507.wcnf
+data/raw/mse_2024/mse24-small/setcover_wt-rail516.wcnf
+data/raw/mse_2024/mse24-small/setcover_wt-rail582.wcnf
+data/raw/mse_2024/mse23-uw-small/decision-tree-heart-cleveland-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree.wcnf
+data/raw/mse_2024/mse23-uw-small/logic-synthesis-normalized-test4.pi.opb.msat.wcnf
+data/raw/mse_2024/mse23-uw-small/inconsistency-measurement-im-forgetting-B-2-stb_625_161.tgf.pl.wcnf
+data/raw/mse_2024/mse24-small/decision-tree-primary-tumor-un-formula_0.8_2021_atleast_31_max-4_reduced_incomplete_adaboost_3.wcnf
+data/raw/mse_2024/mse24-small/correlation-clustering_wt-Rounded_CorrelationClustering_Protein4_BINARY_N360.wcnf

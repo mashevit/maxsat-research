@@ -64,6 +64,16 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-a — Batch PP10 prepared: per_polish {200, 10} on 24 MSE hard-clause instances, with the lean-table code as a flat upload [quote + verified + proposal]
+
+> "prepare now per polish 10 with flat upload" (user, 2026-10-25)
+
+- **[verified] Batch:** 16 KS2 + 3 setcover rail + 5 HMSE picks (h003, h047, h011, h100, h095) × {200, 10} × 3 seeds = 144 tasks, 900 s, stop at the target; both arms on `auto_hparams/2` (R4 pop 10 + ks2).
+- **[verified] Smoke (20 s):** the settings reach the solver; rail507 runs lean at 289 MB; lisbon-wedding at 10 makes 67 children against 6 at 200.
+- **[verified] Upload:** 15 files (`tmp/upload_pp10/`, `arrange_pp10.sh` tested on a mock tree); the C core must be rebuilt, and a stale `.so` is refused (exit 2).
+- **[proposal] Reading:** R5 (per_polish 10 on every hard instance) if 10 is better on ≥ 8 and worse on ≤ 2 of the 21 non-rail instances; else a rail-only rule if 10 is better on ≥ 2 of 3 rail and worse on none; to confirm before submission.
+- Note: `docs/current2/PERPOLISH_RUN.md`.
+
 ### N-2026-10-24-a — Prior work on anytime-vs-exact orthogonality: the closest precedent is SAT (correlation 0.26); the oracle-as-target method is IRoTS's; no MaxSAT study found [quote + verified + inference]
 
 > "check if something like I want to do check orthogonality of anytime to exact sover - anytime : custom memetic, local search, exact RC2 or EvalMAxSAt - if something was done, mainly the pass to anytime of oracle time" (user, 2026-10-24)

@@ -17,6 +17,25 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000000000000. Update 2026-10-25 (r18): read first
+
+- **Batch PP10 prepared** (user, 2026-10-25: "prepare now per polish 10 with
+  flat upload"): `docs/current2/PERPOLISH_RUN.md`, N-2026-10-25-a.
+  - 144 tasks: per_polish {200, 10} on 24 instances (KS2 16 + rail 3 +
+    HMSE picks 5);
+  - flat upload `tmp/upload_pp10/` (15 files + `arrange_pp10.sh`), carrying
+    the lean-table code;
+  - on the cluster: arrange → `build_native.sbatch` (BUILD_OK) → submit
+    (commands in §4 there), plus `sacct` MaxRSS for HMSE/U30
+    (23475119, 23475734).
+  - **Before submitting:** confirm the reading rule (§5 there) and commit,
+    for `MAXSAT_GIT_SHA`.
+- **The "monkey patch" explanation is postponed** (user, 2026-10-25: "keep
+  the note about monkey patch explanation for a nother day"). It is still in
+  `NOTES_2026-10-21_AGENDA_AND_STATS.md` §4. Offer it again on a later day,
+  not as the next opener.
+- The rest of r17 (statistics/ρ, MSE downloads, option 1) is unchanged.
+
 ## 000000000000000. Update 2026-10-21 (r17): read first
 
 **Open with `docs/current2/NOTES_2026-10-21_AGENDA_AND_STATS.md` §6, and tell
