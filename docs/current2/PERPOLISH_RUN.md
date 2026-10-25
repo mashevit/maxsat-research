@@ -6,7 +6,7 @@
 `scripts/make_perpolish_manifest.py`. **Motivation:** the rail probe
 (`LONG_CLAUSE_RULE_DESIGN.md` §9). **Plan:** `NOTES_2026-10-21_AGENDA_AND_STATS.md`
 §1. **Note:** N-2026-10-25-a.
-**Status:** committed and pushed 2026-10-25 as `2763872`; uploaded, arranged, C core rebuilt (BUILD_OK) and **submitted 2026-10-25** (user). Readout pending.
+**Status:** committed and pushed 2026-10-25 as `2763872`; uploaded, arranged, C core rebuilt (BUILD_OK) and **submitted and read 2026-10-25** (§6): general R5 not met (non-rail 5 better / 12 worse; successes 19 vs 25 of 63); rail-only R5′ met (3/3; rail gap +71 % → +15 %).
 
 ## 1. Why [verified: workstation, LONG_CLAUSE_RULE_DESIGN.md §9]
 
@@ -200,3 +200,91 @@ reason with more `--mem` (notes §14).
 the settings of KS2's `ks2_10` arm, under newer code that is identical
 outside rail. Its success counts should be close to KS2's (26/48). Runs stop
 by wall clock, so they will not be byte-equal.
+
+## 6. Readout (2026-10-25) [verified: 144 shard records]
+
+**Run:**
+- submitted 2026-10-25 11:01 UTC, `MAXSAT_GIT_SHA=2763872`;
+- the recorded src digest `6a1e4a8c…` equals the workstation's;
+- the C core was rebuilt on the cluster (BUILD_OK);
+- results are in `results/perpolish/`, aggregates in `results/perpolish/agg/`.
+
+**Integrity:**
+- 144/144 `ok`, all feasible (hv 0), none below its target;
+- maximum wall time 910 s;
+- 44 runs reached the target, 100 hit the time cap;
+- rail ran lean (18 runs), every other instance full;
+- `aggregate` flags 7 runs with cpu/wall < 0.9 (node contention): p01 and
+  p04 in `pp200`, p11 in `pp10`. All 7 reached the target.
+
+**Per instance.** Each cell gives successes / 3, the final costs of seeds
+1–3, and the median TTT in s when at least 2 of 3 runs succeeded. The last
+column is `pp10` against `pp200` under the §5 order.
+
+| p | group | instance | target | pp200 | pp10 | children 200 / 10 | pp10 vs 200 (by) |
+|---|---|---|---:|---|---|---|---|
+| p01 | ks2 | bcp-SU3 | 106 | 3/3, 30 s | 3/3, 50 s | 11 / 419 | worse (TTT) |
+| p02 | ks2 | gen-hyper-tw b01 | 5 | 6, 7, 7 | 6, 6, 7 | 4,620 / 6,860 | better (cost) |
+| p03 | ks2 | inconsistency-measurement contension | 63 | 64, 64, 65 | 64, 67, 68 | 925 / 16,597 | worse (cost) |
+| p04 | ks2 | ja-maxham | 37 | 2/3, 24 s | 2/3, 22 s | 2 / 7 | better (TTT) |
+| p05 | ks2 | mbd-b14 | 24 | 3/3, 19 s | 3/3, 26 s | 12 / 280 | worse (TTT) |
+| p06 | ks2 | min-fill myciel5 | 196 | **3/3, 644 s** | 197, 203, 204 | 178 / 2,738 | **worse (successes)** |
+| p07 | ks2 | optimizing-BDDs | 87 | 89 ×3 | 89 ×3 | 2,065 / 9,571 | tie |
+| p08 | ks2 | scheduling | 28 | **3/3, 36 s** | 2/3, 42 s | 9 / 143 | **worse (successes)** |
+| p09 | ks2 | MaxSATQueries | 31,514 | 43,875 ×3 | 43,875 ×3 | 340 / 4,998 | tie |
+| p10 | ks2 | af-synthesis | 117 | **2/3, 654 s** | 121, 122, 124 | 236 / 1,660 | **worse (successes)** |
+| p11 | ks2 | causal-discovery | 91,349 | 3/3, 6 s | 3/3, 8 s | 3 / 29 | worse (TTT) |
+| p12 | ks2 | ja-kemeny | 554 | 1/3 | 1/3 | 781 / 2,094 | tie |
+| p13 | ks2 | lisbon-wedding 9-18 | 395 | 396 ×3 | 396, 397, 397 | 249 / 2,475 | worse (cost) |
+| p14 | ks2 | metro | 138 | 1/3 | 1/3 | 124 / 513 | tie |
+| p15 | ks2 | preference_planning | 257 | 1/3 | **2/3, 5 s** | 251 / 4 | **better (successes)** |
+| p16 | ks2 | quantum-circuit qgan | 24 | **3/3, 25 s** | 2/3, 431 s | 19 / 3,334 | **worse (successes)** |
+| p17 | rail | setcover rail507 | 174 | 285, 298, 324 | **200, 200, 204** | 250 / 766 | better (cost) |
+| p18 | rail | setcover rail516 | 182 | 269, 271, 284 | **199, 199, 200** | 252 / 826 | better (cost) |
+| p19 | rail | setcover rail582 | 211 | 334, 355, 373 | **241, 243, 246** | 251 / 733 | better (cost) |
+| p20 | hmse | decision-tree heart-cleveland | 31 | 65, 67, 84 | 39, 50, 53 | 242 / 247 | better (cost) |
+| p21 | hmse | logic-synthesis test4.pi | 94 | 107, 108, 113 | 104, 105, 107 | 614 / 4,336 | better (cost) |
+| p22 | hmse | inconsistency-measurement forgetting | 79 | 83, 84, 84 | 88, 89, 95 | 934 / 6,862 | worse (cost) |
+| p23 | hmse | decision-tree primary-tumor | 108 | 132, 148, 164 | 149, 160, 160 | 231 / 238 | worse (cost) |
+| p24 | hmse | correlation-clustering Protein4 | 15,658,391 | 17.02M, 17.21M, 18.18M | 15.80M, 17.41M, 17.75M | 248 / 1,842 | worse (cost) |
+
+**The pre-registered decision (§5):**
+
+| test | needed | result | met |
+|---|---|---|---|
+| non-rail better / worse (21) | ≥ 8 / ≤ 2 | 5 / 12 (4 ties) | no |
+| non-rail successes, of 63 | pp10 > pp200 | 19 vs 25 | no |
+| instances where pp10 has fewer successes | ≤ 2 | 4 (p06, p08, p10, p16) | no |
+| **general R5** | all three | | **no** |
+| rail better / worse (3) | ≥ 2 / 0 | 3 / 0 | yes |
+| **rail-only rule R5′** ("lean tables → per_polish 10") | | | **met** |
+
+**On rail at 900 s:**
+- `pp10` median costs are 200 / 199 / 243 against best-knowns of
+  174 / 182 / 211, gaps of +15 / +9 / +15 %;
+- `pp200` median costs are 298 / 271 / 355, gaps of +71 / +49 / +68 %;
+- no run reached the best-known.
+
+**Consistency check** (§5, not part of the decision): on p01–p16, `pp200`
+reached the target in 25/48 runs, against KS2's `ks2_10` at 26/48 (same
+settings, older code). Min-fill went from 1/3 to 3/3 and ja-maxham from
+3/3 to 2/3. This is within the run-to-run spread of 900 s wall-clock runs.
+
+**[inference] Reading:**
+- On the KS2 instances, ks2's SAT moves do the work that reaches the
+  optimum (KS2 §6).
+- Cutting them to 10 per slot gives 10–300× more children, but loses
+  successes on min-fill, af-synthesis, quantum-circuit and scheduling.
+- Rail is the opposite case. At 200, the moves fill every slot and the
+  polish never runs.
+- The HMSE picks split 2 better (decision-tree h003, logic-synthesis) and
+  3 worse, so there is no family-level pattern to build a rule on.
+- Four verdicts are decided by TTT alone, with equal successes and seconds
+  apart: worse on p01, p05 and p11, better on p04. They do not change the
+  decision: counted as ties, the result is 4 better / 9 worse.
+
+**Next:** R5′ is pre-registered as met, and building it waits for the
+user's go.
+- It would add a rule to `auto_hparams` (`/3`): when the bound
+  Σk(k−1) > 50M (the lean trigger), set `hard.moves.per_polish` = 10.
+- Every other instance resolves exactly as under `/2`.

@@ -64,6 +64,16 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-b — Batch PP10 read: per_polish 10 is not a general improvement (5 better / 12 worse, successes 19 vs 25 of 63); on setcover rail it is (gap +49–71 % → +9–15 %); rail-only rule met [verified + inference]
+
+- **[verified]** 144/144 ok and feasible, code digest = `2763872`.
+- **[verified] Pre-registered decision** (`PERPOLISH_RUN.md` §5–§6):
+  - general R5: not met on any of its three tests;
+  - rail-only R5′ ("lean tables → per_polish 10"): met, 3/3 better.
+- **[verified] Losses of successes at 10:** min-fill (3/3 → 0/3), af-synthesis (2/3 → 0/3), quantum-circuit and scheduling (3/3 → 2/3). The only gain is preference_planning (1/3 → 2/3).
+- **[inference]** On hard instances where ks2 moves reach the optimum, fewer moves per slot hurts despite 10–300× more children. Rail is the exception, because its moves fill the slot.
+- **Next:** build R5′ in `auto_hparams/3` after the user's go.
+
 ### N-2026-10-25-a — Batch PP10 prepared: per_polish {200, 10} on 24 MSE hard-clause instances, with the lean-table code as a flat upload [quote + verified + proposal]
 
 > "prepare now per polish 10 with flat upload" (user, 2026-10-25)

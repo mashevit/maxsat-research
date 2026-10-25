@@ -1,0 +1,3 @@
+config_id,tasks,successes,success_rate,median_ttt_s,n_success,n_target_after_budget,n_budget_exhausted,n_watchdog,n_max_gens,n_cost_mismatch,n_invalid_submission,n_infra_error,n_infra_missing,median_generations,median_children,median_mean_flips_per_call,median_wall_per_child_s,max_overshoot_s,min_cpu_wall_ratio
+perpolish_pp10,72,19,0.264,>900,19,0,53,0,0,0,0,0,0,181.0,1626.0,12498.2,0.324,0.516,0.643
+perpolish_pp200,72,25,0.347,>900,25,0,47,0,0,0,0,0,0,28.0,248.5,12437.25,3.25,10.069,0.229

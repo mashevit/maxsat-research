@@ -19,6 +19,17 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ## 0000000000000000. Update 2026-10-25 (r18): read first
 
+- **PP10 read 2026-10-25** (`PERPOLISH_RUN.md` §6, N-2026-10-25-b):
+  - general R5 not met: non-rail 5 better / 12 worse, successes 19 vs 25 of
+    63;
+  - rail-only R5′ met: rail median gap +49–71 % → +9–15 %;
+  - **next:** build R5′ (`auto_hparams/3`: lean bound > 50M → per_polish 10)
+    after the user's go.
+- **Memory (user, 2026-10-25):** no advance measurement. Run at 8 GB and
+  rerun tasks that died for a system reason with `-- --mem=16G` and up
+  (notes §14).
+
+
 - **Batch PP10 prepared** (user, 2026-10-25: "prepare now per polish 10 with
   flat upload"): `docs/current2/PERPOLISH_RUN.md`, N-2026-10-25-a.
   - 144 tasks: per_polish {200, 10} on 24 instances (KS2 16 + rail 3 +
