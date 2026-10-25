@@ -64,6 +64,14 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-e — MSE 2025 was not held; MSE 2026 is on Zenodo with optima, per-instance EvalMaxSAT results and the EvalMaxSAT source: the better primary ρ benchmark, MSE 2023 as replication [quote + verified + inference]
+
+- **[verified]** Zenodo 21358014 (CC-BY-4.0): exact sets of 607 + 609 instances; 952 published optima; per-run CSV with cpu, memory and verified.
+- **[verified]** Published EvalMaxSAT proves 792, 391 of them in (30, 3600] s. There is no delay plateau (median 0.7–1.1 s on VBS < 1 s instances).
+- **[verified]** Zenodo answers from the workstation; the cluster is untested.
+- **[inference]** 2026 as the primary sample: current, same EvalMaxSAT source, clean data. About 120–235 ρ points, against 140–275 for 2023. 2023 serves as the replication sample.
+- Note: `docs/current2/MSE_PUBLISHED_EXACT_RESULTS.md` §5; data: `data/raw/mse_results/mse26/`.
+
 ### N-2026-10-25-d — MSE 2023/2024 exact tracks publish proven optima and per-instance EvalMaxSAT times; our own EvalMaxSAT runs are the cleaner ρ x [quote + verified + inference + proposal]
 
 > "are there aggregated results ot this solver somewhere? I can run it if there are less than 1000 instances in one wave on cluster for hour" (user, 2026-10-25)

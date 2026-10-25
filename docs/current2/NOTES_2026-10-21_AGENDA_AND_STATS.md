@@ -691,6 +691,21 @@ copies in `cluster_staging_maxsat_strong/scripts/`.
     is network I/O, no Python), then
     `sbatch --export=ALL,STEPS=test,extract,sizes download_mse_full.sbatch`.
 
+**Run 2026-10-25 (user, login node):**
+- **2023:** both Google Drive zips downloaded OK.
+- **2024:** both Helsinki zips failed. `curl: (28) Failed to connect to
+  www.cs.helsinki.fi port 443`.
+- **The server, not the cluster:** the same host also timed out from the
+  workstation. `www.helsinki.fi` answers, and on 2026-10-21 the host
+  answered 200.
+- **No mirror is published.** The 2024 page lists only these links.
+- **Workaround (user: "downloading to laptop"):** a workstation job retries
+  every 10 min for up to 24 h, into `/home/mashe/maxsat-lab_new/mse24_zips/`
+  (log `download.log`), then checks size and CRC. The zips are then uploaded
+  to `~/mse_full/zips/`, and the cluster job runs
+  `STEPS=test,extract,sizes`. A retry on the cluster itself would work as
+  well once the server is back.
+
 ## 14. Submitting the bigger MSE instances: split by memory (user, 2026-10-21, late)
 
 > "when i submit the bigger mse instances, to split them in 3-4 manifests,

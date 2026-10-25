@@ -26,6 +26,20 @@ alias, so every cluster step is a command the user runs on the login node.
   - **R5 built 2026-10-25** (`auto_hparams/3`, N-2026-10-25-c): per_polish
     10 on hard instances with lean tables (rail only). Not on the cluster; it
     goes up with the next batch on `auto.yaml`.
+- **ρ benchmark (user, 2026-10-25; `MSE_PUBLISHED_EXACT_RESULTS.md` §5–§6):**
+  - MSE 2026 (Zenodo 21358014) is the primary sample, MSE 2023 the
+    replication;
+  - our EvalMaxSAT is built from the 2026 competition source;
+  - the memetic runs 3 seeds, up to 5 if needed.
+  - **Downloads:** MSE 2023 zips are on the cluster (extract with
+    `STEPS=test,extract,sizes`). MSE 2026 via `sets_mse26.txt`. MSE 2024:
+    cs.helsinki.fi was down, and a workstation retry job writes to
+    `/home/mashe/maxsat-lab_new/mse24_zips/`.
+  - **Next milestones (each after the user's go):**
+    1. build EvalMaxSAT 2026 on the cluster;
+    2. a decompress + hash job;
+    3. the manifests (EvalMaxSAT 1 h, memetic 3 seeds);
+    4. the ρ pre-registration.
 - **Memory (user, 2026-10-25):** no advance measurement. Run at 8 GB and
   rerun tasks that died for a system reason with `-- --mem=16G` and up
   (notes §14).

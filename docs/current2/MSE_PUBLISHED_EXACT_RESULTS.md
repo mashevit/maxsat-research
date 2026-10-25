@@ -140,3 +140,93 @@ Copies are in `tmp/upload_mse_dl/`, identical to the committed
 
 The commands are in the reply of 2026-10-25 and in
 `NOTES_2026-10-21_AGENDA_AND_STATS.md` §13.
+
+## 5. MSE 2025 and MSE 2026 (checked 2026-10-25) [verified: web]
+
+> "check if there are mse25 or mse26 reachable instances, and reason if
+> they are better benchmark than mse23" (user, 2026-10-25)
+
+- **MSE 2025 was not held.** The 2025 page: "the MaxSAT 2025 evaluation
+  will not be held this year".
+- **MSE 2026 was held, and everything is on Zenodo.**
+  - Record 21358014, DOI 10.5281/zenodo.21358014, CC-BY-4.0, published
+    2026-07-14. The proceedings were updated on 2026-10-24.
+  - Exact zips: unweighted 2.53 GiB (607 `.wcnf.xz` + `meta.csv`),
+    weighted 5.03 GiB (609 + `meta.csv`).
+  - Files are named by hash. `benchmark-metadata.csv` gives hash, family,
+    `best_known_cost` and `optimal_cost`.
+  - Per-instance raw results for every solver: cpu and wall time, memory,
+    memout, answer, optval, `verified`.
+  - The solver sources, including `solver-EvalMaxSAT.zip`.
+  - **Zenodo answers from the workstation**, both a HEAD request on the zip
+    and range requests (the census). The cluster is untested: it reached
+    Google Drive but not Helsinki.
+- **Local copies:** `data/raw/mse_results/mse26/` (metadata, both exact
+  rawdata CSVs, `SHA256SUMS`). The zip listings are in
+  `cluster_staging_maxsat_strong/scripts/mse_census/mse26-exact-*.tsv`.
+  The md5 of the metadata and results files matches Zenodo.
+
+**MSE 2023 against MSE 2026, exact tracks:**
+
+| | MSE 2023 | MSE 2026 |
+|---|---:|---:|
+| instances | 1,130 | 1,216 |
+| proven optima published | 912 (table costs; 43 differ from `best_costs.csv`) | 952 (`optimal_cost`) plus a per-run `verified` flag |
+| VBS-proved in 1 h | 912 | 947 |
+| EvalMaxSAT (published) proved | 854 | 792 |
+| EvalMaxSAT in (30, 3600] s | **457** | **391** |
+| EvalMaxSAT in (30, 900] s | 367 | 301 |
+| EvalMaxSAT on VBS < 1 s instances | median 1–4 s | median 0.7–1.1 s (≥ 150 s: 3 %) |
+| results format | HTML table | CSV with memory and `verified` |
+| EvalMaxSAT version | 2023 | 2026, source in the record |
+| families with ≥ 10 instances | 62 | 56 |
+| download | Google Drive, **done** on the cluster | Zenodo, 7.6 GiB, not started |
+| memory | not published | EvalMaxSAT up to 33.6 GB; 39 memouts |
+
+About 42 of the 98 2026 family names match 2023 families (the newer
+editions reuse families). Whether the instance files overlap is unknown
+until both sets are on disk.
+
+**[inference] Is 2026 the better benchmark? Yes, as the primary set:**
+1. **It is current.** A 2026 benchmark is what reviewers expect, and it
+   carries a citable DOI and a licence.
+2. **The same EvalMaxSAT can run.** The record holds the exact source the
+   competition ran. Our runs then differ from the published ones only in
+   hardware, which gives a strong cross-check of our x.
+3. **The data is cleaner.** Optima, verification and memory are
+   machine-readable. There are no cost conflicts to resolve, unlike 2023's
+   43.
+4. **No 2024-style delay.** EvalMaxSAT's times follow hardness down to the
+   millisecond range.
+
+**What 2026 costs:**
+- about 15 % fewer window points: 391 against 457;
+- an 8 GB download not yet done;
+- a few memory-heavy instances (EvalMaxSAT used up to 33.6 GB).
+
+**Predicted ρ points for 2026:** 391 × 30–60 % memetic success ≈
+**120–235**, successes only. MSE 2023 gives about 140–275.
+
+**Recommendation:**
+- **MSE 2026 is the primary ρ sample.**
+- **MSE 2023 is an independent replication sample.** It is on the cluster
+  already, so it can run first.
+- Two samples that agree are stronger evidence than one bigger sample. The
+  overlap between the two sets is to be checked (by content hash) and
+  removed from the replication.
+
+## 6. Decisions (user, 2026-10-25)
+
+> "agreed, use 2026 source, all 3 seeds, might be even 5 if needed"
+
+- **MSE 2026 is the primary ρ sample; MSE 2023 is the replication
+  sample.** Instances in both sets are removed from the replication, by
+  content hash.
+- **Our EvalMaxSAT runs use the MSE 2026 competition source**
+  (`solver-EvalMaxSAT.zip` from Zenodo 21358014), built on the cluster,
+  not our `94e6774` build. The same binary serves the 2023 replication.
+- **The memetic runs 3 seeds per instance**, and up to 5 if the
+  pre-registered precision needs it. The rule for adding seeds 4–5 goes
+  into the ρ pre-registration, before any memetic result is seen.
+- **Download:** `cluster_staging_maxsat_strong/scripts/sets_mse26.txt`
+  (also in `tmp/upload_mse_dl/`), with `DEST=~/mse_full26`.
