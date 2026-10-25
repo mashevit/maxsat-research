@@ -6,7 +6,7 @@
 `scripts/make_perpolish_manifest.py`. **Motivation:** the rail probe
 (`LONG_CLAUSE_RULE_DESIGN.md` §9). **Plan:** `NOTES_2026-10-21_AGENDA_AND_STATS.md`
 §1. **Note:** N-2026-10-25-a.
-**Status:** prepared and verified, not committed, not uploaded, not
+**Status:** prepared and verified; committed and pushed 2026-10-25 as `2763872` (use it as `MAXSAT_GIT_SHA`). Not uploaded, not
 submitted.
 
 ## 1. Why [verified: workstation, LONG_CLAUSE_RULE_DESIGN.md §9]
@@ -131,7 +131,7 @@ cd ~/cluster_staging_maxsat_strong/scripts && mkdir -p logs
 sbatch build_native.sbatch
 cat logs/build-native-*.out           # the newest one: expect BUILD_OK
 DRY_RUN=1 MANIFEST=manifest_perpolish.tsv OUTDIR=results/perpolish/tasks bash submit_m2_memetic.sh   # --array=1-144%1000
-MAXSAT_GIT_SHA=<commit> MANIFEST=manifest_perpolish.tsv OUTDIR=results/perpolish/tasks bash submit_m2_memetic.sh
+MAXSAT_GIT_SHA=2763872 MANIFEST=manifest_perpolish.tsv OUTDIR=results/perpolish/tasks bash submit_m2_memetic.sh
 ```
 
 **Also on the login node: the memory of the last arrays.** This is the

@@ -28,8 +28,8 @@ alias, so every cluster step is a command the user runs on the login node.
   - on the cluster: arrange → `build_native.sbatch` (BUILD_OK) → submit
     (commands in §4 there), plus `sacct` MaxRSS for HMSE/U30
     (23475119, 23475734).
-  - **Before submitting:** confirm the reading rule (§5 there) and commit,
-    for `MAXSAT_GIT_SHA`.
+  - Committed and pushed as `2763872` (`MAXSAT_GIT_SHA`). The reading rule
+    (§5 there) is a proposal; confirm it with the user at the readout.
 - **The "monkey patch" explanation is postponed** (user, 2026-10-25: "keep
   the note about monkey patch explanation for a nother day"). It is still in
   `NOTES_2026-10-21_AGENDA_AND_STATS.md` §4. Offer it again on a later day,
