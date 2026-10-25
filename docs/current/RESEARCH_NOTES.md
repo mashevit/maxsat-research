@@ -64,6 +64,17 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-g — Batch POP prepared, not run: R4's pop {10, 40} on all 144 MSE 2023/2024 hard-clause instances; pre-registered rule on arrival and fitness [quote + verified + proposal]
+
+> "do prepare run for some data we already have, not mse26, I want to check If with pop10 instead pop40 is better, prepare rule, that takes into account fitness, and arrival at optimum" (user, 2026-10-25)
+
+- **[verified] Why:** R4's pop 10 on hard instances was the user's choice; KS2 showed no pop effect (`ks2_10` vs `ks2_40` 8 / 7 on 16). Soft pools cannot show one (median run: 1 child).
+- **[verified] Batch:** HMSE h001–h141 + rail 3 × {`hard_pop` 10, 40} × 3 seeds = 864 tasks, 900 s, stop at the target, `auto_hparams/3` otherwise. New option `hparams.hard_pop` (default 10; `/3` unchanged).
+- **[verified] Smoke (20 s), upload, tests:** the pop reaches R4 (records show 10 / 40, R5 still on rail); 12-file flat upload (`tmp/upload_pop/`, `arrange_pop.sh` mock-tested), no C rebuild; 421 passed / 16 skipped.
+- **[decision] Not run** (user, 2026-10-25: "dont need to run batch then"): R4 keeps pop 10. This followed the explanation that pop 10 is the user's choice, not a measured result: KS2 showed no pop effect; lisbon single runs and 26 vs 24 successes are the only hints (`POPSIZE_RUN.md` §6). Tree kept for a later run.
+- **[proposal, never confirmed] Reading** (`scripts/popsize_readout.py`, written before results): per instance, arrivals → median cost → TTT (≥ 1.25×, both ≥ 2/3). An arm wins a group if it is better by a sign test (all 144 at α 0.05; unweighted 2023 / weighted 2024 at α 0.025 each), **and** it loses no arrivals overall (W2), **and** it loses no fitness comparisons on balance (W3). Class pop = class winner, else overall winner, else 10.
+- Note: `docs/current2/POPSIZE_RUN.md`.
+
 ### N-2026-10-25-f — EvalMaxSAT 2026: the official static competition binary, smoke-tested; memory bins for the 2026 manifests from EvalMaxSAT's published peaks [quote + verified + proposal]
 
 > "do option 1, use static binary if you reason we dont need local compilation" (user, 2026-10-25)

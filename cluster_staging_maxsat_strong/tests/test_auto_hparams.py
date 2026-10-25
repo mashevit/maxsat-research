@@ -3,6 +3,7 @@
 
 - the size and class rules; the class (soft/hard x unweighted/weighted/heavy)
   picks the published or measured B2 values;
+- R4's pop comes from the `hard_pop` option (default 10), on hard instances only;
 - R5: per_polish 10 exactly on hard instances whose v3 tables are lean (the
   ls_v3 trigger or a forced ls.nbrs), over the config's value; nothing else
   changes, and the shard run uses it;
@@ -197,8 +198,24 @@ def test_flips_c_sets_flips_only_on_soft_but_not_on_hard(tmp_path):
     assert hard.cfg["ls"]["ls_polish_flips"] == 50_000 and "polish_cap" not in hard.cfg["ls"]
 
 
+def test_hard_pop_sets_r4_pop_on_hard_only(tmp_path):
+    cfg = ahp.auto_base()
+    cfg["hparams"] = {"mode": "auto", "hard_pop": 40}
+    hard, default = prev(_hard(tmp_path), cfg), prev(_hard(tmp_path))
+    assert hard.cfg["ea"]["pop_size"] == 40 and default.cfg["ea"]["pop_size"] == 10
+    assert hard.cfg["hard"] == default.cfg["hard"] == {"moves": {"keep_sat": "ks2"}}
+    assert hard.reasons["ea.pop_size+hard.moves.keep_sat"].endswith("pop 40, keep_sat ks2 (hparams.hard_pop)")
+    # nothing else moves
+    assert {k: v for k, v in hard.cfg["ea"].items() if k != "pop_size"} == \
+        {k: v for k, v in default.cfg["ea"].items() if k != "pop_size"}
+    assert hard.cfg["ls"] == default.cfg["ls"]
+    soft = prev(make_wcnf(tmp_path, "s6", n=60, k=3, m_soft=200, seed=4), cfg)
+    assert "pop_size" not in soft.overrides["ea"] and soft.cfg["ea"]["pop_size"] == 40   # the config's value
+
+
 @pytest.mark.parametrize("bad", ["sometimes", {"mode": "auto", "c": 3}, {"mode": "auto", "flips_c": -1},
-                                 {"mode": "auto", "flips_cap": 10}])
+                                 {"mode": "auto", "flips_cap": 10}, {"mode": "auto", "hard_pop": 1},
+                                 {"mode": "auto", "hard_pop": 10.5}, {"mode": "auto", "hard_pop": True}])
 def test_hparams_opts_refuses_bad_values(bad):
     with pytest.raises(ValueError):
         ahp.hparams_opts({"impl": "v3", "hparams": bad})

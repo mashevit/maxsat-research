@@ -34,7 +34,8 @@ config files.
 1. **One batch config:** `configs/strong/auto.yaml`. It is the S1 `allC`
    values plus `hparams: auto`, written by
    `scripts/auto_hparams.py --write-base`.
-   - Options: `hparams: {mode: auto, flips_c, flips_cap}`.
+   - Options: `hparams: {mode: auto, flips_c, flips_cap, hard_pop}`. `hard_pop`
+     (default 10) is the pop R4 sets; it was added for batch POP (`POPSIZE_RUN.md`).
    - `--check` confirms the file matches the generator.
 2. **In each job:**
    - the shard runner runs its kernel gate as before;

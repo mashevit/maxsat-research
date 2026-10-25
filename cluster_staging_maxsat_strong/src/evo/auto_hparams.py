@@ -9,7 +9,7 @@ the hash of the resolved config. Only the keys below are set; every other key
 comes from the batch config (configs/strong/auto.yaml = `BASE` + `hparams: auto`).
 
     hparams: auto                      # or, with options:
-    hparams: {mode: auto, flips_c: 0, flips_cap: 1600000}
+    hparams: {mode: auto, flips_c: 0, flips_cap: 1600000, hard_pop: 10}
 
 PREVIEW. `scripts/auto_hparams.py --print` runs the same `resolve()` on the
 workstation, so it shows what a job will choose.
@@ -66,6 +66,8 @@ Rules (evidence tag in brackets; "measured" = our runs, "source" = paper):
       /1 choice) better on 13, worse on 2. The pre-registered rule failed at
       pop 40 (10/3), and pop alone showed no effect; pop 10 is the user's
       choice, 2026-10-21. KS2_CHECK_RUN.md section 6]
+      The option `hard_pop` (default 10) sets the pop R4 chooses; it exists for
+      batch POP (POPSIZE_RUN.md), whose arm `pop40` sets 40.
   R5  hard clauses in the solved instance AND lean neighbour tables (ls.nbrs
       lean, or auto with the bound sum k(k-1) > ls_v3.NBRS_MAX = 50M; today
       only the setcover rail instances): hard.moves.per_polish = 10, so the
@@ -143,9 +145,9 @@ def hparams_opts(cfg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         h = {"mode": h}
     if not isinstance(h, dict):
         raise ValueError(f"hparams must be a mode string or a mapping, got {h!r}")
-    unknown = sorted(set(h) - {"mode", "flips_c", "flips_cap"})
+    unknown = sorted(set(h) - {"mode", "flips_c", "flips_cap", "hard_pop"})
     if unknown:
-        raise ValueError(f"unknown hparams keys {unknown}; known: mode, flips_c, flips_cap")
+        raise ValueError(f"unknown hparams keys {unknown}; known: mode, flips_c, flips_cap, hard_pop")
     mode = str(h.get("mode", "auto")).lower()
     if mode not in HPARAM_MODES:
         raise ValueError(f"hparams.mode must be one of {HPARAM_MODES}, got {mode!r}")
@@ -153,9 +155,12 @@ def hparams_opts(cfg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
     if str(cfg.get("impl", "")).lower() != "v3":
         raise ValueError(f"hparams: auto needs impl: v3 (got impl: {cfg.get('impl')!r})")
-    opts = {"flips_c": float(h.get("flips_c", 0.0)), "flips_cap": int(h.get("flips_cap", FLIPS_CAP_DEFAULT))}
+    opts = {"flips_c": float(h.get("flips_c", 0.0)), "flips_cap": int(h.get("flips_cap", FLIPS_CAP_DEFAULT)),
+            "hard_pop": h.get("hard_pop", HARD_POP_SIZE)}
     if opts["flips_c"] < 0 or opts["flips_cap"] < FLIPS_FLOOR:
         raise ValueError(f"hparams.flips_c >= 0 and hparams.flips_cap >= {FLIPS_FLOOR} required")
+    if isinstance(opts["hard_pop"], bool) or not isinstance(opts["hard_pop"], int) or opts["hard_pop"] < 2:
+        raise ValueError(f"hparams.hard_pop must be an integer >= 2, got {opts['hard_pop']!r}")
     return opts
 
 
@@ -228,8 +233,8 @@ def polish_flips(n_eff: int, c: float, cap: int) -> int:
     return max(FLIPS_FLOOR, min(int(c * n_eff), cap))
 
 
-def choose(f: Features, flips_c: float = 0.0,
-           flips_cap: int = FLIPS_CAP_DEFAULT) -> Tuple[Dict[str, Any], Dict[str, str]]:
+def choose(f: Features, flips_c: float = 0.0, flips_cap: int = FLIPS_CAP_DEFAULT,
+           hard_pop: int = HARD_POP_SIZE) -> Tuple[Dict[str, Any], Dict[str, str]]:
     """(overrides as a nested {"ea": {...}, "ls": {...}[, "hard": {...}]}, reason per key)."""
     k = mutation_k(f.n_eff)
     t, sp, zeta, h_inc, ev = DLS_BY_CLASS[f.cls]
@@ -243,7 +248,7 @@ def choose(f: Features, flips_c: float = 0.0,
         ls["polish_cap"] = "flips_only"
     out: Dict[str, Any] = {"ea": ea, "ls": ls}
     if f.n_hard_eff > 0:
-        ea["pop_size"] = HARD_POP_SIZE
+        ea["pop_size"] = hard_pop
         out["hard"] = {"moves": {"keep_sat": HARD_KEEP_SAT}}
         if f.nbrs_mode == "lean":
             out["hard"]["moves"]["per_polish"] = LEAN_PER_POLISH
@@ -255,7 +260,8 @@ def choose(f: Features, flips_c: float = 0.0,
     }
     if "hard" in out:
         why["ea.pop_size+hard.moves.keep_sat"] = (f"R4 hard clauses in the solved instance: pop "
-                                                  f"{HARD_POP_SIZE}, keep_sat {HARD_KEEP_SAT}")
+                                                  f"{hard_pop}, keep_sat {HARD_KEEP_SAT}"
+                                                  + (" (hparams.hard_pop)" if hard_pop != HARD_POP_SIZE else ""))
         if f.nbrs_mode == "lean":
             why["hard.moves.per_polish"] = (f"R5 lean neighbour tables (bound {f.nbrs_bound:,}): per_polish "
                                             f"{LEAN_PER_POLISH}")
@@ -308,7 +314,7 @@ def resolve(cfg: Dict[str, Any], wcnf: WCNF, eff: WCNF, gate: str) -> Resolved:
     if opts is None:
         raise ValueError("resolve() needs a config with hparams: auto")
     f = features(wcnf, eff, gate, (cfg.get("ls") or {}).get("nbrs", "auto"))
-    ov, why = choose(f, opts["flips_c"], opts["flips_cap"])
+    ov, why = choose(f, opts["flips_c"], opts["flips_cap"], opts["hard_pop"])
     return Resolved(cfg=merge(cfg, ov), feats=f, overrides=ov, reasons=why, seconds=time.time() - t0)
 
 
