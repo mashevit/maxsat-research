@@ -283,8 +283,8 @@ settings, older code). Min-fill went from 1/3 to 3/3 and ja-maxham from
   apart: worse on p01, p05 and p11, better on p04. They do not change the
   decision: counted as ties, the result is 4 better / 9 worse.
 
-**Next:** R5′ is pre-registered as met, and building it waits for the
-user's go.
+**Built 2026-10-25** (user: "yes build the rail-only rule"). It is
+`auto_hparams/3`, rule R5 (`AUTO_HPARAMS.md`, N-2026-10-25-c). The plan was:
 - It would add a rule to `auto_hparams` (`/3`): when the bound
   Σk(k−1) > 50M (the lean trigger), set `hard.moves.per_polish` = 10.
 - Every other instance resolves exactly as under `/2`.

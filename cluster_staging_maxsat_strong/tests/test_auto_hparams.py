@@ -3,6 +3,9 @@
 
 - the size and class rules; the class (soft/hard x unweighted/weighted/heavy)
   picks the published or measured B2 values;
+- R5: per_polish 10 exactly on hard instances whose v3 tables are lean (the
+  ls_v3 trigger or a forced ls.nbrs), over the config's value; nothing else
+  changes, and the shard run uses it;
 - sizes come from the instance the EA solves (the kernel when the gate
   passes); kernel weights do not make an unweighted instance weighted;
 - in the shard runner: the values are merged in memory, recorded (schema 6),
@@ -130,6 +133,53 @@ def test_class_picks_b2_values(tmp_path, m_hard, w_min, w_max, cls, dls):
         assert "hard" not in r.cfg
 
 
+def _hard(tmp_path, name="r5", seed=4):
+    return make_wcnf(tmp_path, name, n=60, k=3, m_soft=200, m_hard=40, seed=seed)
+
+
+def test_r5_lean_hard_instance_gets_per_polish_10(tmp_path, monkeypatch):
+    from sat import ls_v3
+    path = _hard(tmp_path)
+    full = prev(path)
+    assert full.feats.nbrs_mode == "full" and full.feats.nbrs_bound > 0
+    assert full.cfg["hard"] == {"moves": {"keep_sat": "ks2"}} and "hard.moves.per_polish" not in full.reasons
+    monkeypatch.setattr(ls_v3, "NBRS_MAX", full.feats.nbrs_bound - 1)
+    lean = prev(path)
+    assert lean.feats.nbrs_mode == "lean" and lean.feats.nbrs_bound == full.feats.nbrs_bound
+    assert lean.cfg["hard"] == {"moves": {"keep_sat": "ks2", "per_polish": 10}}
+    assert hard_cfg(lean.cfg)["moves_per_polish"] == 10 and lean.reasons["hard.moves.per_polish"].startswith("R5")
+    # everything else resolves as with full tables
+    assert lean.cfg["ea"] == full.cfg["ea"] and lean.cfg["ls"] == full.cfg["ls"]
+
+
+def test_r5_not_on_soft_instances(tmp_path, monkeypatch):
+    from sat import ls_v3
+    monkeypatch.setattr(ls_v3, "NBRS_MAX", 0)
+    r = prev(make_wcnf(tmp_path, "s5", n=60, k=3, m_soft=200, seed=4))
+    assert r.feats.nbrs_mode is None and r.feats.nbrs_bound is None and "hard" not in r.cfg
+
+
+@pytest.mark.parametrize("forced,cap,want", [("lean", None, 10), ("full", 0, None)])
+def test_r5_follows_a_forced_ls_nbrs(tmp_path, monkeypatch, forced, cap, want):
+    from sat import ls_v3
+    if cap is not None:
+        monkeypatch.setattr(ls_v3, "NBRS_MAX", cap)
+    cfg = ahp.auto_base()
+    cfg["ls"]["nbrs"] = forced
+    r = prev(_hard(tmp_path), cfg)
+    assert r.feats.nbrs_mode == forced
+    assert r.cfg["hard"]["moves"].get("per_polish") == want
+
+
+def test_r5_overrides_the_configs_per_polish(tmp_path, monkeypatch):
+    from sat import ls_v3
+    monkeypatch.setattr(ls_v3, "NBRS_MAX", 0)
+    cfg = ahp.auto_base()
+    cfg["hard"] = {"moves": {"per_polish": 200, "noise": 0.1}}
+    r = prev(_hard(tmp_path), cfg)
+    assert r.cfg["hard"]["moves"] == {"per_polish": 10, "noise": 0.1, "keep_sat": "ks2"}
+
+
 def test_merge_is_deep_and_keeps_other_hard_keys():
     cfg = {"ea": {"pop_size": 40, "elitism": True},
            "hard": {"phases": "random", "moves": {"per_polish": 50, "keep_sat": "none"}}}
@@ -206,6 +256,20 @@ def test_shard_run_uses_the_chosen_values(tmp_path, monkeypatch):
     # the hparams time is inside the budget, like the gate's
     pre = rec["preprocess_s"] + rec["hparams"]["hparams_s"]
     assert seen["cfg"]["time_limit_s"] == pytest.approx(20.0 - pre, abs=0.01)
+
+
+def test_shard_run_with_lean_tables_uses_r5(tmp_path, monkeypatch):
+    pytest.importorskip("pysat")
+    from sat import ls_v3
+    path = _hard(tmp_path, "rl", seed=6)
+    monkeypatch.setattr(ls_v3, "NBRS_MAX", 0)          # every instance lean, in this process
+    _, cp = small_run_cfg(tmp_path)
+    rc, rec = shard_run(path, cp, tmp_path)
+    assert rc == 0 and rec["status"] == "ok" and rec["hard_violations"] == 0
+    hp = rec["hparams"]
+    assert hp["ruleset"] == "auto_hparams/3" and hp["overrides"]["hard"]["moves"]["per_polish"] == 10
+    assert hp["features"]["nbrs_mode"] == "lean" and rec["v3"]["nbrs_mode"] == "lean"
+    assert rec["v3"]["nbrs_bound"] == hp["features"]["nbrs_bound"]
 
 
 def test_shard_without_hparams_is_unchanged(tmp_path):

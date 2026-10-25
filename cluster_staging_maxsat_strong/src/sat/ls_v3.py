@@ -60,6 +60,14 @@ NBRS_MODES = ("auto", "full", "lean")
 NBRS_MAX = 50_000_000
 
 
+def _clause_vars(st, ci: int) -> set:
+    return {a for a in (abs(l) for l in st.lits[ci]) if 0 < a <= st.n}
+
+
+def _mode(requested: str, bound: int) -> str:
+    return requested if requested != "auto" else ("lean" if bound > NBRS_MAX else "full")
+
+
 class _V3Static:
     """Per-clause (var, d) lists (DLS) and, by mode, the neighbour lists (CC, PX,
     walk mutation) or their lean replacement: aocc[v], every clause containing v
@@ -79,9 +87,9 @@ class _V3Static:
                 cvd[ci].append((v, d))
         self.cvd = cvd
         # The variables of each clause as `nbrs` sees them (every literal, d == 0 included).
-        cvs = [sorted({a for a in (abs(l) for l in st.lits[ci]) if 0 < a <= n}) for ci in range(m)]
+        cvs = [sorted(_clause_vars(st, ci)) for ci in range(m)]
         self.bound = sum(len(vs) * (len(vs) - 1) for vs in cvs)
-        self.mode = requested if requested != "auto" else ("lean" if self.bound > NBRS_MAX else "full")
+        self.mode = _mode(requested, self.bound)
         self.nbrs = self.aocc = self.cv = None
         if self.mode == "lean":
             aocc: List[List[int]] = [[] for _ in range(n + 1)]
@@ -125,6 +133,20 @@ def v3_static(cnf) -> _V3Static:
         except AttributeError:
             pass
     return x
+
+
+def nbrs_plan(cnf, requested: str = "auto"):
+    """(mode, bound) the tables of `cnf` will have under `requested`, without building
+    them: O(sum of clause lengths). auto_hparams R5 reads it before the run."""
+    requested = str(requested).lower()
+    if requested not in NBRS_MODES:
+        raise ValueError(f"ls.nbrs must be one of {NBRS_MODES}, got {requested!r}")
+    st = _static_for(cnf)
+    bound = 0
+    for ci in range(st.m):
+        k = len(_clause_vars(st, ci))
+        bound += k * (k - 1)
+    return _mode(requested, bound), bound
 
 
 def nbrs_info(cnf):

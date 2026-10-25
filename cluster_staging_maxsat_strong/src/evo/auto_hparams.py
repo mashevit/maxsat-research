@@ -1,4 +1,4 @@
-"""Instance-aware hyperparameters for `impl: v3` (rule set `auto_hparams/2`, 2026-10-21).
+"""Instance-aware hyperparameters for `impl: v3` (rule set `auto_hparams/3`, 2026-10-25).
 
 RUN TIME (the normal use). A config with `hparams: auto` makes the shard
 runner (src/cli/run_memetic_shard.py) call `resolve()` right after the kernel
@@ -66,10 +66,23 @@ Rules (evidence tag in brackets; "measured" = our runs, "source" = paper):
       /1 choice) better on 13, worse on 2. The pre-registered rule failed at
       pop 40 (10/3), and pop alone showed no effect; pop 10 is the user's
       choice, 2026-10-21. KS2_CHECK_RUN.md section 6]
+  R5  hard clauses in the solved instance AND lean neighbour tables (ls.nbrs
+      lean, or auto with the bound sum k(k-1) > ls_v3.NBRS_MAX = 50M; today
+      only the setcover rail instances): hard.moves.per_polish = 10, so the
+      B1-B5 polish gets slot time (at 200 the SAT moves fill every slot).
+      [measured: batch PP10, 24 MSE instances x 3 seeds, 900 s: rail 3 of 3
+      better, median gap +49-71 % -> +9-15 %; as a general rule 10 failed
+      (21 non-rail: 5 better / 12 worse, successes 19 vs 25 of 63), so it is
+      rail-only (user's pre-registered fallback). PERPOLISH_RUN.md section 6]
+      The bound is computed only when the solved instance has hard clauses.
   Other hard-tree keys (Glucose phases, repair R, moves M) keep their defaults
-  (src/evo/hard.hard_cfg), the values H3 accepted.
+  (src/evo/hard.hard_cfg), the values H3 accepted. The rules override the
+  batch config: under /3 an explicit per_polish 200 on a lean instance
+  resolves to 10 (record: `hparams.overrides`).
 
   /1 -> /2 (2026-10-21): R4 added; soft instances resolve exactly as under /1.
+  /2 -> /3 (2026-10-25): R5 added; every instance with full tables resolves
+  exactly as under /2 (features gain nbrs_mode and nbrs_bound).
 """
 from __future__ import annotations
 
@@ -81,9 +94,10 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Optional, Tuple
 
 from sat import kernel as kern
+from sat import ls_v3
 from sat.cnf import WCNF
 
-RULESET = "auto_hparams/2"
+RULESET = "auto_hparams/3"
 HPARAM_MODES = ("none", "auto")
 
 GATE = {"screen_min": 0.2, "gain_min": 0.2}
@@ -92,6 +106,7 @@ FLIPS_CAP_DEFAULT = 1_600_000
 HEAVY_SOFT_MEAN = 10_000
 HARD_POP_SIZE = 10           # R4
 HARD_KEEP_SAT = "ks2"         # R4
+LEAN_PER_POLISH = 10         # R5
 
 BASE: Dict[str, Any] = {  # make_strong_manifest.py BASE + allC (B1-B5); R0
     "impl": "v3",
@@ -158,6 +173,8 @@ class Features:
     m_eff: int
     n_hard_eff: int
     soft_w_max_eff: int
+    nbrs_mode: Optional[str] = None    # R5: the v3 table mode of the solved instance (hard only)
+    nbrs_bound: Optional[int] = None
 
     @property
     def cls(self) -> str:
@@ -189,8 +206,9 @@ def _soft_stats(w: WCNF) -> Tuple[int, int, float, bool]:
     return n_hard, w_max, (w_sum / n_soft if n_soft else 0.0), weighted
 
 
-def features(wcnf: WCNF, eff: WCNF, gate: str) -> Features:
-    """`eff` is the instance the EA solves (the kernel's wcnf, or `wcnf` itself)."""
+def features(wcnf: WCNF, eff: WCNF, gate: str, nbrs: str = "auto") -> Features:
+    """`eff` is the instance the EA solves (the kernel's wcnf, or `wcnf` itself);
+    `nbrs` the config's ls.nbrs."""
     n_hard, wmax, wmean, weighted = _soft_stats(wcnf)
     h_eff, wmax_e, _, _ = (n_hard, wmax, wmean, weighted) if eff is wcnf else _soft_stats(eff)
     return Features(
@@ -198,6 +216,7 @@ def features(wcnf: WCNF, eff: WCNF, gate: str) -> Features:
         max_len=max((len(c.lits) for c in wcnf.clauses), default=0), weighted=weighted,
         soft_w_max=wmax, soft_w_mean=wmean, gate=gate,
         n_eff=eff.n_vars, m_eff=len(eff.clauses), n_hard_eff=h_eff, soft_w_max_eff=wmax_e,
+        **(dict(zip(("nbrs_mode", "nbrs_bound"), ls_v3.nbrs_plan(eff, nbrs))) if h_eff > 0 else {}),
     )
 
 
@@ -226,6 +245,8 @@ def choose(f: Features, flips_c: float = 0.0,
     if f.n_hard_eff > 0:
         ea["pop_size"] = HARD_POP_SIZE
         out["hard"] = {"moves": {"keep_sat": HARD_KEEP_SAT}}
+        if f.nbrs_mode == "lean":
+            out["hard"]["moves"]["per_polish"] = LEAN_PER_POLISH
     why = {
         "ea.mutation_k": f"R1 clamp(round(0.04*{f.n_eff}), 2, 16) = {k}",
         "ls.dls_*": f"R2 class {f.cls}: t {t}, sp {sp}, zeta {zeta}, h_inc {h_inc} [{ev}]",
@@ -235,6 +256,9 @@ def choose(f: Features, flips_c: float = 0.0,
     if "hard" in out:
         why["ea.pop_size+hard.moves.keep_sat"] = (f"R4 hard clauses in the solved instance: pop "
                                                   f"{HARD_POP_SIZE}, keep_sat {HARD_KEEP_SAT}")
+        if f.nbrs_mode == "lean":
+            why["hard.moves.per_polish"] = (f"R5 lean neighbour tables (bound {f.nbrs_bound:,}): per_polish "
+                                            f"{LEAN_PER_POLISH}")
     return out, why
 
 
@@ -283,7 +307,7 @@ def resolve(cfg: Dict[str, Any], wcnf: WCNF, eff: WCNF, gate: str) -> Resolved:
     opts = hparams_opts(cfg)
     if opts is None:
         raise ValueError("resolve() needs a config with hparams: auto")
-    f = features(wcnf, eff, gate)
+    f = features(wcnf, eff, gate, (cfg.get("ls") or {}).get("nbrs", "auto"))
     ov, why = choose(f, opts["flips_c"], opts["flips_cap"])
     return Resolved(cfg=merge(cfg, ov), feats=f, overrides=ov, reasons=why, seconds=time.time() - t0)
 

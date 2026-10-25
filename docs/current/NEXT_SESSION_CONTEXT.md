@@ -23,8 +23,9 @@ alias, so every cluster step is a command the user runs on the login node.
   - general R5 not met: non-rail 5 better / 12 worse, successes 19 vs 25 of
     63;
   - rail-only R5′ met: rail median gap +49–71 % → +9–15 %;
-  - **next:** build R5′ (`auto_hparams/3`: lean bound > 50M → per_polish 10)
-    after the user's go.
+  - **R5 built 2026-10-25** (`auto_hparams/3`, N-2026-10-25-c): per_polish
+    10 on hard instances with lean tables (rail only). Not on the cluster; it
+    goes up with the next batch on `auto.yaml`.
 - **Memory (user, 2026-10-25):** no advance measurement. Run at 8 GB and
   rerun tasks that died for a system reason with `-- --mem=16G` and up
   (notes §14).

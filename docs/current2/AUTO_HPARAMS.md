@@ -1,4 +1,4 @@
-# Instance-aware hyperparameters for the strong solver (`auto_hparams/2`, 2026-10-21)
+# Instance-aware hyperparameters for the strong solver (`auto_hparams/3`, 2026-10-25)
 
 > "write preprocessing script that passes to solver optimal hyperparameters,
 > whether hard/soft or if small number of vars versus tens thousands of vars
@@ -18,6 +18,13 @@ The search code (EA, polish cores) is unchanged. Note N-2026-10-21-b.
 - `/2` (2026-10-21, N-2026-10-21-h): R4 added, giving pop 10 and
   `keep_sat: ks2` on hard instances. `merge()` is now deep. Soft instances
   resolve exactly as under `/1`.
+- `/3` (2026-10-25, N-2026-10-25-c): R5 added. It sets
+  `hard.moves.per_polish` 10 on hard instances whose v3 neighbour tables are
+  lean, which today means only the 3 setcover rail instances.
+  - Every instance with full tables resolves exactly as under `/2`.
+  - The record's `features` gains `nbrs_mode` and `nbrs_bound`, filled for
+    hard instances only.
+  - Batches HMSE, U30 and PP10 ran on `/2`.
 
 ## 1. What it does: chosen at run time, in memory
 
@@ -69,6 +76,7 @@ from a paper, or inference.
 | R1 | `ea.mutation_k` | clamp(round(0.04 · n_eff), 2, 16) | k 16 measured (n ≥ 300); **the shrink below n 400 is inference, untested** |
 | R2 | B2 `dls_t, sp, zeta, h_inc` | by class, below | |
 | R3 | `ls_polish_flips` = `flip_budget` | max(12,500, min(c · n_eff, cap)); **default c = 0 → 12,500** | 12,500 measured for v3 (raw n 64k solved); c > 0 untested for v3 |
+| R5 (`/3`) | `hard.moves.per_polish` | **10** when the solved instance has hard clauses **and** its v3 tables are lean (`ls.nbrs: lean`, or `auto` with Σk(k−1) > 50M, read by `ls_v3.nbrs_plan`, the same function the tables use); otherwise the config's value (default 200) | measured: batch PP10. Rail 3/3 better, median gap +49–71 % → +9–15 %. As a general rule, 10 failed: 21 non-rail instances, 5 better / 12 worse, successes 19 vs 25 of 63. Rail-only is the user's pre-registered fallback. `PERPOLISH_RUN.md` §6 |
 | R4 (`/2`) | `ea.pop_size`, `hard.moves.keep_sat` | **10 and `ks2`** when the solved instance has hard clauses; otherwise unchanged (40, `none`) | measured: batch KS2. Runs at the optimum: m40 12, ks2_10 26 of 48. ks2_10 vs m10: 13 better / 0 worse; vs m40: 13 / 2. The pre-registered rule failed at pop 40 (10 / 3), and pop alone showed no effect. Pop 10 is the user's choice (2026-10-21). `KS2_CHECK_RUN.md` §6 |
 
 **R2 classes.** "Hard" is judged on the effective instance, as `hard_mode:
@@ -93,6 +101,20 @@ also sets `polish_cap: flips_only`, as Stage L1 did. Hard instances keep the
 
 Hard-tree keys (Glucose, repair R, moves M) keep their `hard_cfg` defaults,
 the values H3 accepted.
+
+**The rules override the batch config.** An explicit `per_polish` 200 on a
+lean instance resolves to 10 under `/3`, so rerunning PP10's `pp200` arm on
+rail now gives 10. The record shows this in `hparams.overrides`.
+
+**R5 check on real instances** [verified: workstation preview, 2026-10-25]:
+- **All 144 MSE hard-clause instances:** the 141 HMSE ones and the 3 rail
+  ones.
+- **R5 fires on rail507, rail516 and rail582 only.** Their bounds are 768.6M,
+  641.2M and 1,142.7M, and resolving costs 0.4–0.6 s inside the budget.
+- **The other 141** resolve to `hard: {moves: {keep_sat: ks2}}` exactly as
+  under `/2`. Their largest bound is 36.9M.
+- **Tests:** 412 passed, 16 skipped (9 new). A copy of the code with the R5
+  line removed fails 4 of them.
 
 ## 3. Dry run on the "< 900 s" pool (582 instances, N-2026-10-21-a) [verified]
 

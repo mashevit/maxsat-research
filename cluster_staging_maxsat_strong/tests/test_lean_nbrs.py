@@ -1,6 +1,7 @@
 """Lean neighbour tables (docs/current2/LONG_CLAUSE_RULE_DESIGN.md).
 
 - the bound sum k(k-1) and the `auto` trigger (full below NBRS_MAX, lean above);
+  `nbrs_plan` (read by auto_hparams R5 before the run) names the tables built;
 - CC: walksat_v3 and dls_v3, Python and C, give the same run with lean and full
   tables (same flips, counters, assignment);
 - PX: lean components equal the BFS components, so the same crossover child;
@@ -105,6 +106,23 @@ def test_bound_and_auto_trigger(tmp_path, monkeypatch):
         assert x2.cv[ci] == sorted({abs(l) for l in cl.lits})
     for v in range(1, w2.n_vars + 1):
         assert x2.aocc[v] == [ci for ci, cl in enumerate(w2.clauses) if v in {abs(l) for l in cl.lits}]
+
+
+@pytest.mark.parametrize("case", CASES)
+def test_nbrs_plan_equals_the_built_tables(tmp_path, monkeypatch, case):
+    """auto_hparams R5 reads nbrs_plan before the run: it must name the tables the run builds."""
+    p = make_wcnf(tmp_path, "pl", seed=3, **case)
+    bound = v3_static(WCNF.parse_dimacs(p)).bound
+    for cap in (lsv3.NBRS_MAX, bound - 1, bound):
+        monkeypatch.setattr(lsv3, "NBRS_MAX", cap)
+        for req in ("auto", "full", "lean", "LEAN"):
+            w = WCNF.parse_dimacs(p)
+            plan = lsv3.nbrs_plan(w, req)
+            set_nbrs_mode(w, req)
+            x = v3_static(w)
+            assert plan == (x.mode, x.bound)
+    with pytest.raises(ValueError):
+        lsv3.nbrs_plan(WCNF.parse_dimacs(p), "half")
 
 
 def test_set_nbrs_mode_drops_a_table_built_under_another_request(tmp_path):

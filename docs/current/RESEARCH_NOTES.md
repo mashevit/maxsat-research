@@ -64,6 +64,22 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 
 ## 2. Dated notes (newest first)
 
+### N-2026-10-25-c — Rail-only rule built: `auto_hparams/3` R5 sets per_polish 10 on hard instances with lean v3 tables [quote + verified]
+
+> "yes build the rail-only rule" (user, 2026-10-25)
+
+- **[verified] Code:**
+  - `src/evo/auto_hparams.py`: R5 and `/3`;
+  - `src/sat/ls_v3.py`: `nbrs_plan`, which predicts (mode, bound) without
+    building the tables, through the same `_mode` function the tables use;
+  - `configs/strong/auto.yaml`: header only, settings unchanged.
+- **[verified] Tests:** 412 passed, 16 skipped.
+- **[verified] Preview:** on the 144 MSE hard-clause instances, R5 fires
+  only on the 3 rail instances. The others resolve as under `/2`.
+- **Not on the cluster yet.** It travels with the next batch that uses
+  `configs/strong/auto.yaml`.
+- Docs: `AUTO_HPARAMS.md` (R5, `/3`), `PERPOLISH_RUN.md` §6.
+
 ### N-2026-10-25-b — Batch PP10 read: per_polish 10 is not a general improvement (5 better / 12 worse, successes 19 vs 25 of 63); on setcover rail it is (gap +49–71 % → +9–15 %); rail-only rule met [verified + inference]
 
 - **[verified]** 144/144 ok and feasible, code digest = `2763872`.
