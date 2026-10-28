@@ -21,9 +21,13 @@ alias, so every cluster step is a command the user runs on the login node.
 
 - **Latest 2026-10-28 (r19c):** before 3c, the memetic is being compiled
   (user: "do the recommended best option"): `docs/current2/COMPILED_MEMETIC_PLAN.md`.
-  C1, C2, C3 BUILT + tested (513 passed; peak RSS ~95x -> 13.5-17x file;
-  C parse 213 MB/s), not committed. Next C4 (memory model + bins + Slurm time
-  for 3c) after the user's go, then
+  C1-C3 pushed 9ce84ca (peak RSS ~95x -> 9-17x file; C parse 213 MB/s).
+  C4 measured (plan §8 C4): without the kernel all 952 fit <= 64 GB. OPEN
+  decision: the Python kernel on large instances (33x RAM, 0.7 s/MiB, not
+  twinnable): user chose the CENSUS JOB, prepared 2026-10-28
+  (COMPILED_MEMETIC_PLAN.md §9, upload tmp/upload_census/, not committed);
+  user uploads, arranges, builds, runs; brings back mse26_census.tsv; then
+  the kernel rule + exact bins, then
   C4 (re-measure memory → bins/time for 3c), then 3c. 3b committed d4208c3.
 - **Later 2026-10-28 (r19b; overrides the r19 order below):** milestone 2
   DONE. **3a dropped** (user): no own EvalMaxSAT runs; ρ x from the published

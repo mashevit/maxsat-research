@@ -298,3 +298,65 @@ measured ≤ 2.1 s at 52 MiB (was 15 s at 26 MiB before C2). Proposal for 3c:
 `--time=01:00:00` for every bin (1,800 s + grace + parse + margin) and
 GRACE 300 s (the watchdog fires only on a stuck run; the readout checks 300
 instead of 60).
+
+## 9. The MSE 2026 census job (prepared 2026-10-28; user: "do option 1, prepare the census job")
+
+**Why:** the kernel gate is the one Python step left (§8 C4), and whether a
+large MSE 2026 instance passes its screen is unknown. The census answers that
+on the real files, and on the way it checks the C parser on all 952 (it has
+never seen them) against the unpack job's awk counts and content hashes, and
+gives the exact clause / literal / variable counts for the memory bins.
+
+**What it does:** `scripts/mse26_census_array.sbatch`, 50 tasks (the
+byte-balanced packing of `scripts/mse26_work.tsv`, as the unpack job), 8 GB,
+1 h limit; one Python process per instance
+(`scripts/mse26_census.py`) writing one row to
+`results/mse26_census/rows/<hash>.tsv`:
+- content sha256, bytes; n_vars, clauses, literals, hard / soft, soft weight
+  sum and max, max clause length, weighted; v3 neighbour bound and mode;
+- the screen (hit / occurring / fraction);
+- when the screen passes (≥ 0.20) and the file is ≤ 100 MiB: the gate itself
+  (`kernel` / `kernel_empty` / `skipped_gain` / `skipped_length` /
+  `skipped_infeasible`, kernel size, gain, seconds); larger screen-passing
+  files are marked `not_run_size` (the Python kernel needs ~33× the file);
+- parse seconds; peak RSS after the parse and at the end; an error column.
+
+A rerun skips rows already written. `scripts/mse26_census_finish.sh` (login
+node, shell only) lists the tasks still missing a row, or merges
+`results/mse26_census/mse26_census.tsv` (952 rows) and prints `ALL_DONE`.
+
+**Tested** on a mock tree (4 local instances under fake MSE 2026 paths, one
+kernelising Max-2-SAT file: kernel 332 variables as in earlier runs; a missing
+file → `TASK_FAIL` with the rerun line; rerun skips written rows; finish
+`MISSING`/`INCOMPLETE`; Python tripwires on PATH not triggered).
+
+**Upload:** `tmp/upload_census/` (44 files: 41 tree files as `cen__*`,
+`UPLOAD_MAP_census.tsv`, `arrange_census.sh`, `upload.sha256`). It carries the
+whole `src/` of 9ce84ca (3b counter + C1–C3) plus the census files; the
+arrange script moves every file to its tree path (NEW / SAME / REPLACE, old
+copy kept as `.bak_pre_census`), checks
+`scripts/census_mse26.upload.sha256`, the C source and the `data/raw/mse26`
+link, and on success removes its map, `~/upload.sha256` and itself. Mock-tested
+against the tree of `2d63a21`: new 6, same 25, replace 11; afterwards `~`
+holds nothing from the upload and `src/` equals the workstation's.
+
+```bash
+# login node, after uploading tmp/upload_census/* into ~
+cd ~ && sha256sum -c upload.sha256                # 44 x OK
+bash arrange_census.sh                            # dry run: NEW / SAME / REPLACE list
+bash arrange_census.sh --apply                    # CENSUS_UPLOAD_OK, C source, link; removes map + itself
+cd ~/cluster_staging_maxsat_strong/scripts && mkdir -p logs
+B=$(sbatch --parsable build_native.sbatch | tail -1)
+sbatch --dependency=afterok:$B mse26_census_array.sbatch
+squeue -u $USER                                   # wait until empty
+cat logs/build-native-$B.out                      # BUILD_OK
+cd .. && bash scripts/mse26_census_finish.sh      # CENSUS 952 rows, 0 with an error; ALL_DONE
+```
+
+**Bring back** to `cluster_staging_maxsat_strong/results/mse26_census/`:
+`mse26_census.tsv` (and `scripts/logs/mse26-census-*` if any task failed).
+
+**Then (workstation):** compare with `mse26_content.tsv` (sha256, hard /
+soft counts); list the screen-passing instances by size; the kernel rule for
+3c (user's decision, with the numbers); exact memory bins; then the 3c
+manifest.
