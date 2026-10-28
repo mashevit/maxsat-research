@@ -35,6 +35,8 @@ def jw_priors(wcnf) -> List[float]:
     Jeroslow–Wang prior per variable (soft-clause only):
     p(x=True) proportional to sum over soft clauses: weight * 2^(-|C|)
     """
+    if getattr(wcnf, "is_compact", False):   # C, same sums (COMPILED_MEMETIC_PLAN.md C1.5)
+        return wcnf.jw_priors()
     n = wcnf.n_vars
     p_true = [0.0] * (n + 1)
     p_false = [0.0] * (n + 1)
@@ -60,6 +62,8 @@ def jw_priors(wcnf) -> List[float]:
 
 def hash_assign(assign01: List[bool]) -> str:
     """Stable hash for caching. Index 0 ignored."""
+    if isinstance(assign01, (bytes, bytearray)):   # 0/1 bytes: the same bytes as below
+        return hashlib.blake2b(bytes(assign01[1:]), digest_size=12).hexdigest()
     b = bytearray( (1 if x else 0) for x in assign01[1:] )
     return hashlib.blake2b(b, digest_size=12).hexdigest()
 
@@ -69,6 +73,9 @@ def evaluate_assignment(wcnf, assign01: List[bool]) -> Tuple[float, int]:
     Fast fitness proxy: soft weight satisfied & #hard violations.
     Returns (soft_weight, hard_violations).
     """
+    if getattr(wcnf, "is_compact", False):   # C, same sum order (plan C2.2)
+        r = wcnf.evaluate(assign01)
+        return r[0], r[1]
     soft_w = 0.0
     hard_viol = 0
     for cl in wcnf.clauses:
@@ -129,9 +136,12 @@ class Population:
         self.rng = rng
         self.members: List[Individual] = []
         self.cache: Dict[str, Tuple[float, int]] = {}  # hash -> (fitness, hard_viol)
+        # Compact instance (COMPILED_MEMETIC_PLAN.md C2.1): assignments as bytearray,
+        # 1 byte per variable; the same values and random draws.
+        self.bytes_assign = False
 
     def _new_assign_from_priors(self, pri: List[float]) -> List[bool]:
-        a = [False] * (self.n_vars + 1)
+        a = bytearray(self.n_vars + 1) if self.bytes_assign else [False] * (self.n_vars + 1)
         a[0] = False
         for v in range(1, self.n_vars + 1):
             a[v] = (self.rng.random() < pri[v])
@@ -147,8 +157,11 @@ class Population:
         for _ in range(cnt):
             a = self._new_assign_from_priors(pri)
             ind = Individual(assign01=a)
-            hard_clauses = [cl for cl in wcnf.clauses if cl.is_hard]
-            ind.hard_satisfied = init_hard_satisfied(hard_clauses, ind.assign01)
+            if getattr(wcnf, "is_compact", False):
+                ind.hard_satisfied = wcnf.hard_satisfied(ind.assign01)
+            else:
+                hard_clauses = [cl for cl in wcnf.clauses if cl.is_hard]
+                ind.hard_satisfied = init_hard_satisfied(hard_clauses, ind.assign01)
             self.members.append(ind)
 
     def evaluate(self, wcnf, ind: Individual) -> Individual:

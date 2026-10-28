@@ -141,6 +141,9 @@ def nbrs_plan(cnf, requested: str = "auto"):
     requested = str(requested).lower()
     if requested not in NBRS_MODES:
         raise ValueError(f"ls.nbrs must be one of {NBRS_MODES}, got {requested!r}")
+    if getattr(cnf, "is_compact", False):    # C, same bound (COMPILED_MEMETIC_PLAN.md C1.5)
+        bound = cnf.nbrs_bound()
+        return _mode(requested, bound), bound
     st = _static_for(cnf)
     bound = 0
     for ci in range(st.m):
@@ -151,6 +154,9 @@ def nbrs_plan(cnf, requested: str = "auto"):
 
 def nbrs_info(cnf):
     """(mode, bound) of the tables built for `cnf`, or (None, None) if none were built."""
+    if getattr(cnf, "is_compact", False):    # the C tables of a compact instance
+        core = getattr(cnf, "_native_core", None)
+        return (("lean" if core.lean else "full"), cnf.nbrs_bound()) if core is not None else (None, None)
     x = getattr(cnf, _V3_ATTR, None)
     return (x.mode, x.bound) if x is not None else (None, None)
 
@@ -515,6 +521,11 @@ def walksat_v3(
 
 def init_dynamic_weights(cnf) -> List[int]:
     """SATLike's start: hard clauses 1, soft clauses their weight."""
+    if getattr(cnf, "is_compact", False):    # from the C tables (same static weights)
+        from native.native import load_native
+        core = load_native(cnf)
+        I = core.inst
+        return [1 if I.is_hard[c] else int(I.w[c]) for c in range(core.m)]
     st = _static_for(cnf)
     return [1 if st.is_hard[c] else st.w[c] for c in range(st.m)]
 

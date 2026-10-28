@@ -19,6 +19,12 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ## 00000000000000000. Update 2026-10-28 (r19): read first
 
+- **Latest 2026-10-28 (r19c):** before 3c, the memetic is being compiled
+  (user: "do the recommended best option"): `docs/current2/COMPILED_MEMETIC_PLAN.md`.
+  C1, C2, C3 BUILT + tested (513 passed; peak RSS ~95x -> 13.5-17x file;
+  C parse 213 MB/s), not committed. Next C4 (memory model + bins + Slurm time
+  for 3c) after the user's go, then
+  C4 (re-measure memory → bins/time for 3c), then 3c. 3b committed d4208c3.
 - **Later 2026-10-28 (r19b; overrides the r19 order below):** milestone 2
   DONE. **3a dropped** (user): no own EvalMaxSAT runs; ρ x from the published
   MSE 2026 results (EvalMaxSAT primary, VBS + per-solver as sensitivity;
@@ -33,10 +39,9 @@ alias, so every cluster step is a command the user runs on the login node.
   `sizes.tsv` copied to `cluster_staging_maxsat_strong/results/`. Census:
   `MSE_PUBLISHED_EXACT_RESULTS.md` §7 (123 GiB as .wcnf; ρ window 392,
   57.6 GiB; optimum known 952, 80.3 GiB).
-- **REMIND THE USER (asked 2026-10-28):** once `mse26_content.tsv` is copied back, clean `~` on
-  the cluster: `bash cleanup_home_uploads.sh` (dry run), then `--apply`. It removes, by name, every flat
-  file ever copied to `~` from the repo's `tmp/upload_*` folders plus the arrange scripts; never
-  directories, symlinks, `~/mse_full*`, `~/evalmaxsat2026` or the trees.
+- **Cluster `~` cleanup: DONE** (user, 2026-10-28, `cleanup_home_uploads.sh`).
+- **Fixed-rate mutation reminder: CLOSED** (2026-10-28): the strong tree's walk mutation is bounded at
+  ≤ 16 flips per child (`auto_hparams` mutation_k), so the 0.02·n damage at large n is gone.
 - **Milestone 1 (EvalMaxSAT 2026 install + smoke on the cluster): DONE**
   (user, 2026-10-28); smoke records not copied back.
 - **Milestone 2: DONE 2026-10-28** (50/50 TASK_OK, ALL_DONE; `cluster_staging_maxsat_strong/results/mse26_unpack/` holds `mse26_content.tsv` + logs, checked: 1,216 rows, 952 unpacked, no dup sha256). Next: 3a after the user's go. Was: **PREPARED 2026-10-28** (`docs/current2/MSE26_RHO_PLAN.md`):

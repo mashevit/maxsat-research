@@ -85,6 +85,16 @@ def _hard_abort(wcnf, hstats: HardStats, elapsed: float, impl: str = "hard",
     }
 
 
+_BITS = bytes.maketrans(b"\x00\x01", b"01")
+
+
+def _soft_weight_float(wcnf) -> float:
+    """sum(float(cl.weight) for soft clauses), in clause order (C for a CompactWCNF)."""
+    if getattr(wcnf, "is_compact", False):
+        return wcnf.soft_weight_float()
+    return sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+
+
 def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 target_cost: int | None = None) -> Dict[str, Any]:
     """
@@ -135,6 +145,10 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
 
     rng = random.Random(rng_seed)
     pop = Population(n_vars=wcnf.n_vars, size=pop_size, rng=rng)
+    # Compact instance (sat/compact.py, COMPILED_MEMETIC_PLAN.md C2): assignments are
+    # bytearrays and the per-child work runs in C; same values, same random draws.
+    compact = getattr(wcnf, "is_compact", False)
+    pop.bytes_assign = compact
     # `impl: hard` (src/evo/hard.py): the population is Glucose models of the
     # hard clauses, and the run clock starts BEFORE them, so Glucose time is
     # charged to the run. v1/v2 keep the JW seeding outside the clock, as before.
@@ -158,13 +172,17 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         # One Glucose for the whole run: initialisation, repair R and moves M
         # share it, so learned clauses carry over (src/evo/hard.HardSAT).
         sat = HardSAT(wcnf)
-        soft_view = SoftView(wcnf)
+        if compact:
+            from sat.compact import CSoftView
+            soft_view = CSoftView(wcnf)
+        else:
+            soft_view = SoftView(wcnf)
         assigns, hstats = glucose_init(wcnf, pop_size, rng, hc["phases"], t_run0 + cap0,
                                        hc["max_tries_per_member"], sat=sat)
         if hstats.status != "ok":
             sat.close()
             return _hard_abort(wcnf, hstats, time.time() - t_run0, impl0, v3s)
-        pop.members = [Individual(assign01=a) for a in assigns]
+        pop.members = [Individual(assign01=bytearray(a) if compact else a) for a in assigns]
     else:
         pop.init_seeds(wcnf, cfg)
 
@@ -173,7 +191,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         pop.evaluate(wcnf, ind)
     if hard_mode:
         hstats.init_infeasible = sum(1 for ind in pop.members if ind.hard_violations)
-        _tot = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+        _tot = _soft_weight_float(wcnf)
         hstats.init_best_cost = _tot - max(ind.fitness for ind in pop.members)
 
     #frozen = frozen_hard_unit_vars(wcnf)#not needed
@@ -197,7 +215,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     # reduces to an unsatisfied-clause count -- but a `weight == 1` assumption
     # would silently corrupt weighted instances once §3's WCNF fix lands.
     # Computed once here, not per generation.
-    total_soft_weight = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
+    total_soft_weight = _soft_weight_float(wcnf)
     stop_reason = None
     time_to_target_s = None
     target_hit = None
@@ -242,11 +260,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     deadline_clip = str((cfg.get("ea") or {}).get("deadline_mode", "")).lower() == "clip"
     gen = 0
     total_children = 0
+    if compact and vc is not None and vc["mutation"] != "rate":
+        # The hard-clause guard is C (sat/compact.HardGuard): no Python clause lists.
+        hard_clauses = hard_occurs = None
+        has_hard = wcnf.counts()["n_hard"] > 0
+    else:
         # 1) derive hard_clauses once
-    hard_clauses = [cl for cl in wcnf.clauses if cl.is_hard]
-
-    # 2) precompute occurrences
-    hard_occurs = build_hard_occurs(hard_clauses, wcnf.n_vars)
+        hard_clauses = [cl for cl in wcnf.clauses if cl.is_hard]
+        # 2) precompute occurrences
+        hard_occurs = build_hard_occurs(hard_clauses, wcnf.n_vars)
+        has_hard = bool(hard_clauses)
     # v3 components (each None/False when its key is absent: the v2 / hard path)
     px_on = vc is not None and vc["crossover"] == "px"
     mut_v3 = vc is not None and vc["mutation"] != "rate"
@@ -289,7 +312,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                     if vc["px_fallback"] == "clause_aware":
                         child_bits = crossover(p1, p2, wcnf, rng)
                     else:
-                        child_bits = list((p2 if p2.fitness > p1.fitness else p1).assign01)
+                        child_bits = (bytearray if compact else list)((p2 if p2.fitness > p1.fitness else p1).assign01)
                 elif eq_parent:
                     d3["px_child_equals_parent"] += 1
             else:
@@ -301,10 +324,14 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             if hard_mode:
                 # The guard must see the CHILD's hard clauses (v1/v2 pass the
                 # last initial member's vector; kept unchanged there).
-                child_hsat = init_hard_satisfied(hard_clauses, child_bits)
+                if hard_clauses is None:
+                    g = wcnf.guard(child_bits)
+                    child_hsat, guard_arg = g.hsat, g
+                else:
+                    child_hsat = init_hard_satisfied(hard_clauses, child_bits)
+                    guard_arg = (hard_clauses, hard_occurs, child_hsat)
                 if mut_v3:
-                    mutate_v3(child_bits, vc, wcnf, rng, p1, p2,
-                              (hard_clauses, hard_occurs, child_hsat), v3s)
+                    mutate_v3(child_bits, vc, wcnf, rng, p1, p2, guard_arg, v3s)
                 else:
                     mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, child_hsat)
                 if diag:
@@ -319,8 +346,11 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                         if fixed is not None:
                             child_bits = fixed
             elif mut_v3:
-                guard = ((hard_clauses, hard_occurs, init_hard_satisfied(hard_clauses, child_bits))
-                         if hard_clauses else None)
+                if hard_clauses is None:
+                    guard = wcnf.guard(child_bits) if has_hard else None
+                else:
+                    guard = ((hard_clauses, hard_occurs, init_hard_satisfied(hard_clauses, child_bits))
+                             if hard_clauses else None)
                 mutate_v3(child_bits, vc, wcnf, rng, p1, p2, guard, v3s)
             else:
                 mutate1(child_bits, pmutate, rng, hard_clauses, hard_occurs, ind.hard_satisfied)
@@ -363,6 +393,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 ls_call = ls_small
             calls += 1
             flips_before = flips_t
+            if compact and not isinstance(child_bits, bytearray):   # repair: a Glucose list
+                child_bits = bytearray(child_bits)
             if hard_mode:
                 # H3: feasible moves M inside the call's time slot, then the
                 # hard-safe flip polish on what remains of it.
@@ -388,6 +420,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
             else:
                 child_bits, flips_t1 = polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
             flips_t += flips_t1
+            if compact and not isinstance(child_bits, bytearray):   # feasible moves / hard polish lists
+                child_bits = bytearray(child_bits)
             child = Individual(assign01=child_bits, meta={"gen": gen})
             pop.evaluate(wcnf, child)
             new_members.append(child)
@@ -445,7 +479,10 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
 
     def _assignment_exports(assign01: list[bool]) -> dict:
         # index 0 is unused in your code; export 1..n
-        bits = "".join("1" if b else "0" for b in assign01[1:])
+        if isinstance(assign01, (bytes, bytearray)):   # compact: same string, no Python loop
+            bits = bytes(assign01[1:]).translate(_BITS).decode("ascii")
+        else:
+            bits = "".join("1" if b else "0" for b in assign01[1:])
         dimacs = "v " + " ".join(str(i if assign01[i] else -i) for i in range(1, len(assign01))) + " 0"
         true_vars = [i for i in range(1, len(assign01)) if assign01[i]]
         return {"assign_bits": bits, "dimacs": dimacs, "true_vars": true_vars}
@@ -472,15 +509,16 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         # index 0 unused; bits[0] -> var 1, bits[1] -> var 2, ...
         return [False] + [c == "1" for c in bits]
 
-    assign01 = bits_to_assign01(results["assign_bits"])
+    assign01 = best.assign01 if compact else bits_to_assign01(results["assign_bits"])
     #bits = f'0{results["assign_bits"]}'
     #wcnf = results["dimacs"]
 
     total_clauses = len(wcnf.clauses)
-    sat_clauses = count_satisfied_clauses_bits(wcnf, assign01)
+    sat_clauses = (wcnf.evaluate(best.assign01)[4] if compact   # == assign01 (same bits)
+                   else count_satisfied_clauses_bits(wcnf, assign01))
     unsat_clauses = total_clauses - sat_clauses
     elapsed = max(1e-9, time.time() - start_t)
-    exports = _assignment_exports(best.assign01)
+    exports = results if compact else _assignment_exports(best.assign01)   # same values
     soft, hv = evaluate_assignment(wcnf, best.assign01)
     if hard_mode:
         hstats.hard_feasible_final = hv == 0

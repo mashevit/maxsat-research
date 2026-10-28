@@ -57,6 +57,9 @@ def screen_frac(wcnf: WCNF) -> Tuple[float, int]:
 
     One pass over the occurrence lists; no knowledge of k or the density.
     """
+    if getattr(wcnf, "is_compact", False):   # C counts (COMPILED_MEMETIC_PLAN.md C1.5)
+        hit, occurring = wcnf.screen_counts()
+        return (hit / occurring if occurring else 0.0), occurring
     hit = occurring = 0
     for v in range(1, wcnf.n_vars + 1):
         p, q = len(wcnf.pos_adj[v]), len(wcnf.neg_adj[v])
@@ -241,7 +244,8 @@ def gate(wcnf: WCNF, cfg: Dict[str, Any]) -> GateResult:
         return GateResult("skipped_infeasible", None, f)
     k = kernel.wcnf.n_vars
     gain = 1.0 - k / occurring if occurring else 0.0
-    orig_max = max((len(cl.lits) for cl in wcnf.clauses), default=0)
+    orig_max = (wcnf.counts()["max_len"] if getattr(wcnf, "is_compact", False)
+                else max((len(cl.lits) for cl in wcnf.clauses), default=0))
     f.update(kernel_n_vars=k, kernel_n_clauses=len(kernel.wcnf.clauses), kernel_n_hard=kernel.n_hard,
              kernel_const=kernel.const, kernel_max_len=kernel.max_len, kernel_gain=round(gain, 6))
     if gain < g["gain_min"]:

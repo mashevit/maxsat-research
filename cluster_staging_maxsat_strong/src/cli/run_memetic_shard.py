@@ -124,7 +124,9 @@ except Exception:
 #    (flip | call) and `time_to_target_hit_s` (same clock as
 #    `time_to_target_s`, which keeps its meaning: the end of the reaching call);
 #    all null unless the run stopped at the target. Plus `peak_rss_mb`, the
-#    process's peak resident memory (getrusage), on every record.
+#    process's peak resident memory (getrusage), on every record; and
+#    `compact_instance` (true when the C parser and tables were used:
+#    `ls.native: true`, docs/current2/COMPILED_MEMETIC_PLAN.md).
 #    Every version-6 field is unchanged.
 SHARD_SCHEMA_VERSION = 7
 
@@ -167,6 +169,10 @@ def detect_format(path: str) -> str:
 
 
 def instance_stats(wcnf: Any) -> Dict[str, int]:
+    if getattr(wcnf, "is_compact", False):   # C counts (COMPILED_MEMETIC_PLAN.md C1.5)
+        k = wcnf.counts()
+        return {"n_vars": int(wcnf.n_vars), "n_clauses": wcnf.m, "n_hard": k["n_hard"],
+                "n_soft": wcnf.m - k["n_hard"], "soft_total_weight": k["soft_w_sum"]}
     n_hard = sum(1 for cl in wcnf.clauses if cl.is_hard)
     soft_w = sum(int(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
     return {
@@ -187,6 +193,10 @@ def score_assignment(wcnf: Any, assign01: List[bool]) -> Tuple[int, int, int]:
     `best_soft_weight`, so the number in the record is verifiable against the
     instance file alone.
     """
+    if getattr(wcnf, "is_compact", False) and getattr(wcnf, "evaluate", None):
+        _, hv, uw, un, _ = wcnf.evaluate(assign01)
+        if uw is not None:
+            return uw, hv, un
     unsat_w = 0
     hard_v = 0
     unsat_n = 0
@@ -380,8 +390,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     # `ls.native: true` needs the prebuilt C core (scripts/build_native.sh) --
     # refused here, before the run, so an arm never mixes native and Python tasks.
     native_build = None
+    # `ls.native: true` also selects the compact instance (C parser and tables,
+    # docs/current2/COMPILED_MEMETIC_PLAN.md): same decisions, less memory.
+    use_compact = False
     try:
         vc = evo_v3.check_cfg(cfg, memetic_impl(cfg))
+        # MAXSAT_COMPACT=0 keeps the Python instance (twin tests, diagnosis).
+        use_compact = bool(vc is not None and vc["native"]) and os.environ.get("MAXSAT_COMPACT", "1") != "0"
         if vc is not None and vc["native"]:
             from native.native import build_info, NativeUnavailable
             try:
@@ -508,6 +523,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "started_at": None,
         "finished_at": None,
         "peak_rss_mb": None,
+        "compact_instance": None,
     }
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
@@ -540,9 +556,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     rec["size_mb"] = round(os.path.getsize(inst) / 1e6, 4)
     rec["instance_sha256"] = sha256_file(inst)
     rec["instance_format"] = detect_format(inst)
+    rec["compact_instance"] = use_compact
 
     try:
-        wcnf = WCNF.parse_dimacs(inst)
+        if use_compact:
+            from sat import compact as cpt
+            wcnf = cpt.load(inst)
+        else:
+            wcnf = WCNF.parse_dimacs(inst)
     except Exception as e:
         rec["status"] = "parse_error"
         rec["error"] = f"{type(e).__name__}: {e}"
@@ -569,7 +590,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             run_cfg = dict(cfg, time_limit_s=max(0.0, float(args.budget_s) - pre_s))
             rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
             if kernel is not None:
-                run_wcnf = kernel.wcnf
+                run_wcnf = cpt.from_wcnf(kernel.wcnf) if use_compact else kernel.wcnf
                 if target_cost is not None:
                     run_target = target_cost - kernel.const
         if hp_opts is not None:

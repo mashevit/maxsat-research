@@ -149,7 +149,9 @@ def test_memetic_target_hit_is_consistent(native, tmp_path, native_on, case):
         assert th["calls_to_target"] == r["meta"]["children"]
         assert 0 <= th["flips_to_target"] <= r["total_flips"]
         assert 0 <= th["time_to_hit_s"] <= r["time_to_target_s"]
-    assert "polish" in by
+    # In hard mode a child can enter its call already at the target (SAT moves), and
+    # which happens first depends on timing; either way the hit is flip-resolved.
+    assert by & {"polish", "pre_polish"}
 
 
 def test_memetic_without_target_has_no_hit(native, tmp_path):

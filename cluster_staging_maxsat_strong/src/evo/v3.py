@@ -112,6 +112,8 @@ def resolve_hard_mode(vc: Dict[str, Any], wcnf) -> bool:
         return True
     if vc["hard_mode"] == "off":
         return False
+    if getattr(wcnf, "is_compact", False):
+        return wcnf.counts()["n_hard"] > 0
     return any(cl.is_hard for cl in wcnf.clauses)
 
 
@@ -158,6 +160,8 @@ def _guarded_flip(a: List[bool], v: int, guard) -> bool:
     if guard is None:
         a[v] = not a[v]
         return True
+    if hasattr(guard, "flip"):                # compact instance: the C guard (plan C2.5)
+        return guard.flip(a, v)
     hard_clauses, hard_occurs, hsat = guard
     affected = hard_occurs[v]
     a[v] = not a[v]
@@ -202,7 +206,7 @@ def mutate_v3(child: List[bool], vc: Dict[str, Any], wcnf, rng, p1, p2, guard, s
             else:
                 refused += 1
     else:  # walk
-        x = v3_static(wcnf)
+        x = _tables(wcnf)
         nbrs = x.nbrs
         seen = set()
         v = rng.randrange(1, n + 1)
@@ -224,6 +228,41 @@ def mutate_v3(child: List[bool], vc: Dict[str, Any], wcnf, rng, p1, p2, guard, s
     stats.d["mutation_flips_sum"] += flips
     stats.d["mutation_refused"] += refused
     return flips
+
+
+class _Slices:
+    """seq[i] -> list, from C CSR arrays (off, vals); i is a variable or a clause."""
+
+    __slots__ = ("off", "vals")
+
+    def __init__(self, off, vals) -> None:
+        self.off, self.vals = off, vals
+
+    def __getitem__(self, i: int) -> List[int]:
+        a, b = self.off[i], self.off[i + 1]
+        return self.vals[a:b] if b > a else []
+
+
+class _CTables:
+    """The neighbour tables walk mutation reads (nbrs, or lean aocc / cv), served from
+    the native core of a compact instance instead of _V3Static (plan C2.6)."""
+
+    __slots__ = ("nbrs", "aocc", "cv", "m")
+
+    def __init__(self, core) -> None:
+        I = core.inst
+        self.m = core.m
+        if I.nb_off:
+            self.nbrs, self.aocc, self.cv = _Slices(I.nb_off, I.nb), None, None
+        else:
+            self.nbrs, self.aocc, self.cv = None, _Slices(I.aocc_off, I.aocc_ci), _Slices(I.cv_off, I.cv_u)
+
+
+def _tables(wcnf):
+    if getattr(wcnf, "is_compact", False):
+        from native.native import load_native
+        return _CTables(load_native(wcnf))
+    return v3_static(wcnf)
 
 
 def _in_sorted(a: List[int], u: int) -> bool:
@@ -340,6 +379,16 @@ def partition_crossover(p1, p2, wcnf) -> Tuple[List[bool], int, bool]:
     on the clauses touching it; ties go to the fitter parent. The child is the
     best of all 2**q recombinations and never worse than either parent
     (design §5.2). Returns (child, q, child_equals_a_parent)."""
+    if getattr(wcnf, "is_compact", False):    # C twin (COMPILED_MEMETIC_PLAN.md C2.3)
+        import ctypes as C
+        from native.native import load_native, u8
+        core = load_native(wcnf)
+        child = bytearray(wcnf.n_vars + 1)
+        out = (C.c_int64 * 3)()
+        if core.lib.px_cross(C.byref(core.inst), u8(p1.assign01), u8(p2.assign01),
+                             1 if p2.fitness > p1.fitness else 0, u8(child), out) != 0:
+            raise MemoryError("px_cross")
+        return child, int(out[0]), out[1] == 0 or out[2] == 0
     from sat.walksat_v2 import _static_for
     st = _static_for(wcnf)
     lits, is_hard, w, occ = st.lits, st.is_hard, st.w, st.occ
@@ -420,11 +469,17 @@ class PolishV3:
     def __call__(self, assign01: List[bool], ls_cfg: Dict[str, Any], rng_seed: int,
                  hard_mode: bool, target_unsat: Optional[int] = None) -> Tuple[List[bool], int, int]:
         vc, s = self.vc, self.stats.d
-        start = [bool(b) for b in assign01[1:]]
+        buffered = self.native is not None and isinstance(assign01, bytearray)
+        start = None if buffered else [bool(b) for b in assign01[1:]]
         max_flips = ls_cfg.get("ls_polish_flips", ls_cfg.get("max_flips", None))
         tl = ls_cfg.get("time_limit_s", 0.05)
         st: Dict[str, int] = {}
-        if self.native is not None:
+        if buffered:
+            # Compact instance: polish a copy of the child's bytes in place (plan C2.1).
+            buf = bytearray(assign01)
+            res = self.native.polish(vc, buf, rng_seed, max_flips, tl, ls_cfg.get("noise", 0.10),
+                                     hard_mode, self.dw, st, target_unsat=target_unsat)
+        elif self.native is not None:
             res = self.native.polish(vc, start, rng_seed, max_flips, tl, ls_cfg.get("noise", 0.10),
                                      hard_mode, self.dw, st, target_unsat=target_unsat)
         elif vc["core"] == "dls":
@@ -439,6 +494,8 @@ class PolishV3:
         self.last_hit = (int(res.get("target_hit_step", -1)), res.get("target_hit_wall"))
         for k2, v2 in st.items():
             s[k2] = s.get(k2, 0) + v2
+        if "final_buf" in res:
+            return res["final_buf"], res["flips"], res.get("noop_steps", 0)
         return [False] + [bool(b) for b in res["final_assign"]], res["flips"], res.get("noop_steps", 0)
 
 

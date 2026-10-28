@@ -194,6 +194,9 @@ class Features:
 
 
 def _soft_stats(w: WCNF) -> Tuple[int, int, float, bool]:
+    if getattr(w, "is_compact", False):      # C counts; the mean in Python, as below
+        k = w.counts()
+        return k["n_hard"], k["soft_w_max"], (k["soft_w_sum"] / k["n_soft"] if k["n_soft"] else 0.0), k["weighted"]
     n_hard = 0
     w_max = w_sum = n_soft = 0
     weighted = False
@@ -218,7 +221,8 @@ def features(wcnf: WCNF, eff: WCNF, gate: str, nbrs: str = "auto") -> Features:
     h_eff, wmax_e, _, _ = (n_hard, wmax, wmean, weighted) if eff is wcnf else _soft_stats(eff)
     return Features(
         n_vars=wcnf.n_vars, n_clauses=len(wcnf.clauses), n_hard=n_hard,
-        max_len=max((len(c.lits) for c in wcnf.clauses), default=0), weighted=weighted,
+        max_len=(wcnf.counts()["max_len"] if getattr(wcnf, "is_compact", False)
+                 else max((len(c.lits) for c in wcnf.clauses), default=0)), weighted=weighted,
         soft_w_max=wmax, soft_w_mean=wmean, gate=gate,
         n_eff=eff.n_vars, m_eff=len(eff.clauses), n_hard_eff=h_eff, soft_w_max_eff=wmax_e,
         **(dict(zip(("nbrs_mode", "nbrs_bound"), ls_v3.nbrs_plan(eff, nbrs))) if h_eff > 0 else {}),

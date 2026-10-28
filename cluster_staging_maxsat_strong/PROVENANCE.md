@@ -126,3 +126,38 @@ per-instance config files). Record: `docs/current2/AUTO_HPARAMS.md`.
 | `tests/test_target_hit.py` | **new.** 18 tests. Schema asserts 6 → 7 in 3 tests. |
 
 **Tests:** 439 passed, 16 skipped.
+
+### 2026-10-28: compact instance (C1 of `docs/current2/COMPILED_MEMETIC_PLAN.md`)
+
+| file | change |
+|---|---|
+| `src/native/ls_core.c` | C parser (`wcnf_parse`), CSR instance, C tables (`inst_tables`), once-per-run passes. **Rebuild required.** |
+| `src/native/native.py` | `_CInst`, `NativeCore.from_compact`, `load_native` for compact instances. |
+| `src/sat/compact.py` | **new.** `CompactWCNF`, `load`, `from_wcnf`. |
+| `src/evo/population.py`, `src/evo/memetic.py`, `src/evo/v3.py`, `src/sat/kernel.py`, `src/evo/auto_hparams.py`, `src/sat/ls_v3.py` | C passes for compact instances (same values). |
+| `src/cli/run_memetic_shard.py` | `ls.native: true` → C parser; `MAXSAT_COMPACT=0` override; field `compact_instance`. |
+| `scripts/compact_check.py`, `tests/test_compact.py` | **new.** Twin check; 42 tests. |
+
+**Tests:** 481 passed, 16 skipped.
+
+### 2026-10-28: per-child C functions (C2 of `docs/current2/COMPILED_MEMETIC_PLAN.md`)
+
+| file | change |
+|---|---|
+| `src/native/ls_core.c` | `px_cross`, `hard_build`/`hard_free`, `xo_cross`, `hard_sat_init`, `hard_guarded_flip`. **Rebuild required.** |
+| `src/native/native.py` | `_HardTab`, `u8`, in-place bytearray polish. |
+| `src/sat/compact.py`, `src/evo/population.py`, `src/evo/memetic.py`, `src/evo/v3.py`, `src/evo/impl_v2.py`, `src/sat/ls_v3.py` | compact path: bytearray assignments, C crossover / guard / tables. |
+| `tests/test_compact.py` | +26 tests. |
+
+**Tests:** 507 passed, 16 skipped.
+
+### 2026-10-28: hard-mode helpers (C3 of `docs/current2/COMPILED_MEMETIC_PLAN.md`)
+
+| file | change |
+|---|---|
+| `src/native/ls_core.c` | `soft_unsat`, `soft_index`, `soft_unit_sat`, `u8_hamming`. **Rebuild required.** |
+| `src/sat/compact.py` | `CSoftView`, `HardClauses`, `hamming`. |
+| `src/evo/hard.py`, `src/evo/memetic.py` | compact path: Glucose streamed, CSoftView, keep-sat literals and Hamming in C. |
+| `tests/test_compact.py` | +6 tests; `tests/test_target_hit.py` one assertion made timing-robust. |
+
+**Tests:** 513 passed, 16 skipped.

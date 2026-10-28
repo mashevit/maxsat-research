@@ -148,6 +148,9 @@ class HardStats:
 
 
 def _hard_clause_lists(wcnf) -> List[List[int]]:
+    if getattr(wcnf, "is_compact", False):   # streamed from the C arrays (COMPILED_MEMETIC_PLAN.md C3.2)
+        from sat.compact import HardClauses
+        return HardClauses(wcnf)
     return [list(cl.lits) for cl in wcnf.clauses if cl.is_hard]
 
 
@@ -309,15 +312,22 @@ def repair(x: List[bool], sat: HardSAT, deadline: float, st: HardStats) -> Optio
     if status != "sat":
         st.repair_failed += 1
         return None
-    st.repair_hamming_sum += sum(1 for v in range(1, len(x)) if x[v] != y[v])
+    if isinstance(x, bytearray) and isinstance(y, bytearray):   # compact: in C, same count
+        from sat.compact import hamming
+        st.repair_hamming_sum += hamming(x, y)
+    else:
+        st.repair_hamming_sum += sum(1 for v in range(1, len(x)) if x[v] != y[v])
     return y
 
 
 def _keep_sat_move(cur: List[bool], soft: SoftView, sat: HardSAT, lit: int, mode: str,
                    deadline: float, conf_budget: Optional[int], st: HardStats) -> Optional[List[bool]]:
     """Moves 7/8: the target unit literal plus every satisfied unit soft literal."""
-    keep = tuple(c[0] for _, c in soft.clauses
-                 if len(c) == 1 and (cur[c[0]] if c[0] > 0 else not cur[-c[0]]))
+    if hasattr(soft, "unit_sat_lits"):        # CSoftView: the same tuple, scanned in C
+        keep = soft.unit_sat_lits(cur)
+    else:
+        keep = tuple(c[0] for _, c in soft.clauses
+                     if len(c) == 1 and (cur[c[0]] if c[0] > 0 else not cur[-c[0]]))
     st.ks_calls += 1
     status, y = sat.model(cur, (lit,) + keep, deadline, conf_budget)
     st.move_calls += 1

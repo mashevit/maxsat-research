@@ -121,6 +121,8 @@ def clause_aware_crossover1_v2(p1, p2, wcnf, rng) -> List[bool]:
     clauses, then the soft proxy score, then the fitter parent's bit (and the
     never-reached rng.choice branch, kept for fidelity).
     """
+    if getattr(wcnf, "is_compact", False):    # C twin (COMPILED_MEMETIC_PLAN.md C2.4)
+        return wcnf.xo_cross(p1.assign01, p2.assign01, p1.fitness >= p2.fitness)
     st = _xo_static(wcnf)
     n = wcnf.n_vars
     s_true, s_false = st.s_true, st.s_false
