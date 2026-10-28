@@ -360,3 +360,14 @@ cd .. && bash scripts/mse26_census_finish.sh      # CENSUS 952 rows, 0 with an e
 soft counts); list the screen-passing instances by size; the kernel rule for
 3c (user's decision, with the numbers); exact memory bins; then the 3c
 manifest.
+
+**Fix 2026-10-28 (during the run):** two census tasks ran > 30 min. Nothing
+but the kernel gate can take that long on one file (parse + hash + counts are
+seconds to a minute; an OOM would end the task), so the Python kernel is
+superlinear on some screen-passing instance ≤ 100 MiB (each elimination puts
+every neighbour back on the work list, `list(occ[v])` copies the whole set
+each time, resolvents grow). `mse26_census.py` now caps the gate at 300 s
+(SIGALRM) and records `kernel_timeout_300s`; a kernel that cannot finish in
+5 minutes is itself the answer for the 1,800 s budget. Upload:
+`tmp/upload_census2/` (the one file + `upload.sha256`); the stuck tasks are
+cancelled and resubmitted (rows already written are kept and skipped).

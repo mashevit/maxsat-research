@@ -21,6 +21,7 @@ import argparse
 import hashlib
 import os
 import resource
+import signal
 import sys
 import time
 
@@ -28,6 +29,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
 KERNEL_MAX_MIB = 100.0      # the Python kernel needs ~33x the file: 100 MiB -> ~3.3 GB of the 8 GB task
+KERNEL_MAX_S = 300          # cap on the gate: a kernel that needs more is recorded as kernel_timeout
+                            # (2026-10-28: two tasks ran > 30 min; the Python kernel is superlinear there)
 GATE = {"preprocess": "kernel", "preprocess_gate": {"screen_min": 0.2, "gain_min": 0.2}}   # = auto.yaml
 
 COLUMNS = ["set", "hash", "path", "sha256", "bytes", "n_vars", "n_clauses", "n_lits", "n_hard", "n_soft",
@@ -46,6 +49,14 @@ def sha256(path: str) -> str:
         for chunk in iter(lambda: f.read(1 << 24), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+class _KernelTimeout(Exception):
+    pass
+
+
+def _on_alarm(signum, frame):
+    raise _KernelTimeout()
 
 
 def census(set_, hash_, path) -> dict:
@@ -74,12 +85,22 @@ def census(set_, hash_, path) -> dict:
         row["kernel_status"] = "not_run_size"
     else:
         t = time.time()
-        g = kern.gate(w, GATE)
+        signal.signal(signal.SIGALRM, _on_alarm)
+        signal.alarm(KERNEL_MAX_S)
+        try:
+            g = kern.gate(w, GATE)
+        except _KernelTimeout:
+            g = None
+        finally:
+            signal.alarm(0)
         row["kernel_s"] = round(time.time() - t, 3)
-        row["kernel_status"] = g.decision
-        f = g.fields
-        row.update(kernel_n_vars=f.get("kernel_n_vars") or "", kernel_n_clauses=f.get("kernel_n_clauses") or "",
-                   kernel_gain=f.get("kernel_gain") if f.get("kernel_gain") is not None else "")
+        if g is None:
+            row["kernel_status"] = f"kernel_timeout_{KERNEL_MAX_S}s"
+        else:
+            row["kernel_status"] = g.decision
+            f = g.fields
+            row.update(kernel_n_vars=f.get("kernel_n_vars") or "", kernel_n_clauses=f.get("kernel_n_clauses") or "",
+                       kernel_gain=f.get("kernel_gain") if f.get("kernel_gain") is not None else "")
     row["rss_end_mb"] = rss_mb()
     return row
 
