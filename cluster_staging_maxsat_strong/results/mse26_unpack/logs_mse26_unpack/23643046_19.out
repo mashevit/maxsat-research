@@ -1,0 +1,11 @@
+------------------------------------
+Wed 28 Oct 2026 11:52:48 IST
+SLURM_JOBID:		23643065
+SLURM_JOB_NODELIST:	ise-cpu-intl-03
+SLURM_SCRATCH_DIR:	/scratch/mashevit/23643065
+Allocated Resouces:	cpu - 2 / mem - 2048 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+START     task 19 2026-10-28T11:52:48+02:00 on ise-cpu-intl-03.auth.ad.bgu.ac.il
+TASK_OK   task 19: 31 files 2026-10-28T12:13:12+02:00

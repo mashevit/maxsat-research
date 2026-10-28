@@ -60,9 +60,62 @@ Never edit an old entry's claim in place. Add a dated correction under it.
 | Long-clause rule (lean v3 tables) for the setcover rail instances | [`../current2/LONG_CLAUSE_RULE_DESIGN.md`](../current2/LONG_CLAUSE_RULE_DESIGN.md) | Design only: trigger Σk(k−1) > 50M; CC/PX exact, walk same distribution; tests and decisions. N-2026-10-21-j. |
 | Batches U30 + HMSE: under-30 s pool and MSE hard-clause pool on the strong solver | [`../current2/UNDER30_HARDMSE_RUN.md`](../current2/UNDER30_HARDMSE_RUN.md) | U30 319 instances (957 tasks), HMSE 141 (423 tasks); selection, smoke, rail memory limit, flat upload + arrange scripts. N-2026-10-21-i. |
 | Prior work: orthogonality of anytime (local search) and exact solvers; passing the exact optimum to the anytime solver | [`../current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md`](../current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md) | Closest precedent is SAT: Hoos & Stützle (TR-99-06 / KI-99), R-Novelty+ vs Satz on uf100-430, correlation 0.26. IRoTS (Smyth, Hoos & Stützle 2003) takes its MaxSAT target from complete solvers but correlates local search with local search only. No MaxSAT study of exact proof time vs anytime time to the optimum was found. N-2026-10-24-a. |
+| MSE 2026 ρ benchmark: unpack + hash job, manifest plan, memory bins, flip counter, per-run RAM | [`../current2/MSE26_RHO_PLAN.md`](../current2/MSE26_RHO_PLAN.md) | 952 instances with a published optimum unpacked (398 under 30 s by published EvalMaxSAT, 392 in (30, 3600], 162 not by EvalMaxSAT); MSE 2023 not touched (user). Flip counter: exact in calls 1–16 (≤ 6 % error after), cutoff in calls not seconds. Per-run peak RSS recommended. N-2026-10-28-b. **2026-10-28 later (§7):** unpack done; EvalMaxSAT own runs dropped, ρ x = published 2026 EvalMaxSAT (VBS, per-solver as sensitivity); memetic 952 × 3 × 1800 s after the flip counter. N-2026-10-28-c. |
+| OpenAI's claimed refutation of ETH (subexponential #k-SAT, Oct 2026): manuscript vs Lean scope, Max-k-SAT corollary, artifacts, relevance, feasibility | [`../current2/RESEARCH_NOTES_ETH_REFUTATION_CLAIM.md`](../current2/RESEARCH_NOTES_ETH_REFUTATION_CLAIM.md) | **A claim under independent examination; documentation only.** Theorem 1.1 is deterministic exact #k-SAT (fixed k) in $(n+m)^{O_k(1)}2^{O_k(n\log\log n/\sqrt{\log n})}$ time and polynomial space. Lean covers only the weaker $2^{O_k(n(\log\log n)^2/\sqrt{\log n})}$ bound, and the appendix cited for the sharper bound is missing from the LaTeX. Corollary 1.2 (`cor:max-sat-approximation`) gives OPT − εm, unweighted, randomized, with ε fixed. There is no runnable solver, only a proof development. As parameterised, it falls back to exhaustive search below n ≈ 2^{1.09·10¹⁰}. Nothing to implement. N-2026-10-28-a. |
 | LLM-driven solver design (FunSearch, EoH, ReEvo, LLaMEA, MCTS-AHD, AlphaEvolve; SAT: AutoSAT, SATLUTION) | [`RESEARCH_NOTES_LLM_SOLVER_DESIGN.md`](RESEARCH_NOTES_LLM_SOLVER_DESIGN.md) | The method family, SAT/MaxSAT applications (no MaxSAT local-search work found), independent critiques (generalisation, cost), and where it could apply to our solver. **Direction not pursued (user, 2026-10-11; §7).** N-2026-10-11-t/u. |
 
 ## 2. Dated notes (newest first)
+
+### N-2026-10-28-c — MSE 2026: unpack done; memetic only at 1800 s; ρ x from the published exact results [quote + verified + inference]
+
+> "do only the memetic staff, I want to see how the solver performs at all, give it 1800s, later we do the granuarity for less if I want, meanwhile consider tkimg exact solver results for rho from web mse" (user, 2026-10-28)
+
+- **[verified]** Milestone 2 done: array 23643046, 50/50 TASK_OK, ALL_DONE; `mse26_content.tsv` checked (1,216 rows, 952 unpacked, no duplicate content sha256, flags match the work list).
+- **Decision (user):** our EvalMaxSAT runs (3a) dropped; memetic 952 × 3 seeds × 1800 s; "granularity for less" = shorter budgets later (user's answer); flip counter (3b) stays before the manifest.
+- **[verified in code]** Shorter budgets are read off the 1800 s records: hyperparameters depend on instance features only; the budget only caps the last call.
+- **[verified]** Published 2026: 22/15 exact solvers per track; EvalMaxSAT proves 792 of the 952 (398 ≤ 30 s, 392 window), single-threaded (CPU/wall 0.99).
+- **[inference]** x of ρ: published EvalMaxSAT wall time primary (ranks cancel a uniform hardware factor); VBS sensitivity (no censoring); per-solver ρ descriptive; per track and pooled.
+- **[verified in code]** Both native cores track true hard count and original-weight soft cost per flip, so the counter is one comparison per flip.
+- **[verified] 3b built:** schema 7 target-hit fields + `peak_rss_mb`; exact in every call (no 16-call cap: same cost); 439 tests pass; overhead ≈ 2 %; smoke: U30 bf0432-007 hit at flip 3,704 of call 1. §8.
+- Note: `docs/current2/MSE26_RHO_PLAN.md` §7–§8.
+
+### N-2026-10-28-b — MSE 2026: unpack + hash job prepared; manifests include under-30 s; flip counter limited to calls 1–16; per-run RAM [quote + verified + proposal]
+
+> "unpack what you recommend, do mainifests for also instances that where proved by exact solver in under 30s, later do per flip, [...] only in the first several 12500 flips calls [...] do the reasoning" and "initially give larger instances more ram, you can add if you find for statistics useful - ram check per run" (user, 2026-10-28)
+
+- **[verified]** MSE 2026 download done (job 23591248, ALL_DONE); census `MSE_PUBLISHED_EXACT_RESULTS.md` §7. EvalMaxSAT 2026 smoke done on the cluster (user).
+- **[verified]** The 952 instances with a published optimum: published EvalMaxSAT ≤ 1 s 167, (1, 30] 231, (30, 3600] 392, not by EvalMaxSAT 162; 80.3 GiB as .wcnf.
+- **Prepared + mock-tested:** `mse26_unpack_array.sbatch` (50-task array, user asked for parallel; unpack 952, content sha256 of all 1,216) + `mse26_unpack_finish.sh` (merge, symlinks `data/raw/mse26`). Upload `tmp/upload_mse26_unpack/`. MSE 2023 extraction removed from the job (user: "I dont want mse23 extraction meanwhile").
+- **[verified records]** Calls to target: U30 83 % at 1 call, 99 % ≤ 16; O900 54 % / 94 %; HMSE 4 % / 38 %.
+- **[inference]** Per-flip resolution matters only in the first calls (error ≤ 1/K after K calls). Cut off at 16 calls, not seconds: seconds per call differ ~100× between U30 and HMSE.
+- **[proposal]** Per-run peak RSS in the memetic and EvalMaxSAT records (sacct MaxRSS is blank). Memory bins from the start for MSE 2026 (user).
+- Note: `docs/current2/MSE26_RHO_PLAN.md`.
+
+### N-2026-10-28-a — OpenAI's claimed refutation of ETH: what it claims, what Lean covers, and why it gives us nothing to implement now [quote + verified + inference]
+
+> "Shlomi Dolev sent me OpenAI's claimed refutation of the Exponential Time Hypothesis and suggested that we might be able to use the results in our MaxSAT research. […] For now, this is documentation only: do not implement anything, modify the solver, or launch experiments." (user, 2026-10-28)
+
+- **[quote] The source calls it a claim under examination.** `openai/math` `history.md` (2026-10-26): "An independent working group of computer scientists led by Russell Impagliazzo, Ramamohan Paturi, and Ryan Williams will examine and explain the proof." The repo README says the manuscripts are "raw research data" produced by "an unnamed internal OpenAI model". The OpenAI announcement page returned 403 and was not read.
+- **[verified] The manuscript claims** (Theorem 1.1, `thm:main`): deterministic exact #k-SAT, fixed k ≥ 2, in $(n+m)^{O_k(1)}2^{O_k(n\log\log n/\sqrt{\log n})}$ bit operations and $(n+m)^{O_k(1)}$ space; when m ≤ Dn, $2^{O_{k,D}(n/\sqrt{\log n})}$.
+  - The main text proves the weaker $2^{O_k(\rho(n))}$, ρ(n) = n(log log n)²/√log n (Proposition 6.4).
+  - The cited "Appendix app:quantitative" for the sharper bound is **absent** from `main_full_version.tex`.
+- **[verified] Lean** (`lean/docs/378.md`; `exact_count_and_sat`): covers the ρ(n) bound only.
+  - The bound is stated in terms of the encoding bit length L, for a multi-tape machine, with visited cells ≤ (L+1)^{O_k(1)}.
+  - The constants are existential.
+  - Not built or checked by us.
+- **[verified] Max-k-SAT** (Corollary 1.2, `cor:max-sat-approximation`):
+  - randomized; finds an assignment with ≥ OPT − εm satisfied clauses, with probability 1 − 2^{−Ω(n)};
+  - time $(n+m)^{O_{k,\varepsilon}(1)}2^{O_{k,\varepsilon}(\rho(n))}$;
+  - unweighted, ε fixed, via clause sampling plus a threshold circuit.
+- **[verified] Artifacts:** paper, LaTeX, and a Lean proof development (≥ 3,977 files). There is **no runnable SAT/MaxSAT solver** and no non-Lean code.
+- **[inference] Feasibility.** The paper's explicit parameters fall back to exhaustive search unless ⌈log₂ n⌉ ≥ 521,284 (sparsification) and ≈ 1.09·10¹⁰ (counting construction). Even with retuned constants, the one-group factor alone is about 2^{0.45–0.5 n} at n = 10⁴–10⁶, worse than PPSZ.
+- **[inference] Relevance:**
+  - ρ/orthogonality results, RC2 and EvalMaxSAT as exact references, and the memetic solver are unaffected.
+  - The corollary's εm additive error is far above our c\* (1–50).
+  - It has no weights and no hard clauses.
+  - Long MSE clauses violate fixed k.
+- **[decision] Nothing implemented** (user). Follow-up checklist (working-group outcome, missing appendix, Lean comparator, concrete-constants analysis): note §5.3, §7.
+- Note: `docs/current2/RESEARCH_NOTES_ETH_REFUTATION_CLAIM.md`.
 
 ### N-2026-10-25-g — Batch POP prepared, not run: R4's pop {10, 40} on all 144 MSE 2023/2024 hard-clause instances; pre-registered rule on arrival and fitness [quote + verified + proposal]
 

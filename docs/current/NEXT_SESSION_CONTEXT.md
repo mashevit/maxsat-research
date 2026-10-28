@@ -17,6 +17,40 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000000000000000. Update 2026-10-28 (r19): read first
+
+- **Later 2026-10-28 (r19b; overrides the r19 order below):** milestone 2
+  DONE. **3a dropped** (user): no own EvalMaxSAT runs; ρ x from the published
+  MSE 2026 results (EvalMaxSAT primary, VBS + per-solver as sensitivity;
+  `MSE26_RHO_PLAN.md` §7). Memetic only: **952 × 3 seeds × 1800 s**; shorter
+  budgets later are read off the records. Next: **3b flip counter + RSS**
+  (design in §7): **BUILT + tested locally 2026-10-28** (§8; 439 passed; not
+  committed, not on the cluster). Next: 3c (manifest, 1800 s) with ONE upload
+  carrying the 3b code (arrange → build_native.sbatch → submit); then 4. The cluster `~`
+  cleanup reminder was given 2026-10-28.
+
+- **MSE 2026 download + extract: DONE** (job 23591248, `ALL_DONE`); log and
+  `sizes.tsv` copied to `cluster_staging_maxsat_strong/results/`. Census:
+  `MSE_PUBLISHED_EXACT_RESULTS.md` §7 (123 GiB as .wcnf; ρ window 392,
+  57.6 GiB; optimum known 952, 80.3 GiB).
+- **REMIND THE USER (asked 2026-10-28):** once `mse26_content.tsv` is copied back, clean `~` on
+  the cluster: `bash cleanup_home_uploads.sh` (dry run), then `--apply`. It removes, by name, every flat
+  file ever copied to `~` from the repo's `tmp/upload_*` folders plus the arrange scripts; never
+  directories, symlinks, `~/mse_full*`, `~/evalmaxsat2026` or the trees.
+- **Milestone 1 (EvalMaxSAT 2026 install + smoke on the cluster): DONE**
+  (user, 2026-10-28); smoke records not copied back.
+- **Milestone 2: DONE 2026-10-28** (50/50 TASK_OK, ALL_DONE; `cluster_staging_maxsat_strong/results/mse26_unpack/` holds `mse26_content.tsv` + logs, checked: 1,216 rows, 952 unpacked, no dup sha256). Next: 3a after the user's go. Was: **PREPARED 2026-10-28** (`docs/current2/MSE26_RHO_PLAN.md`):
+  the user uploads `tmp/upload_mse26_unpack/`, runs `sbatch mse26_unpack_array.sbatch` (50 tasks) then
+  `bash mse26_unpack_finish.sh`, brings back `mse26_content.tsv` (§2 there); MSE 2023 not extracted (user). Then 3a EvalMaxSAT manifest (952 × 1 h), 3b flip counter
+  (calls 1–16) + per-run RSS, 3c memetic manifest (952 × 3), 4 pre-registration.
+  Memory bins from the start for MSE 2026 (user).
+- **The "monkey patch" explanation is no longer a reminder** (user,
+  2026-10-28). Parked in `docs/current2/PARKED_FOR_PROJECT_END.md`; raise
+  only at the end of the project or when the user asks. This supersedes the
+  r18 bullet and r17 "next action 1".
+- Uncommitted on 2026-10-28: the ETH-claim research note (N-2026-10-28-a,
+  documentation only) and these doc edits.
+
 ## 0000000000000000. Update 2026-10-25 (r18): read first
 
 - **PP10 read 2026-10-25** (`PERPOLISH_RUN.md` §6, N-2026-10-25-b):

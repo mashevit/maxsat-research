@@ -95,6 +95,10 @@ solvers cannot.
 
 ## 4. To explain to the user: the "monkey patch" engineering decision in the code
 
+**Status 2026-10-28 (user):** not a reminder any more. Parked for the end
+of the project, or until the user asks; see `PARKED_FOR_PROJECT_END.md`.
+The text below is kept for that.
+
 Explain this at the start of the next session. What it most likely
 refers to [verified: code]:
 

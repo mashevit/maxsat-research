@@ -230,3 +230,35 @@ until both sets are on disk.
   into the ρ pre-registration, before any memetic result is seen.
 - **Download:** `cluster_staging_maxsat_strong/scripts/sets_mse26.txt`
   (also in `tmp/upload_mse_dl/`), with `DEST=~/mse_full26`.
+
+## 7. MSE 2026 on the cluster: download done, size census (2026-10-28) [verified: job log + sizes.tsv + Zenodo metadata]
+
+- **Download:** job 23591248 (2026-10-25) finished with `ALL_DONE`. Both zips
+  passed the CRC test and were extracted to `~/mse_full26/` (607 + 609
+  `.wcnf.xz` plus `meta.csv`); the zips were removed. The log and
+  `sizes.tsv` are in `cluster_staging_maxsat_strong/results/`
+  (`mse26-dl-23591248.out`, `sizes.tsv`).
+- **EvalMaxSAT 2026 smoke on the cluster:** done (user, 2026-10-28;
+  milestone 1). The records were not copied back.
+- **All 1,216 files match the metadata hashes**, and each has an EvalMaxSAT
+  row in the published results.
+- **Sizes as `.wcnf`:** 123.1 GiB in total (7.6 GiB as `.xz`); median 4.6 MiB,
+  99th percentile 3.4 GiB, largest 3.36 GiB.
+
+| `.wcnf` size | files | GiB |
+|---|---:|---:|
+| < 5 MiB | 620 | 0.7 |
+| 5–100 MiB | 445 | 11.3 |
+| 100 MiB – 1 GiB | 120 | 35.1 |
+| 1–10 GiB | 31 | 76.0 |
+
+- **The ρ window** (published EvalMaxSAT, `OPTIMUM FOUND`, verified, wall
+  time in (30, 3600] s): **392** instances. §5 said 391, an off-by-one from
+  the time column or the boundary; not chased. 57.6 GiB as `.wcnf`, 233 over 5 MiB,
+  12 over 1 GiB.
+- **Memory bins (§4 of `EVALMAXSAT_2026_INSTALL.md`, published EvalMaxSAT
+  peak at 75 %):** window 8 GB 344, 16 GB 17, 32 GB 17, 64 GB 14; all 1,216:
+  8 GB 1,074, 16 GB 31, 32 GB 34, 64 GB 77.
+- **EvalMaxSAT peak / `.wcnf` size** (window, files > 50 MiB, n = 112):
+  median 19×, range 8.6–81×.
+- **Proven optimum known** (`optimal_cost`): 952 files, 80.3 GiB as `.wcnf`.

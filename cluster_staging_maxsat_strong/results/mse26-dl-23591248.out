@@ -1,0 +1,27 @@
+------------------------------------
+Sun 25 Oct 2026 15:37:17 IST
+SLURM_JOBID:		23591248
+SLURM_JOB_NODELIST:	cs-cpu-05
+SLURM_SCRATCH_DIR:	
+Allocated Resouces:	cpu - 2 / mem - 2048 MB / gpu - 
+SLURM_GPU_INDEX:	
+Running as mashevit from dolev account with normal QOS
+------------------------------------
+== download
+DOWNLOAD  mse26-exact-unweighted (2586 MiB)
+OK        mse26-exact-unweighted
+DOWNLOAD  mse26-exact-weighted (5151 MiB)
+OK        mse26-exact-weighted
+DONE download
+== test
+TEST_OK   mse26-exact-unweighted (608 members, CRC ok)
+TEST_OK   mse26-exact-weighted (610 members, CRC ok)
+== extract
+EXTRACTED mse26-exact-unweighted -> /home/mashevit/mse_full26/mse26-exact-unweighted (608 files)
+          removed /home/mashevit/mse_full26/zips/mse26-exact-unweighted.zip
+EXTRACTED mse26-exact-weighted -> /home/mashevit/mse_full26/mse26-exact-weighted (610 files)
+          removed /home/mashevit/mse_full26/zips/mse26-exact-weighted.zip
+== sizes
+SIZES     1216 files, xz 7.6 GiB, as .wcnf 123.1 GiB, 596 files over 5 MiB as .wcnf -> /home/mashevit/mse_full26/sizes.tsv
+DONE test,extract,sizes
+ALL_DONE  2026-10-25T16:56:13+02:00
