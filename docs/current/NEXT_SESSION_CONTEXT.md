@@ -17,6 +17,41 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000000000000000. Update 2026-10-28 evening (r20): read first — summary for the next session
+
+**Where we are (all committed and pushed at the end of 2026-10-28):**
+- **ρ plan (`docs/current2/MSE26_RHO_PLAN.md` §7):** memetic only, 952 MSE 2026
+  instances × 3 seeds × **1800 s**; no own EvalMaxSAT runs, the exact side of ρ
+  is the published 2026 results (EvalMaxSAT wall time primary; VBS and
+  per-solver as sensitivity). Shorter budgets later are read off the records.
+- **3b flip counter + peak RSS:** built, pushed d4208c3 (shard schema 7).
+- **Compiled memetic (`docs/current2/COMPILED_MEMETIC_PLAN.md`):** C1–C3 pushed
+  9ce84ca: C parser + CSR + C tables, per-child C functions, hard mode in C;
+  twins (whole runs identical); peak RSS ~95× → 9–17× of the .wcnf; C parse
+  213 MB/s. 604 tests passed.
+- **Fast kernel (§10):** the Python kernel was quadratic on hub variables
+  (2 census tasks stuck > 40 min); now the same kernel in linear time. On the
+  two stuck instances: CQA `78e29d9a` optimum at 7.5 s, ILP `7936a720` at 80 s.
+  NOT yet on the cluster (goes up with 3c).
+- **Census (§11):** 952 rows, 0 mismatches with the unpack job; 128 pass the
+  kernel screen (126 kernelised, max 254 s); 2 large screen-passing instances
+  not run (2,029 MiB and 594 MiB).
+- Cluster `~` cleanup done; fixed-rate mutation reminder closed; "lean tables"
+  explanation parked for the project end (`PARKED_FOR_PROJECT_END.md`).
+
+**Next steps (one per turn, after the user's go):**
+1. **Kernel rule for 3c** (user decision): the 2 large screen-passing instances
+   — run the fast kernel inside the budget, or skip the kernel above a size.
+2. **Exact memory bins** from the census counts (model §8 C4: soft ~9×,
+   hard ~14×, kernel ~33–47× of the file; the larger of that and the
+   EvalMaxSAT-published bin); Slurm `--time=01:00:00`, GRACE 300 s.
+3. **3c manifest + one flat upload** (fast kernel + manifests + submit
+   commands): 2,856 tasks in arrays of ≤ 1,000 per memory bin; rebuild the C
+   core; the login node does not hash the 80 GiB (each record carries the
+   instance sha256).
+4. **Milestone 4: ρ pre-registration** before any MSE 2026 memetic result.
+5. Run, copy back, read out.
+
 ## 00000000000000000. Update 2026-10-28 (r19): read first
 
 - **Latest 2026-10-28 (r19c):** before 3c, the memetic is being compiled
@@ -24,10 +59,15 @@ alias, so every cluster step is a command the user runs on the login node.
   C1-C3 pushed 9ce84ca (peak RSS ~95x -> 9-17x file; C parse 213 MB/s).
   C4 measured (plan §8 C4): without the kernel all 952 fit <= 64 GB. OPEN
   decision: the Python kernel on large instances (33x RAM, 0.7 s/MiB, not
-  twinnable): user chose the CENSUS JOB, prepared 2026-10-28
-  (COMPILED_MEMETIC_PLAN.md §9, upload tmp/upload_census/, not committed);
-  user uploads, arranges, builds, runs; brings back mse26_census.tsv; then
-  the kernel rule + exact bins, then
+  twinnable): user chose the CENSUS JOB (§9, committed 827cea4, running on
+  the cluster 2026-10-28). Tasks 19 + 31 stuck > 40 min in the reference
+  kernel (quadratic on hub variables) -> FAST KERNEL built (§10, same kernel,
+  tests 604 passed; CQA 78e29d9a optimum at 7.5 s, ILP 7936a720 at 80 s);
+  their 27 rows computed on the workstation (results/mse26_census/
+  rows_workstation/). User brings back census_rows.tgz (the cluster rows/);
+  merge on the workstation; then the kernel rule + exact bins, then
+  (fast kernel + census rows + docs NOT COMMITTED at session end 2026-10-28;
+  user cancels tasks 19/31 on the cluster, do not resubmit them)
   C4 (re-measure memory → bins/time for 3c), then 3c. 3b committed d4208c3.
 - **Later 2026-10-28 (r19b; overrides the r19 order below):** milestone 2
   DONE. **3a dropped** (user): no own EvalMaxSAT runs; ρ x from the published

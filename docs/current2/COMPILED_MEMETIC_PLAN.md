@@ -371,3 +371,86 @@ each time, resolvents grow). `mse26_census.py` now caps the gate at 300 s
 5 minutes is itself the answer for the 1,800 s budget. Upload:
 `tmp/upload_census2/` (the one file + `upload.sha256`); the stuck tasks are
 cancelled and resubmitted (rows already written are kept and skipped).
+
+## 10. Fast kernel: the same kernel without the quadratic loop (built 2026-10-28) [verified: tests + the two stuck instances]
+
+> "if you assume relevant optimization can benefit those families, then
+> implement it" (user, 2026-10-28; no further cluster step now)
+
+**The stuck census tasks** (> 40 min): task 19 on `7936a720…` (inductive
+logic programming / MDL, 8.9 MiB, 89,156 hard + 11,043 soft, weighted,
+optimum 37; EvalMaxSAT 247 s, fastest solver 1.5 s) and task 31 on
+`78e29d9a…` (consistency query answering, 25.3 MiB, 1,122,587 hard + 356
+soft, unweighted, optimum 356; EvalMaxSAT 1.1 s). Both pass the screen
+(0.25, 0.60). Fetched from Zenodo by range request; sha256 equal to the
+unpack job's.
+
+**Cause [verified]:** `kernelize` puts every neighbour of an eliminated
+variable back on the work list; a variable in many clauses therefore comes off
+it about once per eliminated neighbour, and each time the reference copied
+(`list(occ[v])`) and scanned its whole clause set, although most of these
+visits change nothing (both polarities, not 1 + 1). Hub instance (one variable
+in N hard clauses whose other variables are pure): N = 2,000 / 4,000 / 8,000 →
+0.10 / 0.35 / 1.65 s, quadratic; at N ≈ 10^6, hours. Neither real instance
+finished within 120 s on the workstation with the reference.
+
+**Fix (`src/sat/kernel.py`):** per-variable counts of the clauses holding v
+and −v, maintained in `insert` / `remove`. A visit whose counts say "no
+change" (no complementary soft units, both polarities present, not 1 + 1) is
+skipped in O(1); every other visit runs the reference's code on the same sets
+in the same iteration order, so the work list, every decision, the kernel dict
+order, the constant and the record are the reference's. The tautology test
+uses a set (same answer, O(k) instead of O(k²)). The reference is kept as
+`kernelize_reference`.
+
+**Equality [verified]:** `tests/test_kernel_fast.py` (91 tests): 40 random
+instances (hard, complementary soft units, duplicates, tautologies, empty and
+long clauses), 10 sparse Max-2-SAT, hub and star cases, 40 local
+kernel-passing instances (calib_2sat_sc, calib_2sat_sc2): kernel items in
+order, constant and record equal. `tests/test_kernel.py` (14, brute-force
+lift correctness) passes. Hub N = 200,000 in < 20 s (reference: hours).
+
+**The two instances with the fast kernel** (workstation, `auto.yaml`, 180 s):
+
+| instance | gate | kernel | memetic |
+|---|---|---|---|
+| CQA `78e29d9a` | 12.5 s, 1.2 GB | 455,520 → **8,034** variables, 190,279 clauses (190,175 hard), constant 252, gain 0.98 | **optimum 356 at 7.5 s** (Glucose start already optimal) |
+| ILP `7936a720` | 28.5 s, 0.4 GB | 11,043 → 8,252 variables, 97,370 clauses, constant 13, gain 0.25 | **optimum 37 at 79.6 s** (3 children) |
+
+With the reference kernel both runs would have spent the whole 1,800 s budget
+in the gate and failed: a preprocessing artefact on instances EvalMaxSAT
+solves in 1 s and 247 s.
+
+**Census rows of tasks 19 and 31:** the stuck file and every later file of
+those tasks (27 files) are fetched from Zenodo and censused on the
+workstation with the same script (kernel limit 50 MiB instead of 100 for the
+workstation's memory); the cluster rows of the other 48 tasks are copied
+back as they are, and the merge is done on the workstation.
+
+**Not done:** a run of `kernelize_reference` to completion on `7936a720`
+(to compare with the fast kernel on real data) was stopped unfinished at the
+user's request (2026-10-28, > 1 h); equality rests on the tests above.
+
+## 11. Census result (merged 2026-10-28) [verified]
+
+`cluster_staging_maxsat_strong/results/mse26_census/mse26_census.tsv`: 952
+rows (925 cluster, 27 workstation; column `source`), **0 mismatches** with
+`mse26_content.tsv` (sha256, hard, soft, weighted) and 0 errors, so the C
+parser reads every MSE 2026 instance as the awk counts do. Raw: `census_rows.tgz`
+(the cluster `rows/`, 925 files), `rows_workstation/` (27).
+
+| | instances |
+|---|---:|
+| screen below 0.20 (no kernel) | 824 |
+| screen passes, ≤ 5 MiB | 85 (kernel 80, kernel_empty 5) |
+| screen passes, 5–25 MiB | 40 (kernel 40) |
+| screen passes, 25–100 MiB | 1 (kernel) |
+| screen passes, > 100 MiB (not run) | 2: `cd1a6257` 2,029 MiB (screen 1.0), `d72b8cab` 594 MiB (0.85) |
+
+Kernel seconds (cluster rows: reference kernel; workstation rows: fast):
+max 253.8 s, 1 over 60 s, none hit the 300 s cap. Parse: max 22.2 s, max
+3.2 GB RSS after the parse. Lean neighbour tables: 125 instances.
+
+**Open for the user (next session):** the kernel rule for 3c, i.e. what the
+2 large screen-passing instances do (fast kernel in the run, or no kernel above
+a size), then exact memory bins from the census counts and the 3c manifest.

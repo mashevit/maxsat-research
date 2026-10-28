@@ -161,3 +161,11 @@ per-instance config files). Record: `docs/current2/AUTO_HPARAMS.md`.
 | `tests/test_compact.py` | +6 tests; `tests/test_target_hit.py` one assertion made timing-robust. |
 
 **Tests:** 513 passed, 16 skipped.
+
+### 2026-10-28: fast kernel (`docs/current2/COMPILED_MEMETIC_PLAN.md` §10)
+
+| file | change |
+|---|---|
+| `src/sat/kernel.py` | `kernelize`: per-variable ± clause counts skip no-change visits in O(1) (same kernel, order, constant, record); set-based tautology test. The old function kept as `kernelize_reference`. |
+| `scripts/mse26_census.py` | kernel gate capped at 300 s (`kernel_timeout_300s`). |
+| `tests/test_kernel_fast.py` | **new.** 91 tests. |

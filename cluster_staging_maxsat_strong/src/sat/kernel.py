@@ -76,6 +76,107 @@ def kernelize(clauses: List[Tuple[int, Lits]]):
 
     `clauses` are (weight, lits) with hard clauses at weight >= HARD. A constant
     >= HARD means the hard clauses contradict each other.
+
+    Same result as `kernelize_reference` -- the same kernel dict in the same
+    order, constant and record (docs/current2/COMPILED_MEMETIC_PLAN.md §10;
+    tests/test_kernel_fast.py) -- without its quadratic cost: a variable comes
+    off the work list once per eliminated neighbour clause, and the reference
+    copied and scanned its whole clause set each time, although most of those
+    visits change nothing (both polarities, not 1 + 1). Per-variable counts of
+    the clauses holding v and -v decide that in O(1); every visit that changes
+    something runs the reference's code, on the same sets in the same iteration
+    order, so the work list and every decision are unchanged. The tautology test
+    uses a set (same answer, O(k) instead of O(k^2)).
+    """
+    C: Dict[Lits, int] = {}
+    occ: Dict[int, set] = defaultdict(set)
+    npos: Dict[int, int] = defaultdict(int)   # clauses of occ[v] holding v
+    nneg: Dict[int, int] = defaultdict(int)   # ... holding -v
+    const = 0
+    rec: List[Tuple[str, int, Any]] = []
+
+    def insert(lits, w):
+        nonlocal const
+        s = set(lits)
+        lits = tuple(sorted(s))
+        if any(-l in s for l in lits):
+            return
+        if not lits:
+            const += w
+            return
+        new = lits not in C
+        C[lits] = C.get(lits, 0) + w
+        for l in lits:
+            occ[abs(l)].add(lits)
+            if new:
+                if l > 0:
+                    npos[l] += 1
+                else:
+                    nneg[-l] += 1
+
+    def remove(k):
+        w = C.pop(k)
+        for l in k:
+            occ[abs(l)].discard(k)
+            if l > 0:
+                npos[l] -= 1
+            else:
+                nneg[-l] -= 1
+        return w
+
+    for w, lits in clauses:
+        insert(lits, w)
+    work = list(occ)
+    while work:
+        v = work.pop()
+        p, q = npos.get(v, 0), nneg.get(v, 0)
+        if p + q == 0:                       # the reference: `if not ks: continue`
+            continue
+        a, b = (v,), (-v,)
+        units = a in C and b in C and max(C[a], C[b]) < HARD
+        if not units and p and q and not (p == 1 and q == 1):
+            continue                         # the reference's final `else: continue`, unchanged state
+        ks = list(occ.get(v, ()))
+        if units:  # complementary soft units
+            m = min(C[a], C[b])
+            const += m
+            for k in (a, b):
+                C[k] -= m
+                if C[k] == 0:
+                    remove(k)
+            ks = list(occ[v])
+            if not ks:
+                continue
+        pos = [k for k in ks if v in k]
+        neg = [k for k in ks if -v in k]
+        if not pos or not neg:
+            for k in ks:
+                remove(k)
+            rec.append(("pure", v, bool(pos)))
+        elif len(pos) == 1 and len(neg) == 1:
+            k1, k2 = pos[0], neg[0]
+            w1, w2 = remove(k1), remove(k2)
+            A = tuple(l for l in k1 if l != v)
+            B = tuple(l for l in k2 if l != -v)
+            insert(A + B, min(w1, w2))
+            rec.append(("res", v, (A, B, w1 >= w2)))
+        else:
+            continue
+        for k in ks:
+            for l in k:
+                if abs(l) != v:
+                    work.append(abs(l))
+    return C, const, rec
+
+
+def kernelize_reference(clauses: List[Tuple[int, Lits]]):
+    """The original kernelize (until 2026-10-28), kept as the twin reference for
+    tests/test_kernel_fast.py. Same contract as `kernelize`.
+
+    Return (kernel clauses {lits: weight}, constant cost, elimination record).
+
+    `clauses` are (weight, lits) with hard clauses at weight >= HARD. A constant
+    >= HARD means the hard clauses contradict each other.
     """
     C: Dict[Lits, int] = {}
     occ: Dict[int, set] = defaultdict(set)
