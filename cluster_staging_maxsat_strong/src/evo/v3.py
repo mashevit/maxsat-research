@@ -398,7 +398,11 @@ def partition_crossover(p1, p2, wcnf) -> Tuple[List[bool], int, bool]:
 # ------------------------------------------------------------------- polish
 
 class PolishV3:
-    """B1/B2/B5 polish with v2's call contract: (assign01, wcnf, ls_cfg, seed) -> (assign01, steps, noops)."""
+    """B1/B2/B5 polish with v2's call contract: (assign01, wcnf, ls_cfg, seed) -> (assign01, steps, noops).
+
+    `target_unsat` (optional): the core reports the first step of this call at
+    which the true cost reached it; `last_hit` = (step, wall) after every call,
+    step -1 = not reached (MSE26_RHO_PLAN.md §7)."""
 
     def __init__(self, vc: Dict[str, Any], wcnf, stats: V3Stats) -> None:
         self.vc = vc
@@ -411,9 +415,10 @@ class PolishV3:
             self.native = load_native(wcnf)   # raises NativeUnavailable
         stats.d["polish_core"] = vc["core"] + ("" if vc["tabu"] == "none" else "+" + vc["tabu"])
         stats.d["ls_native"] = bool(vc["native"])
+        self.last_hit: Tuple[int, Optional[float]] = (-1, None)
 
     def __call__(self, assign01: List[bool], ls_cfg: Dict[str, Any], rng_seed: int,
-                 hard_mode: bool) -> Tuple[List[bool], int, int]:
+                 hard_mode: bool, target_unsat: Optional[int] = None) -> Tuple[List[bool], int, int]:
         vc, s = self.vc, self.stats.d
         start = [bool(b) for b in assign01[1:]]
         max_flips = ls_cfg.get("ls_polish_flips", ls_cfg.get("max_flips", None))
@@ -421,16 +426,17 @@ class PolishV3:
         st: Dict[str, int] = {}
         if self.native is not None:
             res = self.native.polish(vc, start, rng_seed, max_flips, tl, ls_cfg.get("noise", 0.10),
-                                     hard_mode, self.dw, st)
+                                     hard_mode, self.dw, st, target_unsat=target_unsat)
         elif vc["core"] == "dls":
             res = dls_v3(self.wcnf, start, rng=MTRng(rng_seed), max_flips=max_flips, time_limit_s=tl,
                          t=vc["dls_t"], sp=vc["dls_sp"], zeta=vc["dls_zeta"], h_inc=vc["dls_h_inc"],
-                         dw=self.dw, cc=vc["tabu"] == "cc", stats=st)
+                         dw=self.dw, cc=vc["tabu"] == "cc", stats=st, target_unsat=target_unsat)
         else:
             res = walksat_v3(self.wcnf, start, rng=MTRng(rng_seed), max_flips=max_flips, time_limit_s=tl,
                              noise=ls_cfg.get("noise", 0.10), hard_safe=True if hard_mode else ls_cfg.get("hard_safe", True),
                              budget_counts_noops=hard_mode, tabu=vc["tabu"], tenure=vc["tabu_tenure"],
-                             tenure_rand=vc["tabu_tenure_rand"], stats=st)
+                             tenure_rand=vc["tabu_tenure_rand"], stats=st, target_unsat=target_unsat)
+        self.last_hit = (int(res.get("target_hit_step", -1)), res.get("target_hit_wall"))
         for k2, v2 in st.items():
             s[k2] = s.get(k2, 0) + v2
         return [False] + [bool(b) for b in res["final_assign"]], res["flips"], res.get("noop_steps", 0)

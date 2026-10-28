@@ -59,6 +59,7 @@ import hashlib
 import json
 import os
 import platform
+import resource
 import signal
 import socket
 import subprocess
@@ -116,7 +117,16 @@ except Exception:
 #    memory, the reasons, `resolved_config_hash` and `hparams_s`. `config` and
 #    `config_hash` stay the config as submitted (the batch's one file).
 #    Every version-5 field is unchanged.
-SHARD_SCHEMA_VERSION = 6
+# 7 (2026-10-28, docs/current2/MSE26_RHO_PLAN.md §7): additive target-hit
+#    fields -- where a target-stopped run first reached the target, to the flip:
+#    `calls_to_target`, `flips_to_target` (unit of `total_flips`), `target_by`
+#    (init | kernel | pre_polish | polish | child | unknown), `ttt_resolution`
+#    (flip | call) and `time_to_target_hit_s` (same clock as
+#    `time_to_target_s`, which keeps its meaning: the end of the reaching call);
+#    all null unless the run stopped at the target. Plus `peak_rss_mb`, the
+#    process's peak resident memory (getrusage), on every record.
+#    Every version-6 field is unchanged.
+SHARD_SCHEMA_VERSION = 7
 
 DEFAULT_SOLVER = "memetic_ea"
 KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
@@ -431,6 +441,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         # infer which case it is looking at.
         "stop_reason": None,
         "time_to_target_s": None,
+        # Schema 7: where the target was first reached (null unless reached).
+        "calls_to_target": None,
+        "flips_to_target": None,
+        "target_by": None,
+        "ttt_resolution": None,
+        "time_to_target_hit_s": None,
         "target_cost_used": target_cost,
         "stop_at_oracle": bool(args.stop_at_oracle),
         # Explicit success flag for the ablation tables. True/False only when a
@@ -491,11 +507,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         "slurm": slurm_env(),
         "started_at": None,
         "finished_at": None,
+        "peak_rss_mb": None,
     }
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
 
     def emit() -> int:
+        # ru_maxrss is in KiB on Linux.
+        rec["peak_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
         with open(args.out, "w", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         s = rec["status"]
@@ -567,6 +586,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             reached = run_target is not None and run_target >= 0
             res = {"best_soft_weight": 0.0, "stop_reason": "target" if reached else "preprocess_exact",
                    "time_to_target_s": 0.0 if reached else None, "impl": None, "total_flips": 0,
+                   "target_hit": ({"calls_to_target": 0, "flips_to_target": 0, "target_by": "kernel",
+                                   "resolution": "flip", "time_to_hit_s": 0.0} if reached else None),
                    "meta": {"assign_bits": "", "ea_generations": 0, "children": 0}}
         elif solver == "local_multistart":
             res = run_multistart_ls(run_wcnf, run_cfg, rng_seed=args.seed,
@@ -616,6 +637,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     # On the kernel path the solver's clock started after the gate (and after
     # the hparams choice, when the config has `hparams: auto`).
     rec["time_to_target_s"] = None if ttt is None else round(float(ttt) + pre_s, 3)
+    th = res.get("target_hit") if rec["stop_reason"] == "target" else None
+    if th:
+        rec["calls_to_target"] = int(th["calls_to_target"])
+        rec["flips_to_target"] = int(th["flips_to_target"])
+        rec["target_by"] = th["target_by"]
+        rec["ttt_resolution"] = th["resolution"]
+        hs = th.get("time_to_hit_s")
+        rec["time_to_target_hit_s"] = None if hs is None else round(float(hs) + pre_s, 6)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["memetic_impl"] = res.get("impl")
     rec["hard"] = res.get("hard")

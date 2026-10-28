@@ -9,12 +9,20 @@ BUILD_INFO.txt (sha256 of the source and of the .so, gcc version, host, date).
 build time must equal the current ls_core.c -- so a shard with `ls.native: true`
 never runs a core compiled from other code. The directory can be redirected with
 MAXSAT_NATIVE_BUILD_DIR (tests).
+
+TARGET HIT (2026-10-28, docs/current2/MSE26_RHO_PLAN.md §7). `target_unsat`
+(the known optimum as unsatisfied soft weight, in this instance's own units --
+the kernel's on the kernel path) makes each call report the first step at which
+the true cost reached it: `target_hit_step` (0 = the start, -1 = never) and
+`target_hit_wall` (time.time() at that moment, None = never). Observed only;
+the flips are the same with or without it.
 """
 from __future__ import annotations
 
 import ctypes as C
 import hashlib
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -84,10 +92,11 @@ def _lib():
         lib = C.CDLL(os.path.join(build_dir(), SO_NAME))
         I64P = C.POINTER(C.c_int64)
         lib.ls_walksat.argtypes = [C.POINTER(_Inst), C.POINTER(C.c_uint8), C.c_uint64, C.c_int64, C.c_double,
-                                   C.c_double, C.c_int, C.c_int, C.c_int, C.c_int64, C.c_int64, I64P]
+                                   C.c_double, C.c_int, C.c_int, C.c_int, C.c_int64, C.c_int64, C.c_int64,
+                                   I64P]
         lib.ls_walksat.restype = C.c_int
         lib.ls_dls.argtypes = [C.POINTER(_Inst), C.POINTER(C.c_uint8), C.c_uint64, C.c_int64, C.c_double,
-                               C.c_int64, C.c_double, C.c_int64, C.c_int64, I64P, C.c_int, I64P]
+                               C.c_int64, C.c_double, C.c_int64, C.c_int64, I64P, C.c_int, C.c_int64, I64P]
         lib.ls_dls.restype = C.c_int
         lib.rng_stream.argtypes = [C.c_uint64, C.c_int64, C.POINTER(C.c_uint64)]
         lib.rng_stream.restype = None
@@ -99,6 +108,15 @@ def rng_stream(seed: int, count: int) -> List[int]:
     buf = (C.c_uint64 * count)()
     _lib().rng_stream(C.c_uint64(seed), count, buf)
     return list(buf)
+
+
+def _target_arg(target_unsat: Optional[int]) -> int:
+    return -1 if target_unsat is None or target_unsat < 0 else int(target_unsat)
+
+
+def _hit(out, t_call: float) -> Dict[str, Any]:
+    step, ns = int(out[7]), int(out[8])
+    return {"target_hit_step": step, "target_hit_wall": None if step < 0 else t_call + ns * 1e-9}
 
 
 def _arr(ctype, xs):
@@ -170,17 +188,18 @@ class NativeCore:
     def walksat(self, start: List[bool], seed: int, max_flips: Optional[int], time_limit_s: Optional[float],
                 noise: float = 0.10, hard_safe: bool = True, budget_counts_noops: bool = False,
                 tabu: str = "none", tenure: int = 10, tenure_rand: int = 0,
-                stats: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+                stats: Optional[Dict[str, int]] = None, target_unsat: Optional[int] = None) -> Dict[str, Any]:
         n = self.n
         if max_flips is None:
             max_flips = max(2_000, min(50_000, 10 * n))
         A = (C.c_uint8 * (n + 1))(0, *[1 if b else 0 for b in start])
-        out = (C.c_int64 * 8)()
+        out = (C.c_int64 * 9)()
         tl = -1.0 if (time_limit_s is None or time_limit_s == float("inf")) else float(time_limit_s)
         mode = {"none": 0, "tenure": 1, "cc": 2}[tabu]
+        t_call = time.time()
         rc = self.lib.ls_walksat(C.byref(self.inst), A, C.c_uint64(seed), int(max_flips), tl, float(noise),
                                  1 if hard_safe else 0, 1 if budget_counts_noops else 0, mode,
-                                 int(tenure), int(tenure_rand), out)
+                                 int(tenure), int(tenure_rand), _target_arg(target_unsat), out)
         if rc != 0:
             raise MemoryError("ls_walksat allocation failed")
         if stats is not None:
@@ -188,24 +207,26 @@ class NativeCore:
                 stats[k] = stats.get(k, 0) + int(out[i])
         return {"flips": int(out[0]), "total_flips": int(out[1]), "best_soft_weight": float(out[2]),
                 "hard_violations": int(out[3]), "final_assign": [bool(A[v]) for v in range(1, n + 1)],
-                "noop_steps": int(out[0] - out[1]), "impl": "walksat_v3_native/1"}
+                "noop_steps": int(out[0] - out[1]), "impl": "walksat_v3_native/1", **_hit(out, t_call)}
 
     def dls(self, start: List[bool], seed: int, max_flips: Optional[int], time_limit_s: Optional[float],
             t: int = 15, sp: float = 0.01, zeta: int = 50, h_inc: int = 1, dw: Optional[List[int]] = None,
-            cc: bool = False, stats: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+            cc: bool = False, stats: Optional[Dict[str, int]] = None,
+            target_unsat: Optional[int] = None) -> Dict[str, Any]:
         n, m = self.n, self.m
         if max_flips is None:
             max_flips = max(2_000, min(50_000, 10 * n))
         A = (C.c_uint8 * (n + 1))(0, *[1 if b else 0 for b in start])
-        out = (C.c_int64 * 8)()
+        out = (C.c_int64 * 9)()
         tl = -1.0 if (time_limit_s is None or time_limit_s == float("inf")) else float(time_limit_s)
         dwbuf = None
         if dw is not None:
             if len(dw) != m:
                 raise ValueError("dw must have one entry per clause")
             dwbuf = (C.c_int64 * max(1, m))(*dw)
+        t_call = time.time()
         rc = self.lib.ls_dls(C.byref(self.inst), A, C.c_uint64(seed), int(max_flips), tl, int(t), float(sp),
-                             int(zeta), int(h_inc), dwbuf, 1 if cc else 0, out)
+                             int(zeta), int(h_inc), dwbuf, 1 if cc else 0, _target_arg(target_unsat), out)
         if rc != 0:
             raise MemoryError("ls_dls allocation failed")
         if dw is not None:
@@ -216,17 +237,17 @@ class NativeCore:
         return {"flips": int(out[0]), "total_flips": int(out[1]), "hard_violations": int(out[2]),
                 "best_soft_weight": float(self.total_soft - out[3]),
                 "final_assign": [bool(A[v]) for v in range(1, n + 1)], "noop_steps": 0,
-                "impl": "dls_v3_native/1"}
+                "impl": "dls_v3_native/1", **_hit(out, t_call)}
 
     def polish(self, vc: Dict[str, Any], start: List[bool], seed: int, max_flips, time_limit_s, noise,
-               hard_mode: bool, dw, stats) -> Dict[str, Any]:
+               hard_mode: bool, dw, stats, target_unsat: Optional[int] = None) -> Dict[str, Any]:
         if vc["core"] == "dls":
             return self.dls(start, seed, max_flips, time_limit_s, t=vc["dls_t"], sp=vc["dls_sp"],
                             zeta=vc["dls_zeta"], h_inc=vc["dls_h_inc"], dw=dw, cc=vc["tabu"] == "cc",
-                            stats=stats)
+                            stats=stats, target_unsat=target_unsat)
         return self.walksat(start, seed, max_flips, time_limit_s, noise=noise, hard_safe=True,
                             budget_counts_noops=hard_mode, tabu=vc["tabu"], tenure=vc["tabu_tenure"],
-                            tenure_rand=vc["tabu_tenure_rand"], stats=stats)
+                            tenure_rand=vc["tabu_tenure_rand"], stats=stats, target_unsat=target_unsat)
 
 
 def load_native(wcnf) -> NativeCore:

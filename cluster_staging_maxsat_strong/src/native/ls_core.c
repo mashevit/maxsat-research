@@ -7,6 +7,13 @@
  * the Python core run with PortableRng return the same assignment and counters;
  * tests/test_native.py checks it. B5 changes speed, nothing else.
  *
+ * Target hit (MSE26_RHO_PLAN.md §4, §7; 2026-10-28): with target_unsat >= 0, each
+ * core also reports the first step at which the TRUE cost (no hard clause
+ * falsified, original-weight unsatisfied soft weight <= target_unsat) held:
+ * out[7] = that step (0 = the start assignment, -1 = never), out[8] = nanoseconds
+ * from entry to the call to that moment (-1 = never). It is only observed: no
+ * decision depends on it, so the search is unchanged.
+ *
  * Built once per cluster tree by scripts/build_native.sh (plain gcc, no Python):
  *   cc -O2 -shared -fPIC -o src/native/build/libls_core.so src/native/ls_core.c
  */
@@ -109,8 +116,9 @@ static void vec_push(Vec *v, int32_t x) {
 /* out: [flips, applied, soft, hv, tabu_skips, tabu_aspirations, tabu_all_blocked] */
 int ls_walksat(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, double tlim,
                double noise, int hard_safe, int noops, int tabu, int64_t tenure, int64_t tenure_rand,
-               int64_t *out)
+               int64_t target_unsat, int64_t *out)
 {
+    const double t_in = now_s();
     const int32_t n = I->n, m = I->m;
     Rng R; rng_seed(&R, seed);
     int32_t *tc = (int32_t *)calloc((size_t)m + 1, sizeof(int32_t));
@@ -141,6 +149,10 @@ int ls_walksat(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, doub
     int64_t best_hv = nh, best_soft = I->total_soft - usw;
     Vec trail = {0, 0, 0};
     int64_t applied = 0, num_flips = 0;
+    int64_t hit = -1, hit_ns = -1;
+#define HIT_CHECK(STEP, NH, USW) do { if (hit < 0 && target_unsat >= 0 && (NH) == 0 && (USW) <= target_unsat) { \
+        hit = (STEP); hit_ns = (int64_t)((now_s() - t_in) * 1e9); } } while (0)
+    HIT_CHECK(0, nh, usw);
     double t0 = now_s();
 
 #define BLOCKED(v) (use_cc ? !conf[v] : (num_flips <= tabu_until[v]))
@@ -261,15 +273,17 @@ int ls_walksat(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, doub
             int64_t soft_now = I->total_soft - usw;
             if (hv < best_hv || soft_now > best_soft) { best_hv = hv; best_soft = soft_now; trail.len = 0; }
         }
+        HIT_CHECK(num_flips, nh, usw);
     }
     int64_t hv = nh, soft = I->total_soft - usw;
     if (best_hv == 0) { soft = best_soft; hv = 0; }
     if (best_hv <= hv) for (int64_t i = 0; i < trail.len; i++) A[trail.a[i]] = !A[trail.a[i]];
     out[0] = num_flips; out[1] = applied; out[2] = soft; out[3] = hv;
-    out[4] = skips; out[5] = asp; out[6] = alltabu;
+    out[4] = skips; out[5] = asp; out[6] = alltabu; out[7] = hit; out[8] = hit_ns;
     free(tc); free(uh); free(us); free(last_flip); free(tabu_until); free(conf); free(cand); free(allowed); free(trail.a);
     return 0;
 #undef BLOCKED
+#undef HIT_CHECK
 #undef GAIN_SOFT
 #undef EFFECT
 }
@@ -315,8 +329,10 @@ static void adjust(Dls *S, int32_t ci, int64_t delta) {
 
 /* out: [steps, applied, best_hv, best_unsat, stuck, smooths, cc_blocked] */
 int ls_dls(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, double tlim,
-           int64_t t, double sp, int64_t zeta, int64_t h_inc, int64_t *dw_io, int cc, int64_t *out)
+           int64_t t, double sp, int64_t zeta, int64_t h_inc, int64_t *dw_io, int cc,
+           int64_t target_unsat, int64_t *out)
 {
+    const double t_in = now_s();
     const int32_t n = I->n, m = I->m;
     Rng R; rng_seed(&R, seed);
     Dls S; S.I = I; S.A = A;
@@ -350,6 +366,10 @@ int ls_dls(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, double t
     int64_t best_hv = S.nfh, best_unsat = S.usw;
     Vec trail = {0, 0, 0};
     int64_t applied = 0, steps = 0;
+    int64_t hit = -1, hit_ns = -1;
+#define HIT_CHECK(STEP, NH, USW) do { if (hit < 0 && target_unsat >= 0 && (NH) == 0 && (USW) <= target_unsat) { \
+        hit = (STEP); hit_ns = (int64_t)((now_s() - t_in) * 1e9); } } while (0)
+    HIT_CHECK(0, S.nfh, S.usw);
     double t0 = now_s();
 #define BETTER(x, b) ((b) < 0 || S.score[x] > S.score[b] || (S.score[x] == S.score[b] && last_flip[x] < last_flip[b]))
 
@@ -410,11 +430,13 @@ int ls_dls(const Inst *I, uint8_t *A, uint64_t seed, int64_t max_flips, double t
         if (cc) cc_touch(I, conf, bv);
         int64_t hv = S.nfh;
         if (hv < best_hv || (hv == best_hv && S.usw < best_unsat)) { best_hv = hv; best_unsat = S.usw; trail.len = 0; }
+        HIT_CHECK(steps, S.nfh, S.usw);
     }
 #undef BETTER
+#undef HIT_CHECK
     for (int64_t i = 0; i < trail.len; i++) A[trail.a[i]] = !A[trail.a[i]];
     out[0] = steps; out[1] = applied; out[2] = best_hv; out[3] = best_unsat;
-    out[4] = stuck; out[5] = smooths; out[6] = ccb;
+    out[4] = stuck; out[5] = smooths; out[6] = ccb; out[7] = hit; out[8] = hit_ns;
     free(S.tc); free(dw_own); free(S.score); free(S.fh); free(S.fs); free(S.fpos); free(S.D); free(S.dpos);
     free(last_flip); free(conf); free(trail.a);
     return 0;

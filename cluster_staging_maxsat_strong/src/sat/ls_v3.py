@@ -182,9 +182,12 @@ def walksat_v3(
     tenure_rand: int = 0,
     stats: Optional[Dict[str, int]] = None,
     trace: Optional[list] = None,
+    target_unsat: Optional[int] = None,
 ) -> Dict[str, Any]:
     """`trace` (tests only): when a list, each applied flip appends
-    (step, v, how) with how in {"free", "asp", "lru"} under a tabu rule, else "free"."""
+    (step, v, how) with how in {"free", "asp", "lru"} under a tabu rule, else "free".
+    `target_unsat`: report the first step at which the true cost reached it
+    (`target_hit_step`, `target_hit_wall`; src/native/ls_core.c, out[7..8])."""
     if tabu not in TABU_MODES:
         raise ValueError(f"tabu must be one of {TABU_MODES}, got {tabu!r}")
     st = _static_for(cnf)
@@ -271,6 +274,10 @@ def walksat_v3(
     start_t = now()
     limit = time_limit_s
     num_flips = 0
+    tgt = -1 if target_unsat is None or target_unsat < 0 else int(target_unsat)
+    hit, hit_wall = -1, None
+    if tgt >= 0 and not unsat_h and unsat_soft_w <= tgt:
+        hit, hit_wall = 0, now()
     NEG_INF = float("-inf")
     POS_INF = float("inf")
 
@@ -468,6 +475,8 @@ def walksat_v3(
                 best_hv = hv
                 best_soft = soft_now
                 trail.clear()
+        if hit < 0 and tgt >= 0 and not unsat_h and unsat_soft_w <= tgt:
+            hit, hit_wall = num_flips, now()
 
     elapsed = max(1e-9, now() - start_t)
 
@@ -497,6 +506,8 @@ def walksat_v3(
         "final_assign": [bool(b) for b in final_1based[1:]],
         "impl": IMPL_WALKSAT,
         "noop_steps": int(num_flips - applied),
+        "target_hit_step": int(hit),
+        "target_hit_wall": hit_wall,
     }
 
 
@@ -523,9 +534,11 @@ def dls_v3(
     cc: bool = False,
     stats: Optional[Dict[str, int]] = None,
     _debug_check: bool = False,
+    target_unsat: Optional[int] = None,
 ) -> Dict[str, Any]:
     """`_debug_check` (tests only): after every flip and weight update, recompute
-    scores, the decreasing set and the falsified lists from scratch and assert."""
+    scores, the decreasing set and the falsified lists from scratch and assert.
+    `target_unsat`: as in walksat_v3."""
     st = _static_for(cnf)
     n, m = st.n, st.m
     lits, is_hard, w, occ = st.lits, st.is_hard, st.w, st.occ
@@ -704,6 +717,10 @@ def dls_v3(
     now = time.time
     start_t = now()
     limit = time_limit_s
+    tgt = -1 if target_unsat is None or target_unsat < 0 else int(target_unsat)
+    hit, hit_wall = -1, None
+    if tgt >= 0 and not fh and unsat_soft_w <= tgt:
+        hit, hit_wall = 0, now()
 
     while applied < max_flips and not (limit is not None and (now() - start_t) >= limit):
         steps += 1
@@ -766,6 +783,8 @@ def dls_v3(
             best_hv = hv
             best_unsat = unsat_soft_w
             trail.clear()
+        if hit < 0 and tgt >= 0 and not fh and unsat_soft_w <= tgt:
+            hit, hit_wall = steps, now()
 
     elapsed = max(1e-9, now() - start_t)
     final = assign[:]
@@ -787,4 +806,6 @@ def dls_v3(
         "final_assign": [bool(b) for b in final[1:]],
         "impl": IMPL_DLS,
         "noop_steps": 0,
+        "target_hit_step": int(hit),
+        "target_hit_wall": hit_wall,
     }

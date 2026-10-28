@@ -107,6 +107,22 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
       stop_reason       "target" | "time_cap" | "max_gens"
       time_to_target_s  seconds from loop start to first reaching the target,
                         or None if it was never reached / never requested.
+      target_hit        (target-stopped runs only, else None; MSE26_RHO_PLAN.md §7)
+                        where the target was first reached, to the flip:
+                        calls_to_target   polish calls up to and including the
+                                          one that reached it (0 = the seeds)
+                        flips_to_target   steps of the earlier calls + the step
+                                          of that call (the unit of total_flips)
+                        target_by         init | pre_polish (crossover, mutation,
+                                          hard moves: the child entered the call
+                                          at the target) | polish | child (no
+                                          counter on this path) | unknown
+                        resolution        flip, or call when the polish path
+                                          has no counter (v1/v2/hard polish) or
+                                          the counter missed (target_by unknown):
+                                          then flips_to_target = all flips so far
+                        time_to_hit_s     seconds from loop start to that flip
+                                          (None at call resolution)
     """
 
     advisor = LLMAdvisor(provider=NoopProvider())  # swap provider later
@@ -184,6 +200,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     total_soft_weight = sum(float(cl.weight) for cl in wcnf.clauses if not cl.is_hard)
     stop_reason = None
     time_to_target_s = None
+    target_hit = None
 
     def _at_target(ind) -> bool:
         """Incumbent has reached (or beaten) target_cost.
@@ -202,6 +219,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         # The JW-seeded population already reached it; do not run a generation.
         stop_reason = "target"
         time_to_target_s = time.time() - start_t
+        target_hit = {"calls_to_target": 0, "flips_to_target": 0, "target_by": "init",
+                      "resolution": "flip", "time_to_hit_s": time_to_target_s}
 
     ls_small = _ls_budget(cfg)
     # `impl` (src/evo/impl_v2.py): v1 = the historical code paths (default; an
@@ -236,6 +255,11 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         v3s.d["polish_core"] = "v2" + ("+hard" if hard_mode else "")
     diag_every = vc["diag_every"] if vc is not None else 0
     flips_t =0
+    # Target hit (MSE26_RHO_PLAN.md §7): the v3 polish cores report the step of
+    # the call at which the true cost first reached the target; only observed.
+    hit_target = (int(target_cost) if target_cost is not None and float(target_cost).is_integer()
+                  and target_cost >= 0 else None)
+    calls = 0
     while stop_reason is None and (time.time() - start_t) < time_cap and gen < max_gens:
         gen += 1
         # Elites
@@ -337,6 +361,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 ls_call = dict(ls_small, time_limit_s=min(ls_small["time_limit_s"], remaining))
             else:
                 ls_call = ls_small
+            calls += 1
+            flips_before = flips_t
             if hard_mode:
                 # H3: feasible moves M inside the call's time slot, then the
                 # hard-safe flip polish on what remains of it.
@@ -349,7 +375,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 ls_rest = dict(ls_call, time_limit_s=max(0.0, slot_end - time.time()))
                 if polish_v3 is not None:
                     child_bits, flips_t1, noops = polish_v3(child_bits, ls_rest,
-                                                            rng.randrange(1 << 30), True)
+                                                            rng.randrange(1 << 30), True, hit_target)
                 else:
                     child_bits, flips_t1, noops = short_polish_hard(child_bits, wcnf, ls_rest,
                                                                     rng_seed=rng.randrange(1 << 30))
@@ -357,7 +383,8 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 hstats.polish_steps += flips_t1
                 hstats.polish_noop_steps += noops
             elif polish_v3 is not None:
-                child_bits, flips_t1, _noops = polish_v3(child_bits, ls_call, rng.randrange(1 << 30), False)
+                child_bits, flips_t1, _noops = polish_v3(child_bits, ls_call, rng.randrange(1 << 30), False,
+                                                         hit_target)
             else:
                 child_bits, flips_t1 = polish(child_bits, wcnf, ls_call, rng_seed=rng.randrange(1<<30))
             flips_t += flips_t1
@@ -390,6 +417,15 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 if _at_target(best):
                     stop_reason = "target"
                     time_to_target_s = time.time() - start_t
+                    step, wall = polish_v3.last_hit if polish_v3 is not None else (None, None)
+                    if step is not None and step >= 0:
+                        target_hit = {"calls_to_target": calls, "flips_to_target": flips_before + step,
+                                      "target_by": "polish" if step > 0 else "pre_polish",
+                                      "resolution": "flip", "time_to_hit_s": wall - start_t}
+                    else:
+                        target_hit = {"calls_to_target": calls, "flips_to_target": flips_t,
+                                      "target_by": "child" if step is None else "unknown",
+                                      "resolution": "call", "time_to_hit_s": None}
                     break
 
         if stop_reason is not None:  # "target", or "time_cap" from deadline clipping
@@ -460,6 +496,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         "final_noise": 0.0,
         "stop_reason": stop_reason,
         "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
+        "target_hit": target_hit,
         "impl": impl,
         "hard": hstats.as_dict() if hard_mode else None,
         "v3": _v3_dict(v3s, wcnf),

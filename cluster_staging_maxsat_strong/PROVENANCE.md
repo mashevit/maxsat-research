@@ -112,3 +112,17 @@ per-instance config files). Record: `docs/current2/AUTO_HPARAMS.md`.
 | `data/` | 8 more MSE 2023/2024 instances (sha256-checked; not in git). |
 
 **Tests:** 369 passed, 20 skipped.
+
+### 2026-10-28: target-hit counter + per-run peak RSS (milestone 3b, `docs/current2/MSE26_RHO_PLAN.md` §7–§8)
+
+| file | change |
+|---|---|
+| `src/native/ls_core.c` | `ls_walksat` / `ls_dls` take `target_unsat` (−1 = off); `out[7]` = first step at which hv = 0 and unsat soft weight ≤ target (0 = start, −1 = never), `out[8]` = ns from call entry. Observed only: same flips. **Rebuild required.** |
+| `src/native/native.py` | passes `target_unsat`; returns `target_hit_step`, `target_hit_wall`. |
+| `src/sat/ls_v3.py` | the Python twins report the same two keys. |
+| `src/evo/v3.py` | `PolishV3(..., target_unsat)`; `last_hit` after every call. |
+| `src/evo/memetic.py` | `target_hit` in the result: calls/flips to target, `target_by`, resolution, time of the hit. |
+| `src/cli/run_memetic_shard.py` | schema 7: `calls_to_target`, `flips_to_target`, `target_by`, `ttt_resolution`, `time_to_target_hit_s`, `peak_rss_mb`. |
+| `tests/test_target_hit.py` | **new.** 18 tests. Schema asserts 6 → 7 in 3 tests. |
+
+**Tests:** 439 passed, 16 skipped.
