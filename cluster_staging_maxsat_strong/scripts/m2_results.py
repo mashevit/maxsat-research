@@ -277,6 +277,16 @@ def ert(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"ert_s": round(spent / len(succ), 3) if succ else "inf", "ert_runs": len(rs), "ert_complete": True}
 
 
+def par2(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """PAR2 over a group's runs (MSE26_RHO_PREREG.md §3, sensitivity): the mean of
+    success_ttt_s for successes and 2 x budget_s for every final failure; "" when
+    the group is incomplete (as for ERT)."""
+    if any(r["cls"] not in ("success",) + FINAL_FAILURES for r in rs):
+        return {"par2_s": ""}
+    vals = [float(r["success_ttt_s"]) if r["cls"] == "success" else 2.0 * float(r["budget_s"]) for r in rs]
+    return {"par2_s": round(sum(vals) / len(vals), 3)}
+
+
 def summarise(rows: List[Dict[str, Any]], keys: List[str]) -> List[Dict[str, Any]]:
     g = defaultdict(list)
     for r in rows:
@@ -292,6 +302,7 @@ def summarise(rows: List[Dict[str, Any]], keys: List[str]) -> List[Dict[str, Any
             success_rate=round(c["success"] / len(rs), 3),
             median_ttt_s=med_ttt([r["success_ttt_s"] for r in rs]),
             **ert(rs),
+            **par2(rs),
             **{f"n_{x}": c[x] for x in CLASSES},
             median_generations=med("ea_generations"), median_children=med("children"),
             median_mean_flips_per_call=med("mean_flips_per_call"),

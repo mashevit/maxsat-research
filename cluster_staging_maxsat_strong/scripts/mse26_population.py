@@ -18,6 +18,9 @@ scripts/mse26_population.tsv, one row per instance:
   x_role        finite (proved: x = CPU time) | censored (timeout: x = inf, tied top
                 rank) | excluded (any other EvalMaxSAT outcome, or no target)
   primary       1 if in the primary population (x finite or censored, target exists)
+  par2          1 if in the PAR2 sensitivity population: every proven-optimum instance,
+                EvalMaxSAT memouts and crashes included (user 2026-10-29)
+  x_par2_s      EvalMaxSAT's PAR2 (one run): its CPU time if proved, else 2 x 3600 = 7200
   window        1 if x finite in (30, 3600] s CPU (the window sensitivity analysis;
                 y finiteness is applied at analysis time)
   in_3c         1 if run in batch 3c (the 952 with a published optimum)
@@ -39,7 +42,7 @@ OUT = os.path.join(ROOT, "scripts", "mse26_population.tsv")
 RAW = {"mse26-exact-unweighted": "mse26_exact_unweighted_rawdata.csv",
        "mse26-exact-weighted": "mse26_exact_weighted_rawdata.csv"}
 COLUMNS = ["set", "hash", "family", "optimal_cost", "best_known_cost", "target_kind", "provers", "target", "ems_status",
-           "ems_cpu_s", "ems_wall_s", "x_role", "primary", "window", "in_3c"]
+           "ems_cpu_s", "ems_wall_s", "x_role", "primary", "par2", "x_par2_s", "window", "in_3c"]
 
 
 def known(v: str) -> bool:
@@ -96,6 +99,8 @@ def main() -> int:
         rows.append({"set": set_, "hash": h, "family": m["family"], "optimal_cost": opt, "best_known_cost": bk,
                      "target_kind": kind, "provers": provers[h], "target": target, "ems_status": st, "ems_cpu_s": r["cpu.time"],
                      "ems_wall_s": r["wall.time"], "x_role": role, "primary": int(role != "excluded"),
+                     "par2": int(kind == "proven"),
+                     "x_par2_s": (r["cpu.time"] if st == "proved" else "7200") if kind == "proven" else "",
                      "window": int(role == "finite" and 30 < cpu <= 3600),
                      "in_3c": int(content[h]["unpacked"] == "1")})
     with open(OUT, "w", newline="") as f:
@@ -111,6 +116,8 @@ def main() -> int:
           "| by x:", c("x_role", lambda r: r["primary"]), "| by set:", c("set", lambda r: r["primary"]))
     print("primary but not run in 3c:", sum(r["primary"] and not r["in_3c"] for r in rows))
     print("window (x finite in (30, 3600]):", sum(r["window"] for r in rows))
+    print("PAR2 population:", sum(r["par2"] for r in rows), "| x = 7200 by EvalMaxSAT outcome:",
+          c("ems_status", lambda r: r["par2"] and r["x_par2_s"] == "7200"))
     print("excluded with a target, by EvalMaxSAT outcome:",
           c("ems_status", lambda r: not r["primary"] and r["target_kind"] == "proven"))
     print("primary EvalMaxSAT-proved / proved only by other solvers (x censored):",

@@ -100,3 +100,13 @@ def test_ert():
     e = m2_results.ert([row("success", 5.0), row("infra_missing"), row("success", 7.0)])
     assert e["ert_s"] == "" and e["ert_complete"] is False
     assert m2_results.ert([row("success", 5.0), row("cost_mismatch")])["ert_complete"] is False
+
+
+def test_par2():
+    """PAR2 = mean of TTT for successes and 2 x budget per final failure; blank if incomplete."""
+    def row(cls, ttt=None):
+        return {"cls": cls, "success_ttt_s": ttt, "budget_s": "1800"}
+    assert m2_results.par2([row("success", 1.0), row("success", 1.0), row("budget_exhausted")])["par2_s"] == round(3602 / 3, 3)
+    assert m2_results.par2([row("success", 1000.0)] * 3)["par2_s"] == 1000.0
+    assert m2_results.par2([row("budget_exhausted"), row("watchdog"), row("target_after_budget")])["par2_s"] == 3600.0
+    assert m2_results.par2([row("success", 5.0), row("infra_missing")])["par2_s"] == ""

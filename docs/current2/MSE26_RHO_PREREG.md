@@ -2,7 +2,7 @@
 
 > "go, write the rho pre-registration" (user, 2026-10-29)
 
-**Status: DRAFT r3, 2026-10-29.** It becomes binding when the user approves it
+**Status: DRAFT r4, 2026-10-29.** It becomes binding when the user approves it
 and it is committed; the commit hash is then entered here.
 - **r1** (`dda60a8`): primary = the EvalMaxSAT (30, 3600] s window, successes
   only.
@@ -12,6 +12,11 @@ and it is committed; the commit hash is then entered here.
 - **r3** (user, 2026-10-29): **targets only optima proven by an exact solver
   in the 2026 runs** (any solver, not only EvalMaxSAT), so no best-known
   targets and no batch 3d; ERT spelled out on both axes; no 300 s budget.
+- **r4** (user, 2026-10-29: "go with option 1, if there are memouts and
+  crashes on EVALMAXSAT where there are instances with optimum do par2
+  there"): ERT stays primary; **PAR2 is added as a sensitivity analysis**,
+  in which EvalMaxSAT's memouts and crashes on proven-optimum instances enter
+  with the PAR2 penalty instead of being excluded.
 
 **Blind:** every revision was written while batch 3c
 ([`MSE26_3C_RUN.md`](MSE26_3C_RUN.md)) ran on the cluster, before any 3c
@@ -66,7 +71,8 @@ the table by `target_kind`):
 | wrong answer (OPTIMUM FOUND unverified or not the optimum) | non-timeout failure: excluded and counted | 0 |
 
 **Primary population: 922 instances** (464 unweighted, 458 weighted): 792
-with x finite, 130 with x censored. **All 922 are in batch 3c**; no further
+with x finite, 130 with x censored. The 25 memouts and crashes stay excluded
+here and enter only the PAR2 sensitivity analysis (§4.7, 947 instances). **All 922 are in batch 3c**; no further
 memetic batch is needed.
 
 **Eligibility depends on x and the published data only**, never on a memetic
@@ -97,6 +103,18 @@ target and a failed run its full spend; **no success → ERT = ∞**.
   - Computed by `scripts/m2_results.py` (`ert_s` in `by_instance_config.csv`;
     blank while any run of the instance is missing or invalid; tests in
     `tests/test_m2_results.py`).
+- **PAR2 (sensitivity analysis §4.7 only):** the SAT-competition measure, the
+  mean over runs of the time to the target with every unsolved run counted
+  as 2 × its limit.
+  - x_PAR2 = EvalMaxSAT's CPU time if proved, else 2 × 3,600 = **7,200 s**
+    (timeout, memout or crash);
+  - y_PAR2 = mean over seeds 1–3 of `cpu_to_target_s` for successes and
+    2 × 1,800 = **3,600 s** for failures (`par2_s` in
+    `by_instance_config.csv`, `scripts/m2_results.py`);
+  - with ranks, x_PAR2 orders the instances as x does (every 7,200 ties above
+    every proof); y_PAR2 can reorder partly solved instances: seeds 1 s,
+    1 s, failed give ERT 901 but PAR2 1,201, above 3 × 1,000 s (ERT = PAR2 =
+    1,000).
 - **Budget asymmetry, stated with every result:** 1,800 s for the memetic,
   3,600 s for EvalMaxSAT, on different hardware. Ranks are unaffected by a
   uniform speed factor; the censoring points differ.
@@ -119,6 +137,10 @@ excluded (by reason).
 5. **Family-stratified bootstrap:** resampling within families.
 6. **Partial Spearman ρ** controlling for log n_vars and log n_clauses of the
    original instance (size as a common cause), midranks.
+7. **PAR2 instead of ERT on both axes:** ρ(x_PAR2, y_PAR2) with midranks and
+   BCa on **all 947 proven-optimum instances**, EvalMaxSAT's 17 memouts and 8
+   crashes included at x_PAR2 = 7,200 s (user 2026-10-29); reported with the
+   number of instances at the PAR2 penalty on x, on y and on both.
 
 **ρ against every published solver (replaces the VBS analysis, user
 2026-10-29):** for each solver of the MSE 2026 exact tracks (22 unweighted,
@@ -180,3 +202,5 @@ Its own pre-registration, if run, refers to this document.
   with ERT (§4).
 - **Targets (r3, user):** proven optima only, proved by any 2026 exact
   solver; no best-known targets; no 300 s budget.
+- **PAR2 (r4, user):** sensitivity analysis §4.7; ERT stays primary;
+  EvalMaxSAT memouts and crashes enter PAR2 at 7,200 s.
