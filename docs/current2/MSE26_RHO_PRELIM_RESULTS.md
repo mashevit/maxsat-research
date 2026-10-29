@@ -6,6 +6,9 @@ as it came back, *before* the fixes and reruns listed in `MSE26_3C_RUN.md` §7
 kills). The final readout replaces this document once those are done; this
 one stays as the record of the state on 2026-10-29.
 
+**§10 (added later on 2026-10-29):** the complementarity conclusion with
+evidence (not pre-registered; N-2026-10-29-b).
+
 **What is computed.** The pre-registered analysis (`MSE26_RHO_PREREG.md`,
 BINDING r4, text of `f8a3354`), unchanged, run by `scripts/mse26_rho.py`
 (commit `0e96589`) through the wrapper `scripts/mse26_rho_errors.py`
@@ -291,3 +294,140 @@ $P scripts/mse26_rho_errors.py --errors exclude --outdir results/mse26_memetic/t
 2. Heap crash (group A): reproduce on the two instances, fix, rerun 6 tasks.
 3. Group D: rerun 5 tasks with a longer `--time` (`TIME=` in `submit_mse26.sh`).
 4. Optional: the deadline overrun on big instances (groups C, D).
+
+## 10. Complementarity: research conclusion and evidence (added 2026-10-29, later)
+
+**Not pre-registered.** The pre-registration fixes ρ and the §5 counts. The
+tests and intervals below were added afterwards, at the user's request.
+Numbers come from `scripts/mse26_complementarity.py` (strong tree), which
+reads the two `instances.csv` and the published 2026 runs. Population = the
+§5 primary population: 922 instances under `fail` (errored runs count as
+memetic failures) and 878 under `exclude` (instances with errored runs
+removed).
+
+### 10.1 Conclusion
+
+1. **The memetic reaches the optimum but does not prove it. Even so, its
+   hardness ordering agrees with EvalMaxSAT's proof times.** The memetic is
+   given the proven optimum as its target, stops when it reaches that cost,
+   and certifies nothing. EvalMaxSAT has to find the optimum *and* prove it.
+   The two solvers do different tasks, yet instances that take EvalMaxSAT
+   long to prove also take the memetic long to reach:
+   - primary ρ = **+0.639** [+0.590, +0.682] (`fail`) and **+0.635**
+     [+0.585, +0.679] (`exclude`);
+   - every one of the 7 sensitivities is positive (§3), and so are both
+     tracks (§4);
+   - **with size held fixed**, the partial ρ on log variables and log clauses
+     is still +0.57 (§3, sensitivity 6), so this is not just "big instances
+     are hard for both".
+
+   The limit (§3): among instances EvalMaxSAT proves in (30, 3600] s *and* the
+   memetic reaches, ρ is only ≈ +0.2. The agreement is strong at the coarse
+   level (easy vs hard vs unsolved) and weak at the fine level.
+2. **The memetic's reach falls steadily as EvalMaxSAT time grows** (10.3). On
+   instances EvalMaxSAT proves in ≤ 1 s, the memetic reaches 97 %; on those
+   that take 300–3,600 s, only 35 % (`fail`) or 41 % (`exclude`). The trend
+   test gives p ≈ 10⁻⁴⁰ / 10⁻³². This is the same agreement as in point 1,
+   seen as solve rates rather than ranks.
+3. **The two solvers are partly complementary, and lopsided toward
+   EvalMaxSAT.**
+   - The memetic reaches the optimum on **43 instances that EvalMaxSAT
+     cannot prove in 3,600 s**: 4.7 % of the population, a third of
+     EvalMaxSAT's timeouts.
+   - EvalMaxSAT proves about **six times more** instances that the memetic
+     never reaches (263 / 225).
+   - The 43 do not depend on the error treatment.
+   - Against all the published 2026 solvers, the memetic adds speed on some
+     instances, not instances that no solver handled (10.4, point 6).
+
+### 10.2 How "EvalMaxSAT 85.9 %" and "EvalMaxSAT or memetic 90.6 %" fit together
+
+Each instance lands in exactly one of four cells (`fail`, N = 922):
+
+| | memetic reached | memetic did not reach | row total |
+|---|---:|---:|---:|
+| **EvalMaxSAT proved** | 529 (both) | 263 (only EvalMaxSAT) | **792** |
+| **EvalMaxSAT did not prove** | 43 (only memetic) | 87 (neither) | 130 |
+| column total | 572 | 350 | 922 |
+
+- **"Solved by EvalMaxSAT" = 85.9 %** is the whole top row: 529 + 263 = 792,
+  and 792 / 922 = 85.9 %. It counts every instance EvalMaxSAT proved,
+  *whether or not the memetic also reached it*. It does **not** mean "solved
+  by EvalMaxSAT and not by the memetic". That narrower count is the single
+  cell "only EvalMaxSAT": 263 / 922 = 28.5 %.
+- **"Solved by EvalMaxSAT or the memetic" = 90.6 %** is everything except
+  "neither": 529 + 263 + 43 = 835, and 835 / 922 = 90.6 %. Equivalently, the
+  top row plus the one cell the memetic adds: 792 + 43.
+- These two percentages are **nested, not disjoint**. The 90.6 % *contains*
+  the 85.9 %, so they never have to add up to 100 %. The gap,
+  90.6 − 85.9 = 4.7 points, is exactly the 43 instances only the memetic
+  reached.
+- Without the memetic, EvalMaxSAT leaves 130 instances unsolved (14.1 %).
+  With it, 87 remain (9.4 %).
+- Under `exclude` (N = 878):
+  - top row 527 + 225 = 752 (85.6 %);
+  - union 752 + 43 = 795 (90.5 %);
+  - only EvalMaxSAT 225 (25.6 %); neither 83.
+
+### 10.3 Evidence: reach by EvalMaxSAT time
+
+The share of instances the memetic reached (≥ 1 of 3 seeds within 1,800 s),
+among those EvalMaxSAT proved, by EvalMaxSAT CPU band:
+
+| EvalMaxSAT CPU | `fail` | `exclude` |
+|---|---|---|
+| ≤ 1 s | 166 / 171 (97.1 %) | 166 / 171 (97.1 %) |
+| (1, 30] s | 180 / 230 (78.3 %) | 180 / 229 (78.6 %) |
+| (30, 300] s | 113 / 192 (58.9 %) | 113 / 185 (61.1 %) |
+| (300, 3600] s | 70 / 199 (35.2 %) | 68 / 167 (40.7 %) |
+| Cochran–Armitage trend | z = −13.4, p = 8 × 10⁻⁴¹ | z = −12.0, p = 6 × 10⁻³³ |
+
+The share falls in every band step under both treatments. Dropping the
+errored instances (`exclude`) only raises the top band (35 % → 41 %): the
+errors sit mostly among the EvalMaxSAT-hard instances.
+
+### 10.4 Evidence: complementarity
+
+1. **The memetic-only cell is not noise.**
+   - 43 / 922 = 4.7 % [3.4 %, 6.2 %] (`fail`) and 43 / 878 = 4.9 %
+     [3.6 %, 6.5 %] (`exclude`), exact Clopper–Pearson 95 % intervals, well
+     above 0.
+   - As a share of EvalMaxSAT's timeouts: 43 / 130 = 33 % [25 %, 42 %] and
+     43 / 126 = 34 % [26 %, 43 %].
+2. **The memetic-only cell holds across seeds.** 22 of the 43 were reached
+   by all 3 seeds, 11 by 2 seeds, 10 by 1 seed.
+3. **The memetic-only cell is not one family.**
+   - 17 families; 27 unweighted, 16 weighted.
+   - Largest: minimizing-pentagons 7, single-machine-scheduling 7,
+     judgment-aggregation 5, argumentation-framework-synthesis 4 (full list
+     §5).
+4. **The two one-sided cells are very unequal.**
+   - Only EvalMaxSAT: 263 (`fail`) / 225 (`exclude`); only memetic: 43.
+   - Exact McNemar test on the two cells: p = 1 × 10⁻³⁹ / 6 × 10⁻³¹.
+   - The memetic misses 33.2 % [29.9 %, 36.6 %] / 29.9 % [26.7 %, 33.3 %]
+     of what EvalMaxSAT proves.
+5. **Runtime complementarity is real but modest.**
+   - On the 529 / 527 instances both solve, the memetic's ERT is below
+     EvalMaxSAT's CPU time on 124 (23 %), and at least 10× below on 39.
+     EvalMaxSAT is at least 10× faster on 173.
+   - Taking the faster of the two on each instance cuts mean PAR2 from
+     1,296 s to 982 s (`fail`) and from 1,268 s to 937 s (`exclude`), about
+     −25 %. PAR2 counts a failure as 2 × 3,600 s; the memetic side uses its
+     ERT.
+6. **Against all published 2026 solvers, the complementarity is weaker.**
+   - Every one of the 43 was proved by at least one published solver: 2 by
+     a single solver, most by 3–16.
+   - The memetic's ERT is below the fastest published proof on 19 of the
+     43.
+
+**Caveats.**
+- Reaching is not proving (10.1, point 1).
+- The budgets are not symmetric. EvalMaxSAT has one run with a 3,600 s
+  limit. The memetic has 3 seeds × 1,800 s, scored by ERT. Points 5 and 6
+  inherit this.
+- These are preliminary 3c numbers. The remaining fixes (§9: heap crash,
+  Slurm wall kills) touch at most 6 instances, so neither conclusion can
+  flip.
+
+**Reproduce:** after the two `mse26_rho_errors.py` runs of §8:
+`$P scripts/mse26_complementarity.py` (a few seconds).
