@@ -81,7 +81,7 @@ Within a part, instances are ordered by set and hash, seeds 1–3 consecutive;
 
 ## 5. Upload (flat) and commands
 
-`tmp/upload_mse26/` (31 files: 29 tree files as `m26__*`,
+`tmp/upload_mse26/` (32 files: 29 tree files as `m26__*`,
 `UPLOAD_MAP_mse26.tsv`, `arrange_mse26.sh`, plus `upload.sha256`), from
 `make_flat_upload.py` with the verified lists oldest first (HMSE 0877898, PP10
 2763872, census map, kbig map; later lists override earlier ones). Code: only
@@ -90,14 +90,14 @@ Within a part, instances are ordered by set and hash, seeds 1–3 consecutive;
 
 ```bash
 # login node, after uploading tmp/upload_mse26/* into ~/upload_mse26/
-cd ~/upload_mse26 && sha256sum -c upload.sha256      # 30 x OK
+cd ~/upload_mse26 && sha256sum -c upload.sha256      # 31 x OK
 squeue -u $USER                                      # must be empty
 bash arrange_mse26.sh                                # dry run: new 25, same 1, replace 3 (counts may differ slightly)
 bash arrange_mse26.sh --apply                        # MSE26_UPLOAD_OK, 2856 tasks, schema 8 runner, link
 cd ~ && rm -rf ~/upload_mse26
 cd ~/cluster_staging_maxsat_strong/scripts && mkdir -p logs
 for p in 8a 8b 8c 16 32 64; do DRY_RUN=1 PART=$p bash submit_mse26.sh | grep -e instances -e command; done
-for p in 8a 8b 8c 16 32 64; do MAXSAT_GIT_SHA=<3c commit> PART=$p bash submit_mse26.sh; done
+for p in 8a 8b 8c 16 32 64; do MAXSAT_GIT_SHA=14b9276 THROTTLE=1000 PART=$p bash submit_mse26.sh; done   # user 2026-10-29: throttle 1000 per part
 squeue -u $USER | wc -l
 ```
 
@@ -111,3 +111,28 @@ the partition offers it.
 **Bring back** to `cluster_staging_maxsat_strong/results/mse26_memetic/`:
 `tasks/` (2,856 `.jsonl`), `provenance/`, and `scripts/logs/mse26-memetic-*`
 (at least those of failed tasks). **Not read before milestone 4 is written.**
+
+## 6. Submission log
+
+**2026-10-29 12:24 UTC** (user, `MAXSAT_GIT_SHA=14b9276 THROTTLE=1000`):
+
+| part | job | tasks | state |
+|---|---|---:|---|
+| 8a | 23674900 | 870 | submitted |
+| 8b | 23674901 | 870 | submitted |
+| **8c** | — | 870 | **refused:** `QOSMaxSubmitJobPerUserLimit` ("Job violates accounting/QOS policy (job submit limit, user's size and/or time limits)") |
+| 16 | 23674902 | 60 | submitted |
+| 32 | 23674903 | 63 | submitted |
+| 64 | 23674904 | 123 | submitted |
+
+1,986 tasks in the queue. 8c came after 1,740 queued tasks and was refused,
+while the three small parts after it were accepted, so the per-user submit cap
+counts array tasks and lies between 1,986 and 2,609 (probably 2,000)
+[inference]. `provenance/submit_8c_20261029T122454Z.txt` has no `sbatch` line:
+that submission did not happen.
+
+**Plan (user):** when the queue empties, copy back, classify per part with
+`m2_results.py pending` (resubmission only; results are not read before
+milestone 4), then submit part 8c whole and the failed tasks
+(`RESUME=1 IDS=…`, `MEM=` one bin up for memory deaths), keeping the queue
+under ~2,000 tasks.
