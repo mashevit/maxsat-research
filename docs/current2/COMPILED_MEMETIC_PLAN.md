@@ -592,3 +592,40 @@ solve in 3,600 s).
 commit"):** **the kernel gate runs on every instance in 3c, with no size
 cut-off** (`auto.yaml` as it is: `preprocess: kernel`, screen 0.20, gain
 0.20). The CPU fix is in `run_memetic_shard.py` (MSE26_RHO_PLAN.md §9).
+
+## 15. Memory bins for 3c (computed 2026-10-29; user: "go, keep cpu, do the memory bins") [verified: script; estimates = model]
+
+`scripts/mse26_membins.py` (workstation) → `scripts/mse26_membins.tsv`, one
+row per instance (952): published EvalMaxSAT peak, our memetic estimate and
+its basis, the need, the bin and what set it.
+
+**Rule:** bin = the smallest of 8 / 16 / 32 / 64 GB whose 75 % covers
+max(EvalMaxSAT's published `mem.usage`, memetic estimate); a published
+EvalMaxSAT memout → 64 GB (EVALMAXSAT_2026_INSTALL.md §4). Memetic estimate:
+- screen not passed (824; the run is on the original file): the C4 model,
+  soft 9 × MiB + 100, hard 14 × MiB + 120 (§8 C4);
+- kernel / kernel_empty (128; the gate runs on all, user 2026-10-29): the
+  larger of the measured gate peak (census `rss_end_mb`, measured with the
+  pre-lean kernel, so an upper bound; the 2 large ones from §14) and the parse
+  footprint + the C4 model on the kernel's share of the clauses.
+
+| bin | instances | set by EvalMaxSAT | set by the memetic estimate | EvalMaxSAT memout |
+|---|---:|---:|---:|---:|
+| 8 GB | 870 | 399 | 471 | |
+| 16 GB | 20 | 17 | 3 | |
+| 32 GB | 21 | 21 | | |
+| 64 GB | 41 | 12 | 11 | 18 |
+| **all** | **952** | 449 | 485 | 18 |
+
+× 3 seeds = 2,856 tasks: 2,610 / 60 / 63 / 123 per bin. `cd1a6257` goes to
+32 GB (EvalMaxSAT 21.6 GiB; ours 11.2 GiB measured); `d72b8cab` to 16 GB
+(ours 8.7 GiB measured > EvalMaxSAT 8.0 GiB).
+
+**The tight case [inference]:** 11 bnn-verification instances of 3,439 MiB
+(hard, screen not passed) get 64 GB from the model alone: 14 × 3,439 + 120 ≈
+47.1 GiB, 98 % of the 48 GiB that 75 % of 64 GB allows. The 14× factor was
+measured on files up to 52 MiB (§8 C4), so at 3.4 GiB it is an
+extrapolation. EvalMaxSAT used ~29 GiB on them (8 of 11 optimum in 204–266 s
+CPU). If any of these 33 tasks dies for memory, the rule's "one bin up" has
+no bin above 64 GB: a rerun would need a larger `--mem`, if the partition
+offers it.
