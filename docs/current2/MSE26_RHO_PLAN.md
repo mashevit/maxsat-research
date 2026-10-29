@@ -431,3 +431,32 @@ no longer cost search time. Reason: on `cd1a6257` the first read of the
 which a wall-clock deduction would have taken from the search although ρ's
 CPU clock does not count it. The search itself still stops on its own wall
 cap; it is compute-bound, so its wall ≈ CPU.
+
+## 10. The analysis code, written blind (2026-10-29) [verified: tests on synthetic data]
+
+> "ok" (user, 2026-10-29, to writing the ρ analysis before any 3c result)
+
+`cluster_staging_maxsat_strong/scripts/mse26_rho.py` implements every analysis
+of the binding pre-registration ([`MSE26_RHO_PREREG.md`](MSE26_RHO_PREREG.md)
+r4, text of `f8a3354`), with nothing added: the primary ρ (ERT, midranks, BCa
+B = 10,000, seed 20261029, censoring counts, §7 interpretation, the D1
+trigger), sensitivity analyses 1–7, ρ against every published solver (per
+track and pooled), per-track and per-family breakdowns, and the
+complementarity 2 × 2, map and floor share. It reads the population table,
+the manifests and shards (classes from `m2_results.classify`), the published
+raw data and the census; it checks that the population table's primary flag
+agrees with EvalMaxSAT's published outcome, and lists instances without 3
+complete runs. Outputs: `results/mse26_rho/{summary.json, report.md,
+instances.csv}`.
+
+**Tests** (`tests/test_mse26_rho.py`, 10, synthetic data only): Spearman with
+midranks = Pearson on scipy's average ranks (ties and ∞); memetic ERT and PAR2
+= `m2_results.ert` / `par2`, the pre-registration's example (1,100 s), the
+900 s budget and flip-level variants; the published-run rules; BCa within
+0.03 of `scipy.stats.bootstrap(method="BCa")`; the stratified bootstrap;
+partial Spearman removing a common cause; the §7 rules; an end-to-end run on
+a synthetic 60-instance population (populations, censoring counts, an
+incomplete instance, the 2 × 2 table, PAR2 with memouts, per-solver pooled,
+ρ equal to scipy's on the same x and y); the population/EvalMaxSAT mismatch
+is fatal. Suite 642 passed / 16 skipped. Timing at N = 922: 2.6 s per CI
+(partial ρ 6.6 s), a few minutes for the whole readout.
