@@ -142,3 +142,13 @@ under ~2,000 tasks.
 with an `sbatch` line). Some of its tasks pend on the per-user memory cap
 (QOS max memory) while the 64 GB tasks run; they start as those finish.
 All 2,856 tasks are now submitted.
+
+**2026-10-29, later still (user):** some tasks show errors on the cluster
+(roughly 5–15 so far; the run is not finished). Plan, unchanged in kind: once
+the queue is empty and results + logs are back, classify every failed task by
+its cause (`m2_results.py pending`, `sacct` state, the task's log) and rerun
+the fixable ones: memory deaths one bin up with `MEM=` (8 → 16 → 32 → 64 GB;
+above 64 GB only if the partition allows it), other fixable causes (timeout of
+the job wall, node failure, a code or path error) after the fix, with
+`RESUME=1 IDS=…` per part. Classifying for resubmission is not reading the
+results.
