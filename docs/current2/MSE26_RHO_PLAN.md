@@ -26,7 +26,7 @@ N-2026-10-28-b. Earlier context: `MSE_PUBLISHED_EXACT_RESULTS.md` §5–§7,
 | 2. unpack + hash job (MSE 2026 only) | **done** 2026-10-28: array job 23643046, 50/50 `TASK_OK` (11:52–12:20), `ALL_DONE`; `results/mse26_unpack/mse26_content.tsv` (1,216 rows; 952 unpacked: 479 unweighted, 473 weighted; no duplicate content sha256; flags match `mse26_work.tsv`; no old-format `p` lines) + logs |
 | 3a. EvalMaxSAT manifest (952 × 1 h) | **dropped** 2026-10-28 (user): ρ x from the published results (§7) |
 | 3b. flip counter + per-run RAM in the memetic (§4, §5, §8) | **built + tested locally** 2026-10-28; goes to the cluster with the 3c upload (native rebuild) |
-| 3c. memetic manifest (952 × 3 seeds, **1800 s**, §7; time = whole-job process CPU, §9) | after the compiled memetic (`COMPILED_MEMETIC_PLAN.md`, C1–C3 pushed 9ce84ca) and the census job (§9 there, prepared 2026-10-28) |
+| 3c. memetic manifest (952 × 3 seeds, **1800 s**, §7; time = whole-job process CPU, §9) | **prepared** 2026-10-29: `MSE26_3C_RUN.md` (2,856 tasks, 6 parts by memory bin, upload `tmp/upload_mse26/`) |
 | 4. ρ pre-registration | before any memetic result |
 
 ## 2. Milestone 2: the unpack + hash job

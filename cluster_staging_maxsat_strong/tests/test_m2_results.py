@@ -49,3 +49,41 @@ def test_aggregate_without_analysis_group(tmp_path, capsys):
     grp = list(csv.DictReader(open(agg / "by_group_config.csv")))
     assert [(g["analysis_group"], g["successes"]) for g in grp] == [("fam", "1")]
     assert (agg / "paired_by_instance_seed.csv").exists()
+
+
+def _process_task(**kw):
+    t = dict(task_id="1", job_id="m26_x_s1", config_id="auto", pop_size="40", ls_time_limit_s="3.5",
+             deadline_mode="clip", solver_seed="1", budget_s="1800", grace_s="300", budget_clock="process",
+             pop_idx="m001", instance="data/a.wcnf", instance_sha256="ab", family="fam", oracle_cost="3")
+    t.update(kw)
+    return t
+
+
+def _process_rec(**kw):
+    r = {"job_id": "m26_x_s1", "config_id": "auto", "seed": 1, "instance_sha256": "ab", "budget_s": 1800.0,
+         "grace_s": 300.0, "budget_clock": "process", "stop_at_oracle": True, "oracle_cost": 3, "status": "ok",
+         "stop_reason": "target", "time_to_target_s": 1700.0, "cpu_to_target_s": 1750.0,
+         "config": {"ea": {"pop_size": 40, "deadline_mode": "clip"}, "ls": {"time_limit_s": 3.5, "ls_polish_flips": 12500}}}
+    r.update(kw)
+    return r
+
+
+def test_process_clock_success_is_on_cpu_to_target():
+    """Batch 3c sidecars (grace_s, budget_clock process): success iff cpu_to_target_s <= budget
+    (MSE26_RHO_PLAN.md §9), whatever time_to_target_s says."""
+    t = _process_task()
+    assert m2_results.classify(t, _process_rec())[0] == "success"
+    cls, note = m2_results.classify(t, _process_rec(time_to_target_s=1700.0, cpu_to_target_s=1801.0))
+    assert cls == "target_after_budget" and "cpu_to_target_s" in note
+    # a sidecar without the columns keeps the historical rule (time_to_target_s, grace 60, clock run)
+    old = {k: v for k, v in _process_task(budget_s="900").items() if k not in ("grace_s", "budget_clock")}
+    rec = _process_rec(budget_s=900.0, grace_s=60.0, budget_clock=None, time_to_target_s=800.0, cpu_to_target_s=None)
+    assert m2_results.classify(old, rec)[0] == "success"
+
+
+def test_process_clock_grace_and_clock_are_checked():
+    t = _process_task()
+    cls, note = m2_results.classify(t, _process_rec(grace_s=60.0))
+    assert cls == "invalid_submission" and note.startswith("grace_s")
+    cls, note = m2_results.classify(t, _process_rec(budget_clock="run"))
+    assert cls == "invalid_submission" and note.startswith("budget_clock")

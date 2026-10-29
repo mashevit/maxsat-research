@@ -8,7 +8,8 @@ to OUTDIR/<job_id>.jsonl. See docs/M2_DEEPPOLISH_RUN_PREPARATION.md (repo).
 Every task gets exactly one class:
 
     success              status ok, stop_reason target, time_to_target_s <= budget_s
-                         (900 s in every M2 manifest)
+                         (900 s in every M2 manifest); on a sidecar with
+                         budget_clock process (batch 3c): cpu_to_target_s <= budget_s
     target_after_budget  status ok, stop_reason target, time_to_target_s > 900
                          (hit during the generation that straddles the budget;
                          NOT a success)
@@ -112,7 +113,10 @@ def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
         ("seed", r.get("seed"), int(t["solver_seed"])),
         ("instance_sha256", r.get("instance_sha256"), t["instance_sha256"]),
         ("budget_s", r.get("budget_s"), float(t["budget_s"])),
-        ("grace_s", r.get("grace_s"), GRACE_S),
+        # Sidecars with a grace_s column (batch 3c) set it per task; earlier ones are 60 s.
+        ("grace_s", r.get("grace_s"), float(t.get("grace_s") or GRACE_S)),
+        # The budget clock (shard schema 8, MSE26_RHO_PLAN.md §9); absent on both sides = run.
+        ("budget_clock", r.get("budget_clock") or "run", t.get("budget_clock") or "run"),
         ("stop_at_oracle", r.get("stop_at_oracle"), True),
         ("oracle_cost", r.get("oracle_cost"), int(t["oracle_cost"])),
         ("ea.pop_size", (cfg.get("ea") or {}).get("pop_size"), int(t["pop_size"])),
@@ -161,10 +165,13 @@ def classify(t: Dict[str, str], r: Optional[dict]) -> (str, str):
         return "infra_error", f"status={status}: {r.get('error')}"
     sr = r.get("stop_reason")
     if sr == "target":
-        ttt = r.get("time_to_target_s")
+        # On the process clock (batch 3c) success is measured on ρ's clock: the
+        # process CPU from its start to the target (MSE26_RHO_PLAN.md §9).
+        key = "cpu_to_target_s" if (t.get("budget_clock") or "run") == "process" else "time_to_target_s"
+        ttt = r.get(key)
         if ttt is not None and float(ttt) <= float(t["budget_s"]):
             return "success", ""
-        return "target_after_budget", f"time_to_target_s={ttt}"
+        return "target_after_budget", f"{key}={ttt}"
     if sr == "time_cap":
         return "budget_exhausted", ""
     if sr == "max_gens":
@@ -205,7 +212,13 @@ def evaluate(manifest: str, outdir: str) -> List[Dict[str, Any]]:
             wall_time_s=wall, cpu_time_s=cpu,
             cpu_wall_ratio=(round(cpu / wall, 3) if wall and cpu is not None else None),
             time_to_target_s=r.get("time_to_target_s"),
-            success_ttt_s=(r.get("time_to_target_s") if cls == "success" else None),
+            success_ttt_s=(r.get("cpu_to_target_s" if (t.get("budget_clock") or "run") == "process"
+                                 else "time_to_target_s") if cls == "success" else None),
+            # Whole-process times (shard schema 8; null on earlier shards).
+            cpu_to_target_s=r.get("cpu_to_target_s"), cpu_to_target_hit_s=r.get("cpu_to_target_hit_s"),
+            cpu_total_s=r.get("cpu_total_s"), wall_total_s=r.get("wall_total_s"),
+            hash_s=r.get("hash_s"), parse_s=r.get("parse_s"), solver_start_s=r.get("solver_start_s"),
+            peak_rss_mb=r.get("peak_rss_mb"),
             overshoot_s=(round(wall - float(t["budget_s"]), 3) if cls == "budget_exhausted" and wall else None),
             best_cost=r.get("best_cost"), abs_gap=r.get("abs_gap"),
             ea_generations=r.get("ea_generations"), children=ch, total_flips=fl,

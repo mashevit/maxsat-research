@@ -1,0 +1,74 @@
+# File list for batch 3c, MSE 2026 memetic (2856 tasks; docs/current2/MSE26_3C_RUN.md, repo).
+# Paths relative to cluster_staging_maxsat_strong/. Destination: ~/cluster_staging_maxsat_strong/.
+# After the upload: sha256sum -c scripts/manifest_mse26.upload.sha256 on the login node.
+# The instances are NOT in this list: they are on the cluster (data/raw/mse26 -> ~/mse_full26/wcnf).
+#
+# 1. code (src/, C core source unchanged since 9ce84ca: no rebuild needed)
+src/__init__.py
+src/cli/__init__.py
+src/cli/oracle_evalmaxsat.py
+src/cli/profile_hardness.py
+src/cli/run_memetic_shard.py
+src/cli/run_opt_rc2.py
+src/cli/solve_rc2_anytime.py
+src/evo/__init__.py
+src/evo/auto_hparams.py
+src/evo/hard.py
+src/evo/impl_v2.py
+src/evo/memetic.py
+src/evo/multistart.py
+src/evo/operators.py
+src/evo/population.py
+src/evo/v3.py
+src/llm/__init__.py
+src/llm/advisor.py
+src/llm/prompt.py
+src/llm/providers/__init__.py
+src/llm/providers/noop.py
+src/llm/providers/ollama.py
+src/native/__init__.py
+src/native/native.py
+src/sat/__init__.py
+src/sat/cnf.py
+src/sat/compact.py
+src/sat/kernel.py
+src/sat/ls_v3.py
+src/sat/rng.py
+src/sat/state.py
+src/sat/walksat.py
+src/sat/walksat_v2.py
+src/native/ls_core.c
+# 2. config
+configs/strong/auto.yaml
+# 3. driver, submit, results, builders, manifests
+scripts/mse26_memetic_array.sbatch
+scripts/submit_mse26.sh
+scripts/m2_results.py
+scripts/build_native.sh
+scripts/build_native.sbatch
+scripts/auto_hparams.py
+scripts/make_under30_manifest.py
+scripts/make_mse26_manifest.py
+scripts/mse26_membins.py
+scripts/mse26_membins.tsv
+scripts/make_flat_upload.py
+scripts/manifest_mse26_16.sha256
+scripts/manifest_mse26_16.tasks.csv
+scripts/manifest_mse26_16.tsv
+scripts/manifest_mse26_32.sha256
+scripts/manifest_mse26_32.tasks.csv
+scripts/manifest_mse26_32.tsv
+scripts/manifest_mse26_64.sha256
+scripts/manifest_mse26_64.tasks.csv
+scripts/manifest_mse26_64.tsv
+scripts/manifest_mse26_8a.sha256
+scripts/manifest_mse26_8a.tasks.csv
+scripts/manifest_mse26_8a.tsv
+scripts/manifest_mse26_8b.sha256
+scripts/manifest_mse26_8b.tasks.csv
+scripts/manifest_mse26_8b.tsv
+scripts/manifest_mse26_8c.sha256
+scripts/manifest_mse26_8c.tasks.csv
+scripts/manifest_mse26_8c.tsv
+scripts/manifest_mse26.upload.sha256
+scripts/rsync_files_mse26.txt
