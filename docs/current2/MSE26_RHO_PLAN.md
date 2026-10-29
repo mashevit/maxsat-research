@@ -27,7 +27,7 @@ N-2026-10-28-b. Earlier context: `MSE_PUBLISHED_EXACT_RESULTS.md` §5–§7,
 | 3a. EvalMaxSAT manifest (952 × 1 h) | **dropped** 2026-10-28 (user): ρ x from the published results (§7) |
 | 3b. flip counter + per-run RAM in the memetic (§4, §5, §8) | **built + tested locally** 2026-10-28; goes to the cluster with the 3c upload (native rebuild) |
 | 3c. memetic manifest (952 × 3 seeds, **1800 s**, §7; time = whole-job process CPU, §9) | **prepared** 2026-10-29: `MSE26_3C_RUN.md` (2,856 tasks, 6 parts by memory bin, upload `tmp/upload_mse26/`) |
-| 4. ρ pre-registration | **drafted** 2026-10-29 before any 3c result was read: `MSE26_RHO_PREREG.md` (binding once the user approves D1–D4) |
+| 4. ρ pre-registration | **draft r2** 2026-10-29, before any 3c result was read: `MSE26_RHO_PREREG.md` (primary = all 1,152 instances with a target; binding once the user approves r2); needs batch 3d for the 226 best-known instances |
 
 ## 2. Milestone 2: the unpack + hash job
 
