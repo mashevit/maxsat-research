@@ -136,3 +136,9 @@ that submission did not happen.
 milestone 4), then submit part 8c whole and the failed tasks
 (`RESUME=1 IDS=…`, `MEM=` one bin up for memory deaths), keeping the queue
 under ~2,000 tasks.
+
+**2026-10-29, later:** part 8c submitted by the user once the queue had room
+(job id not recorded here; it is in `provenance/submit_8c_*.txt`, the file
+with an `sbatch` line). Some of its tasks pend on the per-user memory cap
+(QOS max memory) while the 64 GB tasks run; they start as those finish.
+All 2,856 tasks are now submitted.
