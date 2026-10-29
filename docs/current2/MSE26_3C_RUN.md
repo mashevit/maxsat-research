@@ -152,3 +152,22 @@ above 64 GB only if the partition allows it), other fixable causes (timeout of
 the job wall, node failure, a code or path error) after the fix, with
 `RESUME=1 IDS=…` per part. Classifying for resubmission is not reading the
 results.
+
+## 7. Copy back and failure classification (2026-10-29)
+
+Archive `mse26_3c_back.tgz` (sha256 `82efc7d0…88be2`, matches the login node),
+unpacked into the strong tree: 2,845 task files of 2,856, 8 provenance files,
+5,712 logs, `sacct_3c.tsv` (2,856 3c rows + 2 kbig). `sacct`: 2,836 COMPLETED,
+17 FAILED, 5 TIMEOUT. `m2_results.py pending` per part, read together with
+`sacct` and the logs, gives four groups. **None is a memory death:** no
+OUT_OF_MEMORY and no MemoryError; the overrunning tasks peaked at 0.34–5.7 GB,
+well inside their bins.
+
+| group | tasks | instances | evidence | rerun? |
+|---|---:|---:|---|---|
+| A. heap corruption in the process | 6: 8a 205–207, 8b 196–198 | 2 tiny (27770a63…, d1a8db71…; ~15 KB, all 3 seeds) | exit 134, `free(): invalid next size` / `double free or corruption`, no record | after a fix (bug, likely the C core); reproduce locally first |
+| B. Glucose found no feasible start in the budget | 107: 8b 30, 8c 61, 16 7, 32 9 | 38 | record `status=ok stop_reason=glucose_timeout`, CPU ≈ 1,800 s | **no**: a real failure at the budget; `m2_results.py` does not know this stop reason and calls it infra_error (classifier fix needed) |
+| C. overran budget + grace, watchdog record written | 11: 8a 29,30,317,493–495,749; 8b 681; 16 10–12 | 7 large (34 MB – 663 MB text) | `status=timeout error=watchdog_fired_at_budget+300s`, wall 2,094–3,310 s, exit 1 | no: valid failure (no target by 2,100 s); the overrun itself is a deadline-enforcement bug on big instances |
+| D. overran, killed by the 1 h Slurm wall before the record | 5: 8a 28,664,748,750; 64 50 | 4 (053470870, 847b49a5, 96d20fa0, cf864e2f) | sacct TIMEOUT, no record (infra_missing) | yes, with a longer `--time` so the watchdog record lands (expected: failure) |
+
+Part 8c: no Slurm failures (its 61 pending are all group B).
