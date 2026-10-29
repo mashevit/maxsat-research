@@ -551,3 +551,44 @@ OUT_OF_MEMORY state + the last `KBIG_MEM` line give the answer).
 
 **Then (workstation):** the kernel rule for 3c (user's decision with the
 measured seconds and GB), the exact memory bins, the 3c manifest.
+
+## 14. Large-instance kernel task: result (read 2026-10-29) [verified: rows + logs]
+
+Job 23673258 (array 1–2, 64 GB), both `TASK_OK`; rows and logs in
+`cluster_staging_maxsat_strong/results/mse26_kernel_big/`.
+
+| | `cd1a6257` (task 1) | `d72b8cab` (task 2) |
+|---|---|---|
+| file | 2,029 MiB, 88.4 M clauses, 240.7 M literals | 594 MiB, 2.8 M clauses, 87.4 M literals (avg 31, max 8,081) |
+| family / optimum | university-course-timetabling / 0 | minimum-weight-dominating-set / 119,321,020 |
+| node | ise-cpu-intl-06 | ise-cpu128-03 |
+| gate decision | **kernel_empty** (gain 1.0): every variable eliminated, the lifted assignment is optimal | **kernel**: 1,398,408 → 212,881 variables, 424,001 clauses (gain 0.848) |
+| kernel seconds (wall) | **404.6** | **578.1** |
+| parse | 10.8 s, 2,055 MB | 3.1 s, 411 MB |
+| **peak RSS** | **11,510 MB** | **8,919 MB** |
+| published EvalMaxSAT | optimum, 62.6 s CPU, 22.6 GB | timeout (3,601 s CPU), 8.4 GB |
+
+**Against §12's projection:** `cd1a6257` peaked at 11.5 GB, less than half of
+the projected ~26 GB (the synthetic shape over-estimates this file). Memory
+grows during the elimination itself (the `KBIG_MEM` samples rise steadily to
+the end on both), which the all-pure synthetic file did not exercise; on
+`d72b8cab` (resolution-heavy, long clauses) the peak is 22× the parse.
+
+**Slow first read [verified: log]:** on `cd1a6257` the process stayed at
+0.1 GB for the first ~150 s, i.e. the sha256 read of the 2 GiB file ran at
+~15 MB/s on that node (network file system, first read), before the 10.8 s
+parse (page cache). Wall 572 s from start to `TASK_OK` = ~155 s read + 11 s
+parse + 405 s kernel. `d72b8cab` read at full speed. That wait is wall time,
+not CPU: under `--budget-clock process` (MSE26_RHO_PLAN.md §9) it would
+shorten the search, while ρ's CPU clock does not count it.
+
+**For the kernel rule (user's decision):** both fit the 1,800 s budget and
+16 GB with the kernel on, so no size cut-off is needed: `cd1a6257` is solved
+by the kernel alone at ~420 s of process time, and `d72b8cab` leaves ~1,200 s
+for the search on a 213 k-variable kernel (an instance EvalMaxSAT did not
+solve in 3,600 s).
+
+**Decision (user, 2026-10-29: "go, kernel on for all, do the cpu fix and
+commit"):** **the kernel gate runs on every instance in 3c, with no size
+cut-off** (`auto.yaml` as it is: `preprocess: kernel`, screen 0.20, gain
+0.20). The CPU fix is in `run_memetic_shard.py` (MSE26_RHO_PLAN.md §9).

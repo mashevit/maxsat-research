@@ -421,3 +421,13 @@ published EvalMaxSAT `cpu.time`**, wall as sensitivity; this replaces §7's
   For ρ this is conservative: success at budget B needs `cpu_to_target_s` ≤
   B, while the memetic's own cap is wall, so CPU above wall can only count
   against the memetic, as the competition's CPU limit would.
+
+**CPU fix (2026-10-29, user's go; built, 628 passed / 16 skipped):** under
+`--budget-clock process` the solver's limit is the budget less the
+**CPU** used since the process started (`time.process_time()`: start-up,
+imports, hash, parse, gate, hparams), and the watchdog likewise; I/O waits
+no longer cost search time. Reason: on `cd1a6257` the first read of the
+2 GiB file took ~150 s of wall at ~15 MB/s (`COMPILED_MEMETIC_PLAN.md` §14),
+which a wall-clock deduction would have taken from the search although ρ's
+CPU clock does not count it. The search itself still stops on its own wall
+cap; it is compute-bound, so its wall ≈ CPU.

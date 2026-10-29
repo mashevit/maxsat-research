@@ -227,6 +227,8 @@ def test_shard_record_schema8_process_clock(native, tmp_path):
         assert r["cpu_to_target_hit_s"] <= r["cpu_to_target_s"]
     # the process clock leaves less for the solver, and decides nothing else here
     assert proc["solver_time_limit_s"] < 20.0
+    # the limit is the budget less the CPU used before the solver started, never less than budget - all CPU
+    assert proc["solver_time_limit_s"] >= 20.0 - proc["cpu_total_s"] - 1e-3
     for k in ("best_assignment_hash", "total_flips", "flips_to_target", "calls_to_target", "target_by", "children"):
         assert run[k] == proc[k], k
 

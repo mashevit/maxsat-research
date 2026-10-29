@@ -141,7 +141,10 @@ except Exception:
 #    reaching call taken off at 1 CPU s per wall s), `cpu_total_s` and
 #    `wall_total_s` (at the record), and `budget_clock` (run | process).
 #    `--budget-clock process` counts the budget from the process start instead
-#    of after the parse; the default `run` is the historical run.
+#    of after the parse: the CPU already used (time.process_time: start-up,
+#    imports, hash, parse, gate, hparams) is taken off, so I/O waits (a slow
+#    first read of a large file) cost no search time, as on ρ's CPU clock;
+#    the default `run` is the historical run.
 #    Every version-7 field is unchanged.
 SHARD_SCHEMA_VERSION = 8
 
@@ -348,8 +351,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="Config override, e.g. -D ea.pop_size=80")
     p.add_argument("--budget-clock", choices=("run", "process"), default="run",
                    help="run (default, historical): the budget starts after the hash and "
-                        "the parse. process: it starts with the process, so start-up, "
-                        "imports, hash and parse are inside it (MSE26_RHO_PLAN.md §9)")
+                        "the parse. process: the CPU used since the process started "
+                        "(start-up, imports, hash, parse, gate, hparams) is taken off it; "
+                        "I/O waits are not (MSE26_RHO_PLAN.md §9)")
     args = p.parse_args(argv)
 
     if args.stop_at_oracle and args.oracle_cost is None:
@@ -607,7 +611,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     rec["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     signal.signal(signal.SIGALRM, _on_alarm)
-    used = time.time() - _T_PROC0 if args.budget_clock == "process" else 0.0
+    used = time.process_time() if args.budget_clock == "process" else 0.0
     signal.setitimer(signal.ITIMER_REAL, max(1.0, float(args.budget_s) + float(args.grace_s) - used))
     t0 = time.time()
     c0 = time.process_time()
@@ -639,8 +643,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
         rec["solver_start_s"] = round(time.time() - _T_PROC0, 3)
         if args.budget_clock == "process":
-            # Everything since the process started counts (MSE26_RHO_PLAN.md §9).
-            run_cfg = dict(run_cfg, time_limit_s=max(0.0, float(args.budget_s) - (time.time() - _T_PROC0)))
+            # The CPU used since the process started counts, I/O waits do not
+            # (MSE26_RHO_PLAN.md §9; COMPILED_MEMETIC_PLAN.md §14: a 2 GiB first read took ~150 s).
+            run_cfg = dict(run_cfg, time_limit_s=max(0.0, float(args.budget_s) - time.process_time()))
             rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
         if kernel is not None and kernel.wcnf.n_vars == 0:
             # Every variable eliminated: the lifted assignment is optimal.
