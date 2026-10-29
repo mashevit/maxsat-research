@@ -2,8 +2,14 @@
 
 > "go, write the rho pre-registration" (user, 2026-10-29)
 
-**Status: DRAFT r4, 2026-10-29.** It becomes binding when the user approves it
-and it is committed; the commit hash is then entered here.
+**Status: BINDING, r4.** Approved by the user on 2026-10-29 ("fine"), after
+the list of details set without an explicit decision (the sensitivity
+analyses, the per-solver populations, the complementarity bands, the floor
+share, the family threshold, the 0.15 seeds trigger, the rerun rules, the
+bootstrap settings). **The approved text is the one committed in
+`f8a3354`**; this commit only changes the status lines. No 3c record had been
+read when it was approved. Any later change is a dated amendment, and any
+analysis not listed here is exploratory.
 - **r1** (`dda60a8`): primary = the EvalMaxSAT (30, 3600] s window, successes
   only.
 - **r2** (`08d6056`, user): primary = all instances, censored on both axes
