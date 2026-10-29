@@ -36,7 +36,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .cnf import WCNF, Clause
 
@@ -71,11 +71,18 @@ def screen_frac(wcnf: WCNF) -> Tuple[float, int]:
     return (hit / occurring if occurring else 0.0), occurring
 
 
-def kernelize(clauses: List[Tuple[int, Lits]]):
+def kernelize(clauses: Iterable[Tuple[int, Sequence[int]]], n_vars: Optional[int] = None):
     """Return (kernel clauses {lits: weight}, constant cost, elimination record).
 
     `clauses` are (weight, lits) with hard clauses at weight >= HARD. A constant
-    >= HARD means the hard clauses contradict each other.
+    >= HARD means the hard clauses contradict each other. `clauses` may be a
+    generator (read once, in order); `n_vars` bounds the variables (|lit| <=
+    n_vars, IndexError otherwise) and is computed from the clauses when None.
+
+    Memory (COMPILED_MEMETIC_PLAN.md §12): one int object per literal, shared by
+    every clause tuple and work-list entry, and the HARD weight object shared by
+    every hard clause; with a streamed input ~270 B per clause instead of ~570.
+    Neither changes a value or an order.
 
     Same result as `kernelize_reference` -- the same kernel dict in the same
     order, constant and record (docs/current2/COMPILED_MEMETIC_PLAN.md §10;
@@ -88,6 +95,11 @@ def kernelize(clauses: List[Tuple[int, Lits]]):
     order, so the work list and every decision are unchanged. The tautology test
     uses a set (same answer, O(k) instead of O(k^2)).
     """
+    if n_vars is None:
+        clauses = list(clauses)
+        n_vars = max((abs(l) for _, lits in clauses for l in lits), default=0)
+    POS = list(range(n_vars + 1))             # POS[v]: the int object of v (and of variable v)
+    NEG = [-v for v in POS]                   # NEG[v]: the int object of -v
     C: Dict[Lits, int] = {}
     occ: Dict[int, set] = defaultdict(set)
     npos: Dict[int, int] = defaultdict(int)   # clauses of occ[v] holding v
@@ -105,9 +117,12 @@ def kernelize(clauses: List[Tuple[int, Lits]]):
             const += w
             return
         new = lits not in C
-        C[lits] = C.get(lits, 0) + w
+        if new:
+            C[lits] = w                       # w itself: every hard clause shares the HARD object
+        else:
+            C[lits] += w
         for l in lits:
-            occ[abs(l)].add(lits)
+            occ[l if l > 0 else POS[-l]].add(lits)
             if new:
                 if l > 0:
                     npos[l] += 1
@@ -125,7 +140,7 @@ def kernelize(clauses: List[Tuple[int, Lits]]):
         return w
 
     for w, lits in clauses:
-        insert(lits, w)
+        insert([POS[l] if l > 0 else NEG[-l] for l in lits], w)
     work = list(occ)
     while work:
         v = work.pop()
@@ -165,7 +180,7 @@ def kernelize(clauses: List[Tuple[int, Lits]]):
         for k in ks:
             for l in k:
                 if abs(l) != v:
-                    work.append(abs(l))
+                    work.append(l if l > 0 else POS[-l])
     return C, const, rec
 
 
@@ -277,8 +292,16 @@ class Kernel:
 
 
 def build_kernel(wcnf: WCNF) -> Tuple[Optional[Kernel], int]:
-    """(Kernel, raw constant). Kernel is None when the hard clauses contradict."""
-    C, const, rec = kernelize([(_weight(cl), tuple(cl.lits)) for cl in wcnf.clauses])
+    """(Kernel, raw constant). Kernel is None when the hard clauses contradict.
+
+    The clauses are streamed into `kernelize` (a compact instance straight from
+    its C arrays, without Clause objects), so the input is never held twice.
+    """
+    if getattr(wcnf, "is_compact", False):
+        stream = ((HARD if h else w, lits) for w, h, lits in wcnf.iter_clause_lits())
+    else:
+        stream = ((_weight(cl), cl.lits) for cl in wcnf.clauses)
+    C, const, rec = kernelize(stream, wcnf.n_vars)
     if const >= HARD:
         return None, const
     var_of = sorted({abs(l) for k in C for l in k})

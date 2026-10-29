@@ -106,6 +106,15 @@ class CompactWCNF:
             self._adj()
         return self._neg_adj
 
+    def iter_clause_lits(self) -> Iterator[Tuple[int, bool, List[int]]]:
+        """(weight, is_hard, lits) per clause in order: the values of `clauses`
+        without building a Clause (the kernel's streamed input)."""
+        ci = self._ci
+        off, lits, w, hard = ci.lit_off, ci.lits, ci.w, ci.hard
+        for i in range(self.m):
+            a, b = off[i], off[i + 1]
+            yield int(w[i]), bool(hard[i]), (lits[a:b] if b > a else [])
+
     @property
     def nlits(self) -> int:
         return int(self._ci.nlits)

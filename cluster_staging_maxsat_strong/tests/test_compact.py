@@ -340,3 +340,38 @@ def test_memetic_hard_moves_identical(native, tmp_path, keep_sat):
         assert b["hard"]["moves_tried"] > 0 and b["hard"]["glucose_calls"] > 0
         if keep_sat != "none":
             assert b["hard"]["ks_calls"] > 0
+
+
+@pytest.mark.parametrize("rel", SAMPLE + ["data/generated/calib_2sat_sc2"])
+def test_build_kernel_compact_stream_equal(native, rel):
+    """build_kernel on the compact instance (clauses streamed from the C arrays) equals the
+    reference kernel on the Python instance (COMPILED_MEMETIC_PLAN.md §12)."""
+    from sat import compact as cpt
+    from test_kernel_fast import same_build, kernel_items
+    from sat.kernel import build_kernel
+    p = os.path.join(TREE, rel)
+    if os.path.isdir(p):
+        fs = sorted(f for f in os.listdir(p) if f.endswith(".wcnf") and os.path.getsize(os.path.join(p, f)) < 3_000_000)
+        p = os.path.join(p, fs[0]) if fs else ""
+    if not os.path.isfile(p):
+        pytest.skip("instance not in this tree")
+    w = WCNF.parse_dimacs(p)
+    assert same_build(w)
+    kc, cc_ = build_kernel(cpt.load(p))
+    kp, cp = build_kernel(w)
+    assert cc_ == cp and (kc is None) == (kp is None)
+    if kp is not None:
+        assert kernel_items(kc) == kernel_items(kp) and kc.rec == kp.rec and kc.var_of == kp.var_of
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3])
+def test_build_kernel_compact_random(native, tmp_path, seed):
+    from sat import compact as cpt
+    from test_kernel_fast import kernel_items
+    from sat.kernel import build_kernel
+    p = write_mixed(tmp_path, f"k{seed}.wcnf", n=40, m=160, seed=seed, new=False)
+    kc, cc_ = build_kernel(cpt.load(p))
+    kp, cp = build_kernel(WCNF.parse_dimacs(p))
+    assert cc_ == cp and (kc is None) == (kp is None)
+    if kp is not None:
+        assert kernel_items(kc) == kernel_items(kp) and kc.rec == kp.rec

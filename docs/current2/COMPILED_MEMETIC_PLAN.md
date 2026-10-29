@@ -454,3 +454,50 @@ max 253.8 s, 1 over 60 s, none hit the 300 s cap. Parse: max 22.2 s, max
 **Open for the user (next session):** the kernel rule for 3c, i.e. what the
 2 large screen-passing instances do (fast kernel in the run, or no kernel above
 a size), then exact memory bins from the census counts and the 3c manifest.
+
+## 12. Lean kernel memory (built 2026-10-29) [verified: tests + measurements; 2 GiB figure = projection]
+
+> "go, do the three edits and the twin tests" (user, 2026-10-29), for the
+> 2,029 MiB screen-passing instance `cd1a6257` (4,841,010 vars, 88,386,411
+> clauses, 240,660,218 literals, screen 1.0; optimum 0, EvalMaxSAT 63 s at
+> 22.6 GB published).
+
+**Where the memory went [verified in code]:** `build_kernel` built the whole
+input as a Python list of `(weight, tuple)` with one int object per literal
+occurrence, kept alive through `kernelize`, which made a second sorted tuple
+per clause; `C.get(lits, 0) + w` gave every hard clause its own `2^60` int.
+
+**Three edits, no value or order changed:**
+1. `build_kernel` streams the clauses into `kernelize` (a compact instance via
+   the new `CompactWCNF.iter_clause_lits`, straight from the C arrays, no
+   `Clause` objects); `kernelize(clauses, n_vars=None)` reads its input once.
+2. `kernelize` keeps one int object per literal (`POS`/`NEG` tables of
+   n_vars + 1 each); clause tuples, occurrence keys and work-list entries
+   point to them. A literal above n_vars raises IndexError.
+3. A new clause stores `w` itself, so hard clauses share the `HARD` object
+   (a merged duplicate, HARD + w, is still its own object).
+
+**Twins [verified]:** `tests/test_kernel_fast.py` now checks every case on the
+list and on a one-pass stream with a loose n_vars, plus `build_kernel`
+(streamed) against the reference on the materialised list (local and 10
+random instances), the sharing itself, and the IndexError;
+`tests/test_compact.py` checks `build_kernel` on the compact instance against
+the Python one (5 samples + calib_2sat_sc2 + 3 random). Full suite 625 passed
+/ 16 skipped.
+
+**Memory, `build_kernel` on a compact instance [verified]** (synthetic file
+shaped like `cd1a6257`: 2.73 lits/clause, ~50 occurrences/var, every variable
+pure, 0.2 % soft; 2,000,000 clauses, 43.9 MiB; peak RSS above the parse):
+
+| | B / clause | time |
+|---|---:|---:|
+| before (HEAD 7be6563) | 585 | 22.0 s |
+| after | **274** | 21.9 s |
+
+**Projection for `cd1a6257` [inference]:** 88.4 M × 274 B ≈ 24 GB + 2.05 GB
+compact (census `rss_parse_mb`) ≈ **26 GB** (before ≈ 54 GB). The real file
+has clauses up to 237 literals and an unknown occurrence spread, so this is
+an estimate; one cluster task (kernel only, `--mem=64G`, peak RSS + seconds)
+measures it. **Time is unchanged:** ~11 µs/clause → ~1,000 s of the 1,800 s
+budget on this instance (the 2 M point was slower per clause than 1 M, so
+possibly more).
