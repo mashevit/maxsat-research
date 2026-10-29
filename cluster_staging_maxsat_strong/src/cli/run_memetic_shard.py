@@ -67,6 +67,11 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
+# Wall clock of the whole process (schema 8): taken before the solver imports, so
+# `wall_total_s` and `--budget-clock process` include them. Process CPU needs no
+# mark: time.process_time() already counts from the process start.
+_T_PROC0 = time.time()
+
 # --- Flexible imports so this runs as a module or as a script -----------------
 try:
     from evo.memetic import run_memetic
@@ -128,7 +133,17 @@ except Exception:
 #    `compact_instance` (true when the C parser and tables were used:
 #    `ls.native: true`, docs/current2/COMPILED_MEMETIC_PLAN.md).
 #    Every version-6 field is unchanged.
-SHARD_SCHEMA_VERSION = 7
+# 8 (2026-10-29, docs/current2/MSE26_RHO_PLAN.md §9): additive whole-process
+#    times -- `hash_s`, `parse_s`, `solver_start_s` (process wall when the
+#    solver started), `cpu_to_target_s` (process CPU, start-up and imports
+#    included, when the target was reached; the clock of ρ),
+#    `cpu_to_target_hit_s` (the same at the flip-level hit: the tail of the
+#    reaching call taken off at 1 CPU s per wall s), `cpu_total_s` and
+#    `wall_total_s` (at the record), and `budget_clock` (run | process).
+#    `--budget-clock process` counts the budget from the process start instead
+#    of after the parse; the default `run` is the historical run.
+#    Every version-7 field is unchanged.
+SHARD_SCHEMA_VERSION = 8
 
 DEFAULT_SOLVER = "memetic_ea"
 KNOWN_SOLVERS = (DEFAULT_SOLVER, "local_multistart")
@@ -331,6 +346,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="Store the full best assignment bit-string (off by default)")
     p.add_argument("--override", "-D", action="append", default=[],
                    help="Config override, e.g. -D ea.pop_size=80")
+    p.add_argument("--budget-clock", choices=("run", "process"), default="run",
+                   help="run (default, historical): the budget starts after the hash and "
+                        "the parse. process: it starts with the process, so start-up, "
+                        "imports, hash and parse are inside it (MSE26_RHO_PLAN.md §9)")
     args = p.parse_args(argv)
 
     if args.stop_at_oracle and args.oracle_cost is None:
@@ -524,6 +543,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         "finished_at": None,
         "peak_rss_mb": None,
         "compact_instance": None,
+        # Schema 8: whole-process times (MSE26_RHO_PLAN.md §9).
+        "budget_clock": args.budget_clock,
+        "hash_s": None,
+        "parse_s": None,
+        "solver_start_s": None,
+        "cpu_to_target_s": None,
+        "cpu_to_target_hit_s": None,
+        "cpu_total_s": None,
+        "wall_total_s": None,
     }
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
@@ -531,6 +559,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     def emit() -> int:
         # ru_maxrss is in KiB on Linux.
         rec["peak_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
+        rec["cpu_total_s"] = round(time.process_time(), 3)
+        rec["wall_total_s"] = round(time.time() - _T_PROC0, 3)
         with open(args.out, "w", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         s = rec["status"]
@@ -554,16 +584,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         return emit()
 
     rec["size_mb"] = round(os.path.getsize(inst) / 1e6, 4)
+    t_h = time.time()
     rec["instance_sha256"] = sha256_file(inst)
+    rec["hash_s"] = round(time.time() - t_h, 3)
     rec["instance_format"] = detect_format(inst)
     rec["compact_instance"] = use_compact
 
+    t_p = time.time()
     try:
         if use_compact:
             from sat import compact as cpt
             wcnf = cpt.load(inst)
         else:
             wcnf = WCNF.parse_dimacs(inst)
+        rec["parse_s"] = round(time.time() - t_p, 3)
     except Exception as e:
         rec["status"] = "parse_error"
         rec["error"] = f"{type(e).__name__}: {e}"
@@ -573,7 +607,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     rec["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     signal.signal(signal.SIGALRM, _on_alarm)
-    signal.setitimer(signal.ITIMER_REAL, float(args.budget_s) + float(args.grace_s))
+    used = time.time() - _T_PROC0 if args.budget_clock == "process" else 0.0
+    signal.setitimer(signal.ITIMER_REAL, max(1.0, float(args.budget_s) + float(args.grace_s) - used))
     t0 = time.time()
     c0 = time.process_time()
     kernel = None
@@ -602,11 +637,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             pre_s += hp.seconds
             run_cfg = dict(hp.cfg, time_limit_s=max(0.0, float(args.budget_s) - pre_s))
             rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
+        rec["solver_start_s"] = round(time.time() - _T_PROC0, 3)
+        if args.budget_clock == "process":
+            # Everything since the process started counts (MSE26_RHO_PLAN.md §9).
+            run_cfg = dict(run_cfg, time_limit_s=max(0.0, float(args.budget_s) - (time.time() - _T_PROC0)))
+            rec["solver_time_limit_s"] = round(run_cfg["time_limit_s"], 4)
         if kernel is not None and kernel.wcnf.n_vars == 0:
             # Every variable eliminated: the lifted assignment is optimal.
             reached = run_target is not None and run_target >= 0
             res = {"best_soft_weight": 0.0, "stop_reason": "target" if reached else "preprocess_exact",
                    "time_to_target_s": 0.0 if reached else None, "impl": None, "total_flips": 0,
+                   "cpu_at_target_s": time.process_time() if reached else None,
                    "target_hit": ({"calls_to_target": 0, "flips_to_target": 0, "target_by": "kernel",
                                    "resolution": "flip", "time_to_hit_s": 0.0} if reached else None),
                    "meta": {"assign_bits": "", "ea_generations": 0, "children": 0}}
@@ -666,6 +707,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         rec["ttt_resolution"] = th["resolution"]
         hs = th.get("time_to_hit_s")
         rec["time_to_target_hit_s"] = None if hs is None else round(float(hs) + pre_s, 6)
+    cat = res.get("cpu_at_target_s") if rec["stop_reason"] == "target" else None
+    if cat is not None:
+        rec["cpu_to_target_s"] = round(float(cat), 3)
+        if rec["time_to_target_hit_s"] is not None:
+            tail = max(0.0, rec["time_to_target_s"] - rec["time_to_target_hit_s"])
+            rec["cpu_to_target_hit_s"] = round(max(0.0, float(cat) - tail), 3)
     rec["ea_generations"] = meta.get("ea_generations")
     rec["memetic_impl"] = res.get("impl")
     rec["hard"] = res.get("hard")

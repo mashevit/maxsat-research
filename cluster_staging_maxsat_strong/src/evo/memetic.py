@@ -133,6 +133,9 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                                           then flips_to_target = all flips so far
                         time_to_hit_s     seconds from loop start to that flip
                                           (None at call resolution)
+      cpu_at_target_s   process CPU (time.process_time: since the process
+                        started) at the moment time_to_target_s was taken, or
+                        None (MSE26_RHO_PLAN.md §9)
     """
 
     advisor = LLMAdvisor(provider=NoopProvider())  # swap provider later
@@ -218,6 +221,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
     total_soft_weight = _soft_weight_float(wcnf)
     stop_reason = None
     time_to_target_s = None
+    cpu_at_target_s = None
     target_hit = None
 
     def _at_target(ind) -> bool:
@@ -237,6 +241,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         # The JW-seeded population already reached it; do not run a generation.
         stop_reason = "target"
         time_to_target_s = time.time() - start_t
+        cpu_at_target_s = time.process_time()
         target_hit = {"calls_to_target": 0, "flips_to_target": 0, "target_by": "init",
                       "resolution": "flip", "time_to_hit_s": time_to_target_s}
 
@@ -451,6 +456,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
                 if _at_target(best):
                     stop_reason = "target"
                     time_to_target_s = time.time() - start_t
+                    cpu_at_target_s = time.process_time()
                     step, wall = polish_v3.last_hit if polish_v3 is not None else (None, None)
                     if step is not None and step >= 0:
                         target_hit = {"calls_to_target": calls, "flips_to_target": flips_before + step,
@@ -534,6 +540,7 @@ def run_memetic(wcnf, cfg: Dict[str, Any], rng_seed: int = 1,
         "final_noise": 0.0,
         "stop_reason": stop_reason,
         "time_to_target_s": (None if time_to_target_s is None else float(time_to_target_s)),
+        "cpu_at_target_s": cpu_at_target_s,
         "target_hit": target_hit,
         "impl": impl,
         "hard": hstats.as_dict() if hard_mode else None,

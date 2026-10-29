@@ -26,7 +26,7 @@ N-2026-10-28-b. Earlier context: `MSE_PUBLISHED_EXACT_RESULTS.md` §5–§7,
 | 2. unpack + hash job (MSE 2026 only) | **done** 2026-10-28: array job 23643046, 50/50 `TASK_OK` (11:52–12:20), `ALL_DONE`; `results/mse26_unpack/mse26_content.tsv` (1,216 rows; 952 unpacked: 479 unweighted, 473 weighted; no duplicate content sha256; flags match `mse26_work.tsv`; no old-format `p` lines) + logs |
 | 3a. EvalMaxSAT manifest (952 × 1 h) | **dropped** 2026-10-28 (user): ρ x from the published results (§7) |
 | 3b. flip counter + per-run RAM in the memetic (§4, §5, §8) | **built + tested locally** 2026-10-28; goes to the cluster with the 3c upload (native rebuild) |
-| 3c. memetic manifest (952 × 3 seeds, **1800 s**, §7) | after the compiled memetic (`COMPILED_MEMETIC_PLAN.md`, C1–C3 pushed 9ce84ca) and the census job (§9 there, prepared 2026-10-28) |
+| 3c. memetic manifest (952 × 3 seeds, **1800 s**, §7; time = whole-job process CPU, §9) | after the compiled memetic (`COMPILED_MEMETIC_PLAN.md`, C1–C3 pushed 9ce84ca) and the census job (§9 there, prepared 2026-10-28) |
 | 4. ρ pre-registration | before any memetic result |
 
 ## 2. Milestone 2: the unpack + hash job
@@ -343,3 +343,81 @@ The U30 row is the tie the counter exists for: "1 call" becomes flip 3,704.
 On the two hard-clause instances the child entered its call already at the
 optimum (crossover, mutation, repair or hard moves); the flips are then
 those of the earlier calls.
+
+## 9. Decision 2026-10-29: the memetic's time is the whole job's CPU time
+
+> "I want rho include parse time, and actually all cluster cpu time per job
+> until it finishes" (user, 2026-10-29)
+
+**Today [verified in code, `run_memetic_shard.py`]:** the clock `t0` starts
+after the instance hash and the parse; `time_to_target_s` = kernel gate +
+hparams + search (wall); `cpu_time_s` = `process_time` from `t0`. Python
+start-up, imports, the sha256 (~0.5 GB/s) and the parse (C, up to 22.2 s on
+the 3.6 GB files; 625 s summed over the 952, census §11 of
+`COMPILED_MEMETIC_PLAN.md`) are in no time field, and the parse time is not
+recorded at all.
+
+**Proposal for 3c [plan; to build after the user's go]:**
+1. **The memetic side of ρ = process CPU of the whole run**, from interpreter
+   start to the moment the target is reached (or to exit): start-up, imports,
+   hash, parse, kernel gate, hparams, search. `time.process_time()` is
+   process-wide since process start, so it is read at the hit (where
+   `time_to_target_s` / the flip-level hit are set) and at exit; the run is
+   single-threaded, Glucose is in-process (pysat), so nothing runs outside
+   the process. New fields: `parse_s`, `hash_s`, `cpu_to_target_s` (process
+   CPU at the hit), `cpu_total_s` (process CPU at exit), `wall_total_s` (from
+   the first line of the script). The old fields stay, for continuity.
+2. **The 1,800 s budget counts from process start** (search limit = 1,800 −
+   time already spent), so the cap is on the same clock as ρ. Censoring:
+   success at budget B iff `cpu_to_target_s` ≤ B.
+3. **Not counted:** the Slurm/conda wrapper before Python starts (`module
+   load`, `source activate`), which is harness, as MSE's runsolver measures
+   only the solver process. The driver logs its wall around the Python call,
+   so it is visible.
+4. **The exact side, like with like:** published EvalMaxSAT **CPU time**
+   (`cpu.time`) as the primary x, wall as sensitivity (CPU/wall median 0.989
+   on its proofs > 1 s, §7, so the two barely differ). This replaces §7's
+   "EvalMaxSAT wall time primary" if the user agrees.
+
+**User 2026-10-29:** "yes to 1" (point 3: the wrapper is not counted); on
+point 4 "what is counted at the competition for results", then "build what
+you want".
+
+**What MSE 2026 counts [verified from the published raw data,
+`data/raw/mse_results/mse26/*_rawdata.csv`]:** the limit is **3,600 s of CPU
+time**. Every one of the 7,552 timeouts (4,591 unweighted + 2,961 weighted
+runs) stops at CPU = 3,600.0 s with wall 3,623 s or more, and every run counted
+as solved has CPU ≤ 3,589.5 s, including 8 with wall > 3,600 s. Ranking: the
+number of instances solved (optimum found) within the per-instance limits
+(2023 rules page; the 2026 rules page did not render for the fetch, and
+neither page states the clock). So **point 4 is adopted: the x of ρ is the
+published EvalMaxSAT `cpu.time`**, wall as sensitivity; this replaces §7's
+"wall time primary".
+
+**Built 2026-10-29 [verified: tests]** (strong tree, shard schema 8):
+- `run_memetic_shard.py`: `_T_PROC0` before the solver imports; new fields
+  `budget_clock`, `hash_s`, `parse_s`, `solver_start_s`, `cpu_to_target_s`
+  (process CPU when the target was reached, from `memetic.py`'s new
+  `cpu_at_target_s`, taken where `time_to_target_s` is), `cpu_to_target_hit_s`
+  (the same at the flip-level hit: the tail of the reaching call taken off
+  at 1 CPU s per wall s), `cpu_total_s`, `wall_total_s` (on every record).
+- `--budget-clock process` (opt-in; default `run` = the historical run): the
+  solver's limit and the watchdog count from the process start. **The 3c
+  driver passes it.**
+- Tests: `tests/test_target_hit.py` (schema 8 fields in a subprocess shard on
+  both clocks; same decisions on both clocks while the budget does not bind;
+  the process clock binding at 3 s); schema checks 7 → 8 in 4 tests. Suite
+  628 passed / 16 skipped.
+
+**Two clock observations [verified]:**
+- **Workstation (WSL) CPU time is unreliable:** a single-threaded 3 s busy
+  loop reported 5.25 s of `process_time` (a 5 s loop 4.59 s), and the shell's
+  `time` agrees with it. No CPU-vs-wall test runs locally.
+- **Cluster records (2,475 shard files, 779 with wall > 1 s on `ise-*`
+  nodes):** CPU/wall median 0.997, but 165 above 1.01 (max 1.10), all in
+  hard mode (hardmse 127 / 422, ks2check 29 / 186, perpolish 9 / 137; soft
+  0 / 11). The cause is not identified: the hard path starts a
+  `threading.Timer` per Glucose call (`hard.py`), but that thread only waits.
+  For ρ this is conservative: success at budget B needs `cpu_to_target_s` ≤
+  B, while the memetic's own cap is wall, so CPU above wall can only count
+  against the memetic, as the competition's CPU limit would.

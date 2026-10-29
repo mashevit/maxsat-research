@@ -237,7 +237,7 @@ def test_shard_resolves_in_memory_records_and_runs_with_it(tmp_path, m_hard):
     path = make_wcnf(tmp_path, "e", n=40, k=3, m_soft=150, m_hard=m_hard, seed=6)
     cfg, cp = small_run_cfg(tmp_path)
     rc, rec = shard_run(path, cp, tmp_path)
-    assert rc == 0 and rec["status"] == "ok" and rec["schema_version"] == 7
+    assert rc == 0 and rec["status"] == "ok" and rec["schema_version"] == 8
     hp = rec["hparams"]
     assert hp["ruleset"] == ahp.RULESET and hp["hparams_s"] >= 0
     assert hp["class"] == ("hard_unweighted" if m_hard else "soft_unweighted")
