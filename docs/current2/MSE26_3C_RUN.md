@@ -171,3 +171,32 @@ well inside their bins.
 | D. overran, killed by the 1 h Slurm wall before the record | 5: 8a 28,664,748,750; 64 50 | 4 (053470870, 847b49a5, 96d20fa0, cf864e2f) | sacct TIMEOUT, no record (infra_missing) | yes, with a longer `--time` so the watchdog record lands (expected: failure) |
 
 Part 8c: no Slurm failures (its 61 pending are all group B).
+
+## 8. ρ before the fixes, two treatments of the errored runs (2026-10-29, user)
+
+User: compute the statistics now, once with every errored run counted as a
+memetic failure and once with them removed; the §7 fixes and reruns come later.
+`scripts/mse26_rho_errors.py` runs `mse26_rho.py` unchanged; `--errors fail`
+turns each infra_missing / infra_error / invalid_submission run (118 runs:
+groups A, B, D) into a failure at the budget; `--errors exclude` is
+`mse26_rho.py` as is (an instance with such a run is incomplete and leaves
+every analysis: 44 instances, 40 EvalMaxSAT-proved, 34 weighted, mostly
+job-shop 13 and shifted-* 17). Outputs `results/mse26_rho_{fail,exclude}/`
+(not committed). B = 10,000, ~6 min each.
+
+| analysis | exclude (N) | fail (N) |
+|---|---|---|
+| **primary** ERT ρ | **+0.635 [+0.585, +0.679]** (878) | **+0.639 [+0.590, +0.682]** (922) |
+| 1 window, uncensored | +0.200 [+0.052, +0.339] (181) | +0.212 [+0.065, +0.351] (183) |
+| 4 budget 900 s | +0.636 [+0.587, +0.680] | +0.640 [+0.592, +0.683] |
+| 5 family-stratified | +0.635 [+0.598, +0.669] | +0.639 [+0.601, +0.673] |
+| 6 partial on size | +0.572 [+0.520, +0.620] | +0.571 [+0.519, +0.620] |
+| 7 PAR2, all proven | +0.634 [+0.587, +0.679] (903) | +0.636 [+0.589, +0.678] (947) |
+| unweighted track | +0.623 [+0.549, +0.686] (454) | +0.621 [+0.544, +0.684] (464) |
+| weighted track | +0.650 [+0.582, +0.709] (424) | +0.659 [+0.595, +0.715] (458) |
+
+Sensitivities 2 (wall x) and 3 (flip level) equal the primary in both. D1
+(seeds 4–5) not triggered in either. 2×2 (EvalMaxSAT proved / memetic reached
+in ≥ 1 run): exclude 527 / 225 / 43 / 83, fail 529 / 263 / 43 / 87 (proved &
+reached, proved & not, not & reached, neither). The conclusion does not depend on
+the treatment.
