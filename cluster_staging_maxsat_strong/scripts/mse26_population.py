@@ -5,8 +5,12 @@ Workstation only. Reads the published metadata and raw results (Zenodo 21358014,
 data/raw/mse_results/mse26/) and the unpack job's content table; writes
 scripts/mse26_population.tsv, one row per instance:
 
-  target_kind   optimum (published optimal_cost) | best_known (no proven optimum:
-                the memetic target is best_known_cost) | none (no target: excluded)
+  target_kind   proven: the published optimal_cost, proved in the 2026 runs by at least
+                one exact solver (OPTIMUM FOUND, verified, optval = optimal_cost; any
+                solver, not only EvalMaxSAT; user 2026-10-29) | not_proved_2026 (a
+                published optimum no 2026 run proved) | no_optimum (none published)
+                | infeasible (every answer UNSATISFIABLE); only `proven` is a target
+  provers       how many 2026 exact-solver runs proved it
   ems_status    EvalMaxSAT's published outcome: proved (OPTIMUM FOUND, verified, the
                 published optimum where one exists, CPU <= 3600) | timeout | memout |
                 crash (no answer, no timeout, no memout) | unsat (infeasible hard
@@ -34,7 +38,7 @@ CONTENT = os.path.join(ROOT, "results", "mse26_unpack", "mse26_content.tsv")
 OUT = os.path.join(ROOT, "scripts", "mse26_population.tsv")
 RAW = {"mse26-exact-unweighted": "mse26_exact_unweighted_rawdata.csv",
        "mse26-exact-weighted": "mse26_exact_weighted_rawdata.csv"}
-COLUMNS = ["set", "hash", "family", "optimal_cost", "best_known_cost", "target_kind", "target", "ems_status",
+COLUMNS = ["set", "hash", "family", "optimal_cost", "best_known_cost", "target_kind", "provers", "target", "ems_status",
            "ems_cpu_s", "ems_wall_s", "x_role", "primary", "window", "in_3c"]
 
 
@@ -60,26 +64,37 @@ def main() -> int:
         meta = {r["hash"]: r for r in csv.DictReader(f)}
     with open(CONTENT, newline="") as f:
         content = {r["file"][:-len(".wcnf.xz")]: r for r in csv.DictReader(f, delimiter="\t")}
-    ems = {}
+    ems, provers, answers = {}, Counter(), {}
     for set_, fn in RAW.items():
         with open(os.path.join(PUB, fn), newline="") as f:
             for r in csv.DictReader(f):
+                h = r["instance"][:-len(".wcnf")]
                 if r["solvername"] == "EvalMaxSAT":
-                    ems[r["instance"][:-len(".wcnf")]] = (set_, r)
+                    ems[h] = (set_, r)
+                answers.setdefault(h, set()).add(r["answer"])
+                if (r["answer"] == "OPTIMUM FOUND" and r["verified"] == "1"
+                        and r["optval"] == meta[h]["optimal_cost"]):
+                    provers[h] += 1
     if not (len(meta) == len(content) == len(ems) == 1216):
         raise SystemExit(f"FATAL: expected 1216 instances, got meta {len(meta)} content {len(content)} ems {len(ems)}")
     rows = []
     for h in sorted(meta, key=lambda h: (ems[h][0], h)):
         m, (set_, r) = meta[h], ems[h]
         opt, bk = m["optimal_cost"], m["best_known_cost"]
-        kind, target = (("optimum", opt) if known(opt) else ("best_known", bk) if known(bk) else ("none", ""))
+        if provers[h]:
+            kind, target = "proven", opt
+        elif known(opt):
+            kind, target = "not_proved_2026", ""
+        else:
+            kind, target = ("infeasible" if answers[h] <= {"UNSATISFIABLE", "NONE"} and "UNSATISFIABLE" in answers[h]
+                            else "no_optimum"), ""
         st = ems_status(r, opt)
         role = "finite" if st == "proved" else "censored" if st == "timeout" else "excluded"
-        if kind == "none":
+        if kind != "proven":
             role = "excluded"
         cpu = float(r["cpu.time"])
         rows.append({"set": set_, "hash": h, "family": m["family"], "optimal_cost": opt, "best_known_cost": bk,
-                     "target_kind": kind, "target": target, "ems_status": st, "ems_cpu_s": r["cpu.time"],
+                     "target_kind": kind, "provers": provers[h], "target": target, "ems_status": st, "ems_cpu_s": r["cpu.time"],
                      "ems_wall_s": r["wall.time"], "x_role": role, "primary": int(role != "excluded"),
                      "window": int(role == "finite" and 30 < cpu <= 3600),
                      "in_3c": int(content[h]["unpacked"] == "1")})
@@ -96,8 +111,11 @@ def main() -> int:
           "| by x:", c("x_role", lambda r: r["primary"]), "| by set:", c("set", lambda r: r["primary"]))
     print("primary but not run in 3c:", sum(r["primary"] and not r["in_3c"] for r in rows))
     print("window (x finite in (30, 3600]):", sum(r["window"] for r in rows))
-    print("excluded:", c("ems_status", lambda r: not r["primary"]), "| no target:",
-          sum(r["target_kind"] == "none" for r in rows))
+    print("excluded with a target, by EvalMaxSAT outcome:",
+          c("ems_status", lambda r: not r["primary"] and r["target_kind"] == "proven"))
+    print("primary EvalMaxSAT-proved / proved only by other solvers (x censored):",
+          sum(r["primary"] and r["x_role"] == "finite" for r in rows), "/",
+          sum(r["primary"] and r["x_role"] == "censored" for r in rows))
     return 0
 
 

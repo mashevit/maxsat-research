@@ -2,15 +2,18 @@
 
 > "go, write the rho pre-registration" (user, 2026-10-29)
 
-**Status: DRAFT r2, 2026-10-29.** It becomes binding when the user approves it
+**Status: DRAFT r3, 2026-10-29.** It becomes binding when the user approves it
 and it is committed; the commit hash is then entered here.
-- **r1** (commit `dda60a8`): primary = the EvalMaxSAT (30, 3600] s window,
-  successes only.
-- **r2** (user, 2026-10-29): the primary population becomes **all
-  instances**, censored on both axes; the window becomes a sensitivity
-  analysis; ρ against every published solver replaces the VBS analysis.
+- **r1** (`dda60a8`): primary = the EvalMaxSAT (30, 3600] s window, successes
+  only.
+- **r2** (`08d6056`, user): primary = all instances, censored on both axes
+  (timeouts and zero successes = ∞, midranks); the window as a sensitivity
+  analysis; ρ against every published solver instead of the VBS.
+- **r3** (user, 2026-10-29): **targets only optima proven by an exact solver
+  in the 2026 runs** (any solver, not only EvalMaxSAT), so no best-known
+  targets and no batch 3d; ERT spelled out on both axes; no 300 s budget.
 
-**Blind:** both revisions were written while batch 3c
+**Blind:** every revision was written while batch 3c
 ([`MSE26_3C_RUN.md`](MSE26_3C_RUN.md)) ran on the cluster, before any 3c
 record was copied to the workstation or read (`results/mse26_memetic/` did
 not exist locally). Anything added after the records are read is labelled
@@ -23,79 +26,84 @@ Sources of the conventions: the M2 pre-registration
 
 ## 1. Question
 
-Across MSE 2026 exact-track instances, do the instances that are hard for an
-exact MaxSAT solver also take the memetic long to reach the target? ρ is the
-Spearman rank correlation between the two hardness measures, one point per
-instance, with failures on either side as tied top ranks. A low ρ, with each
-solver reaching instances the other does not, is the "complementary hardness"
-result; a high ρ means the two see the same hardness. No direction is
-assumed: the tests are two-sided.
+Across MSE 2026 exact-track instances with a proven optimum, do the instances
+that are hard for an exact MaxSAT solver also take the memetic long to reach
+the optimum? ρ is the Spearman rank correlation between the two ERTs, one
+point per instance, with failures on either side as tied top ranks. A low ρ,
+with each solver reaching instances the other does not, is the
+"complementary hardness" result; a high ρ means the two see the same
+hardness. No direction is assumed: the tests are two-sided.
 
 ## 2. Population
 
-**Frame:** all 1,216 MSE 2026 exact-track instances (Zenodo 21358014; 607
-unweighted + 609 weighted). One row each in `scripts/mse26_population.tsv`
-(strong tree), written by `scripts/mse26_population.py` from the published
-metadata and raw results; counts below are from it.
+**Frame:** all 1,216 MSE 2026 exact-track instances (Zenodo 21358014). One
+row each in `scripts/mse26_population.tsv` (strong tree), written by
+`scripts/mse26_population.py` from the published metadata and raw results;
+counts below are from it.
 
-**The memetic target:**
-- the published optimum (`optimal_cost`) where one exists: **952** instances;
-- otherwise the **best-known cost** (`best_known_cost`): **249** instances
-  **lack a proven optimum** and have a best-known cost (rows with
-  `target_kind` best_known in the table); reaching it is reaching the best
-  known, not proving optimality;
-- **no target: 15** instances, excluded and listed: 4 with infeasible hard
-  clauses (every solver, EvalMaxSAT included, answered UNSATISFIABLE:
-  pareto-optimal-interpretation-synthesis `1d4d3512`, `21a4f155`,
-  `63cb4386`, `bd26740c`) and 11 with no best-known cost (bnn-verification
-  4, overcommitted-scheduling 3, traveling-salesman 2, judgment-aggregation 1,
-  minimum-weight-dominating-set 1).
+**The target is a proven optimum:** the published `optimal_cost`, proved in
+the 2026 runs by **at least one exact solver** (a run with OPTIMUM FOUND,
+`verified` 1 and `optval` = `optimal_cost`; any of the 22 unweighted / 15
+weighted solvers): **947 instances**. Without a target (excluded, listed in
+the table by `target_kind`):
+- **no published optimum: 260** (no 2026 run answered OPTIMUM FOUND on any of
+  them);
+- **infeasible: 4** (every answer UNSATISFIABLE: `1d4d3512`, `21a4f155`,
+  `63cb4386`, `bd26740c`);
+- **a published optimum that no 2026 run proved: 5** (`9db6427c` scheduling,
+  `ec201844` railway-transport, `1d1e713e` rail, `b1d02455`
+  railway-timetabling, `d72b8cab` minimum-weight-dominating-set; they still
+  run in 3c).
 
 **The x side (EvalMaxSAT's published run, one run per instance):**
 
-| EvalMaxSAT outcome | rule | instances |
+| EvalMaxSAT outcome (on the 947) | rule | instances |
 |---|---|---:|
-| proved (OPTIMUM FOUND, verified, the published optimum, CPU ≤ 3,600 s) | x = CPU time | 792 |
-| timeout | ERT = ∞ (one run, zero successes): **censored, tied top rank** | 363 |
-| memout | non-timeout failure: **excluded and counted** | 39 |
-| crash (no answer, no timeout, no memout) | non-timeout failure: excluded and counted | 18 |
+| proved (OPTIMUM FOUND, verified, the optimum, CPU ≤ 3,600 s) | x finite | 792 |
+| timeout | x = ∞, **censored, tied top rank** (another solver proved it) | 130 |
+| memout | non-timeout failure: **excluded and counted** | 17 |
+| crash (no answer, no timeout, no memout) | non-timeout failure: excluded and counted | 8 |
 | wrong answer (OPTIMUM FOUND unverified or not the optimum) | non-timeout failure: excluded and counted | 0 |
-| UNSATISFIABLE (infeasible; no target) | excluded with the no-target instances | 4 |
 
-**Primary population: 1,152 instances** (586 unweighted, 566 weighted):
-target present and x finite (792) or censored (360). Of these, 926 have an
-optimum target and 226 a best-known target. **Excluded: 64** (57 non-timeout
-EvalMaxSAT failures, 4 infeasible, 3 timeouts without a target).
+**Primary population: 922 instances** (464 unweighted, 458 weighted): 792
+with x finite, 130 with x censored. **All 922 are in batch 3c**; no further
+memetic batch is needed.
 
-**Runs still missing:** 3c covers the 952 with an optimum (926 of them in the
-population). The **226 best-known instances** need a batch **3d** with the
-same settings (unpack and census first: the unpack job extracted only the
-952), before the primary ρ can be computed.
+**Eligibility depends on x and the published data only**, never on a memetic
+outcome. After the runs, an instance leaves only if it still lacks 3 valid
+records after the reruns of §5 (listed with the reason).
 
-**Eligibility depends on x and the published metadata only**, never on a
-memetic outcome. After the runs, an instance leaves only if it still has
-fewer than 3 valid records after the reruns of §5 (listed with the reason).
+## 3. ERT on both axes
 
-## 3. The two measures
+ERT (expected running time) is the expected time to the first success when
+failed runs are restarted: **ERT = (total effort of all runs) / (number of
+successful runs)**, where a successful run contributes its time to the
+target and a failed run its full spend; **no success → ERT = ∞**.
 
-- **x (exact hardness):** EvalMaxSAT 2026's published **CPU time**, the
-  clock MSE 2026 limits and counts (every timeout at CPU 3,600.0 s;
-  MSE26_RHO_PLAN.md §9); ∞ for a timeout.
-- **y (memetic hardness):** **ERT on the process CPU clock** over seeds 1–3
-  (configs/strong/auto.yaml, budget B = 1,800 s, stop at the target):
+- **x = EvalMaxSAT's ERT** from its single published run, on the CPU clock
+  MSE 2026 limits and counts (every timeout at CPU 3,600.0 s;
+  MSE26_RHO_PLAN.md §9): proved → x = its CPU time (one run, one success);
+  timeout → x = ∞ (one run, zero successes).
+- **y = the memetic's ERT** over seeds 1–3 (configs/strong/auto.yaml, budget
+  B = 1,800 s of process CPU, stop at the optimum):
   - a run **succeeds** iff `stop_reason` is target and `cpu_to_target_s` ≤ B;
     its effort is `cpu_to_target_s` (process CPU from the start: start-up,
     imports, hash, parse, kernel gate, hparams, search);
-  - a failed run is charged B;
-  - ERT = (sum of the efforts) / (number of successes); **zero successes:
-    ERT = ∞, censored, tied top rank**.
+  - a failed run (budget exhausted, target after B, watchdog) is charged B;
+  - y = (sum of the three efforts) / (number of successes); zero successes →
+    y = ∞.
+  - Example: TTTs 100 s and 300 s and one failure → (100 + 300 + 1,800) / 2
+    = 1,100 s.
+  - Computed by `scripts/m2_results.py` (`ert_s` in `by_instance_config.csv`;
+    blank while any run of the instance is missing or invalid; tests in
+    `tests/test_m2_results.py`).
 - **Budget asymmetry, stated with every result:** 1,800 s for the memetic,
   3,600 s for EvalMaxSAT, on different hardware. Ranks are unaffected by a
   uniform speed factor; the censoring points differ.
 
 ## 4. Analyses
 
-**Primary:** Spearman ρ(x, y) on the 1,152 instances, **with midranks** for
+**Primary:** Spearman ρ(x, y) on the 922 instances, **with midranks** for
 ties (all ∞ on an axis share one midrank); **95 % BCa bootstrap CI over
 instances, B = 10,000**, seed 20261029. Reported with it: the number of
 instances **censored on x only, on y only, and on both**, and the number
@@ -106,21 +114,20 @@ excluded (by reason).
    instances) and y finite (≥ 1 memetic success).
 2. **x = EvalMaxSAT wall time** (timeouts still ∞).
 3. **Flip-level effort:** y with `cpu_to_target_hit_s` for successes.
-4. **Shorter memetic budgets read off the same records:** B = 900 s and
-   300 s (success iff `cpu_to_target_s` ≤ B, failures charged B).
+4. **A shorter memetic budget read off the same records:** B = 900 s
+   (success iff `cpu_to_target_s` ≤ 900, failures charged 900).
 5. **Family-stratified bootstrap:** resampling within families.
 6. **Partial Spearman ρ** controlling for log n_vars and log n_clauses of the
    original instance (size as a common cause), midranks.
-7. **Optimum targets only:** the 926 instances whose target is a proven
-   optimum.
 
 **ρ against every published solver (replaces the VBS analysis, user
 2026-10-29):** for each solver of the MSE 2026 exact tracks (22 unweighted,
-15 weighted), x = that solver's ERT with EvalMaxSAT's rules (proved → CPU;
-timeout → ∞; memout, crash or wrong answer → excluded from that solver's ρ
-and counted); y and the midrank/BCa method as in the primary; on the primary
-population of its track. Reported per track as one figure with CIs, plus a
-pooled value for solvers present in both tracks.
+15 weighted), x = that solver's ERT from its single run with EvalMaxSAT's
+rules (proved → CPU; timeout → ∞; memout, crash or wrong answer → excluded
+from that solver's ρ and counted); y and the midrank/BCa method as in the
+primary; on the 947 proven-optimum instances of its track. Reported per track
+as one figure with CIs, plus a pooled value for solvers present in both
+tracks.
 
 **Breakdowns (descriptive, CIs shown, no tests):** per track; per family
 with ≥ 10 instances in the primary population.
@@ -134,21 +141,18 @@ with ≥ 10 instances in the primary population.
 - **Seeds 4–5 (D1):** the primary ρ is computed on seeds 1–3. If its 95 %
   BCa CI half-width is **> 0.15**, seeds 4 and 5 are run on **every**
   instance of the primary population (whatever its outcome; worst case
-  1,152 CPU-h) and the primary ρ is recomputed on 5 seeds; the 3-seed value
-  is reported next to it.
-- **Improvements over the best known:** a run that ends below a best-known
-  target is a success like any other; the instance and cost are reported.
+  922 CPU-h) and the primary ρ is recomputed on 5 seeds; the 3-seed value is
+  reported next to it.
 
 ## 6. Secondary, pre-registered: complementarity
 
 1. **2 × 2 table on the primary population:** EvalMaxSAT proved (x finite)
-   × memetic reached the target in ≥ 1 of 3 seeds (y finite); counts and
-   the off-diagonal instances by family, separately for optimum and
-   best-known targets.
+   × memetic reached the optimum in ≥ 1 of 3 seeds (y finite); counts and
+   the off-diagonal instances by family.
 2. **Complementarity map:** x bands ≤ 1 s, (1, 30], (30, 300], (300, 3600],
    ∞ × y bands ERT ≤ 10 s, (10, 300], (300, 5,400], ∞; counts per cell, per
    track.
-3. **Floor share:** the share of runs that reached the target in the
+3. **Floor share:** the share of runs that reached the optimum in the
    initialisation or the first polish call (`calls_to_target` ≤ 1), per x
    band.
 
@@ -169,8 +173,10 @@ Its own pre-registration, if run, refers to this document.
 
 ## 9. Decisions
 
-- **D1 seeds 4–5:** as in §5, applied to the new primary population.
+- **D1 seeds 4–5:** as in §5, on the primary population.
 - **D2:** replaced by the r2 population (user).
 - **D3:** as in §7 (recommended, user).
-- **D4:** x = EvalMaxSAT CPU; no VBS; ρ against every published solver with
-  ERT (§4).
+- **D4:** x = EvalMaxSAT CPU ERT; no VBS; ρ against every published solver
+  with ERT (§4).
+- **Targets (r3, user):** proven optima only, proved by any 2026 exact
+  solver; no best-known targets; no 300 s budget.

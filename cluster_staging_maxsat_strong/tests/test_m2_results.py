@@ -87,3 +87,16 @@ def test_process_clock_grace_and_clock_are_checked():
     assert cls == "invalid_submission" and note.startswith("grace_s")
     cls, note = m2_results.classify(t, _process_rec(budget_clock="run"))
     assert cls == "invalid_submission" and note.startswith("budget_clock")
+
+
+def test_ert():
+    """ERT = (successes' TTT + budget per final failure) / successes; inf with none; blank if incomplete."""
+    def row(cls, ttt=None):
+        return {"cls": cls, "success_ttt_s": ttt, "budget_s": "1800"}
+    assert m2_results.ert([row("success", 100.0), row("success", 300.0), row("success", 200.0)])["ert_s"] == 200.0
+    assert m2_results.ert([row("success", 100.0), row("budget_exhausted"), row("watchdog")])["ert_s"] == 3700.0
+    assert m2_results.ert([row("success", 60.0), row("target_after_budget")])["ert_s"] == 1860.0
+    assert m2_results.ert([row("budget_exhausted"), row("max_gens"), row("budget_exhausted")])["ert_s"] == "inf"
+    e = m2_results.ert([row("success", 5.0), row("infra_missing"), row("success", 7.0)])
+    assert e["ert_s"] == "" and e["ert_complete"] is False
+    assert m2_results.ert([row("success", 5.0), row("cost_mismatch")])["ert_complete"] is False

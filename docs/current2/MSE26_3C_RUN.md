@@ -62,7 +62,7 @@ Within a part, instances are ordered by set and hash, seeds 1–3 consecutive;
 
 ## 4. Tests and smoke [verified]
 
-- Suite: 631 passed / 16 skipped (3 new in `test_m2_results.py`).
+- Suite: 630 passed / 16 skipped at 14b9276 (2 new in `test_m2_results.py`; the 14b9276 commit message's "631" was a miscount); 631 after the ERT test (2026-10-29).
 - **Driver smoke** (workstation, mock tree, 2 local instances under MSE 2026
   paths, budget 60 s): a soft 2-SAT instance → kernel, optimum, `success`
   (`cpu_to_target_s` 0.11); a hard judgment-aggregation instance (48 k hard) →

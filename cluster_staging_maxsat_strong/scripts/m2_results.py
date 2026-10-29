@@ -258,6 +258,25 @@ def med_ttt(vals: List[Optional[float]]) -> str:
     return f"{m:.1f}" if math.isfinite(m) else f">{BUDGET_S:g}"
 
 
+FINAL_FAILURES = ("budget_exhausted", "target_after_budget", "watchdog", "max_gens")
+
+
+def ert(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Expected running time over a group's runs (MSE26_RHO_PREREG.md §3).
+
+    ERT = (sum of efforts) / (number of successes): a success contributes its
+    success_ttt_s (cpu_to_target_s on the process clock), every final failure
+    (budget exhausted, target after the budget, watchdog, max_gens) is charged
+    its budget_s. No success: "inf". Any run still missing, failed by
+    infrastructure, invalid or a cost mismatch: "" (incomplete, not computed).
+    """
+    if any(r["cls"] not in ("success",) + FINAL_FAILURES for r in rs):
+        return {"ert_s": "", "ert_runs": len(rs), "ert_complete": False}
+    succ = [float(r["success_ttt_s"]) for r in rs if r["cls"] == "success"]
+    spent = sum(succ) + sum(float(r["budget_s"]) for r in rs if r["cls"] != "success")
+    return {"ert_s": round(spent / len(succ), 3) if succ else "inf", "ert_runs": len(rs), "ert_complete": True}
+
+
 def summarise(rows: List[Dict[str, Any]], keys: List[str]) -> List[Dict[str, Any]]:
     g = defaultdict(list)
     for r in rows:
@@ -272,6 +291,7 @@ def summarise(rows: List[Dict[str, Any]], keys: List[str]) -> List[Dict[str, Any
             zip(keys, k), tasks=len(rs), successes=c["success"],
             success_rate=round(c["success"] / len(rs), 3),
             median_ttt_s=med_ttt([r["success_ttt_s"] for r in rs]),
+            **ert(rs),
             **{f"n_{x}": c[x] for x in CLASSES},
             median_generations=med("ea_generations"), median_children=med("children"),
             median_mean_flips_per_call=med("mean_flips_per_call"),
