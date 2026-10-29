@@ -12,6 +12,8 @@ node. Per instance, with the C parser (sat/compact.py):
   - parse seconds and the process peak RSS after the parse and at the end.
 
     python3 scripts/mse26_census.py --set S --hash H --path data/raw/mse26/S/H.wcnf --out ROW.tsv
+`--kernel-max-mib` / `--kernel-max-s` raise the two kernel limits (the large-instance
+kernel task, scripts/mse26_kernel_big.sbatch, COMPILED_MEMETIC_PLAN.md §13).
 The header is COLUMNS; the row is written only when everything finished, so a
 missing row means "rerun this file".
 """
@@ -59,7 +61,7 @@ def _on_alarm(signum, frame):
     raise _KernelTimeout()
 
 
-def census(set_, hash_, path) -> dict:
+def census(set_, hash_, path, kernel_max_mib=KERNEL_MAX_MIB, kernel_max_s=KERNEL_MAX_S) -> dict:
     from sat import compact as cpt
     from sat import kernel as kern
     from sat import ls_v3
@@ -81,12 +83,12 @@ def census(set_, hash_, path) -> dict:
     row.update(screen_hit=hit, screen_occ=occ, screen_frac=round(frac, 6))
     if frac < GATE["preprocess_gate"]["screen_min"]:
         row["kernel_status"] = "skipped_screen"
-    elif row["bytes"] / 2 ** 20 > KERNEL_MAX_MIB:
+    elif row["bytes"] / 2 ** 20 > kernel_max_mib:
         row["kernel_status"] = "not_run_size"
     else:
         t = time.time()
         signal.signal(signal.SIGALRM, _on_alarm)
-        signal.alarm(KERNEL_MAX_S)
+        signal.alarm(int(kernel_max_s))
         try:
             g = kern.gate(w, GATE)
         except _KernelTimeout:
@@ -95,7 +97,7 @@ def census(set_, hash_, path) -> dict:
             signal.alarm(0)
         row["kernel_s"] = round(time.time() - t, 3)
         if g is None:
-            row["kernel_status"] = f"kernel_timeout_{KERNEL_MAX_S}s"
+            row["kernel_status"] = f"kernel_timeout_{int(kernel_max_s)}s"
         else:
             row["kernel_status"] = g.decision
             f = g.fields
@@ -111,10 +113,12 @@ def main(argv=None) -> int:
     ap.add_argument("--hash", required=True)
     ap.add_argument("--path", required=True, help="relative to the tree root")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--kernel-max-mib", type=float, default=KERNEL_MAX_MIB)
+    ap.add_argument("--kernel-max-s", type=int, default=KERNEL_MAX_S)
     a = ap.parse_args(argv)
     os.chdir(ROOT)
     try:
-        row = census(a.set, a.hash, a.path)
+        row = census(a.set, a.hash, a.path, a.kernel_max_mib, a.kernel_max_s)
     except Exception as e:   # recorded, so the readout sees it; the task goes on
         row = {c: "" for c in COLUMNS}
         row.update(set=a.set, hash=a.hash, path=a.path, error=f"{type(e).__name__}: {e}"[:300],

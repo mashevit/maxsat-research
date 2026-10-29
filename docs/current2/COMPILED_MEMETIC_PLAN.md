@@ -501,3 +501,53 @@ an estimate; one cluster task (kernel only, `--mem=64G`, peak RSS + seconds)
 measures it. **Time is unchanged:** ~11 µs/clause → ~1,000 s of the 1,800 s
 budget on this instance (the 2 M point was slower per clause than 1 M, so
 possibly more).
+
+## 13. Large-instance kernel task (prepared 2026-10-29; user: "go, commit and prepare the cluster kernel task")
+
+**Why:** the kernel rule for 3c needs the lean kernel's real peak RSS and
+seconds on the 2 screen-passing instances the census did not run (§11); §12
+only projects them (`cd1a6257` ~26 GB, ~1,000 s).
+
+**What it does:** `scripts/mse26_kernel_big.sbatch`, array 1–2, **64 GB**,
+2 h limit, 1 CPU: the census row (`scripts/mse26_census.py`, now with
+`--kernel-max-mib` / `--kernel-max-s`; defaults unchanged) with no size limit
+and a **3,600 s** kernel cap, into `results/mse26_kernel_big/rows/<hash>.tsv`.
+Task 1 = `cd1a6257` (2,029 MiB, 88.4 M clauses, screen 1.0), task 2 =
+`d72b8cab` (594 MiB, 2.8 M clauses, screen 0.85). The row gives the gate's
+decision, kernel size, gain, `kernel_s`, `rss_parse_mb` and `rss_end_mb`
+(process peak); a shell sampler logs `VmHWM`/`VmRSS` every 30 s
+(`KBIG_MEM` lines), so a task killed for memory shows how far it got. The
+task log ends with `ROW …` + `TASK_OK`, or `TASK_FAIL`. Worst case 4 CPU-h.
+
+**Tested** (workstation mock): the sbatch on a tree copy with the 43.9 MiB
+shaped file under task 1's path → `kernel_empty`, 17.8 s, peak 590 MB,
+`TASK_OK`; task 2 with its file missing → `FATAL: missing`; the census
+script with default limits gives the same row as before. Arrange script
+mock-tested on the cluster tree of `fd2e5f1`: replace 3 (kernel.py,
+compact.py, mse26_census.py; old copies `.bak_pre_kbig`), new 2,
+`KBIG_UPLOAD_OK`, `src/` equal to the workstation's afterwards.
+
+**Upload (flat):** `tmp/upload_kbig/` (8 files: 5 tree files as `kb__*`,
+`UPLOAD_MAP_kbig.tsv`, `arrange_kbig.sh`, `upload.sha256`). Python only, **no
+C rebuild** (the census build is current: `src/native` unchanged since
+9ce84ca).
+
+```bash
+# login node, after uploading tmp/upload_kbig/* into ~/upload_kbig/
+cd ~/upload_kbig && sha256sum -c upload.sha256    # 7 x OK
+bash arrange_kbig.sh                              # dry run: REPLACE 3, NEW 2
+bash arrange_kbig.sh --apply                      # KBIG_UPLOAD_OK, lean kernel in place, link
+cd ~ && rm -rf ~/upload_kbig
+cd ~/cluster_staging_maxsat_strong/scripts && mkdir -p logs
+sbatch mse26_kernel_big.sbatch                    # or --array=1 for cd1a6257 only
+squeue -u $USER                                   # wait until empty
+grep -h -e ROW -e TASK_ -e FATAL logs/mse26-kbig-*.out
+```
+
+**Bring back** to `cluster_staging_maxsat_strong/results/mse26_kernel_big/`:
+`rows/` (2 files) and `scripts/logs/mse26-kbig-*.out`. If a task ends
+without a row, also `sacct -j <jobid> -o JobID,State,Elapsed,ReqMem` (an
+OUT_OF_MEMORY state + the last `KBIG_MEM` line give the answer).
+
+**Then (workstation):** the kernel rule for 3c (user's decision with the
+measured seconds and GB), the exact memory bins, the 3c manifest.
