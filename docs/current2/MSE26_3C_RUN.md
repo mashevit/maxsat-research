@@ -200,3 +200,5 @@ Sensitivities 2 (wall x) and 3 (flip level) equal the primary in both. D1
 in ≥ 1 run): exclude 527 / 225 / 43 / 83, fail 529 / 263 / 43 / 87 (proved &
 reached, proved & not, not & reached, neither). The conclusion does not depend on
 the treatment.
+
+Full tables (per family, per published solver, maps): `MSE26_RHO_PRELIM_RESULTS.md`.
