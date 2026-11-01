@@ -202,3 +202,176 @@ reached, proved & not, not & reached, neither). The conclusion does not depend o
 the treatment.
 
 Full tables (per family, per published solver, maps): `MSE26_RHO_PRELIM_RESULTS.md`.
+
+## 9. Error policy and the heap-crash fix (2026-11-01, user)
+
+> "what is to be glucoze timeout, or slrum timeout - treat them as errors legitimate in our 2 columns rho summary, document it, the memory error on small instances if can be solved - solve it. are there other error categories?" (user, 2026-11-01)
+
+### 9.1 All outcome categories of the 2,856 tasks
+
+From `m2_results.py pending --summary` per part (classifier of §9.3), with the
+§7 groups:
+
+| class | tasks | what it is | in ρ |
+|---|---:|---|---|
+| success | 1,560 | target reached, `cpu_to_target_s` ≤ 1,800 s | effort = `cpu_to_target_s` |
+| budget_exhausted | 1,165 | ran to the 1,800 s budget, no target | failure, charged B (prereg) |
+| target_after_budget | 2 | target reached after the budget (8a) | failure, charged B (prereg) |
+| watchdog (group C) | 11 | overran budget + 300 s grace; the watchdog record says no target | failure, charged B (prereg) |
+| **glucose_timeout (group B)** | **107** | **error**: `impl: hard` found no hard-feasible start in the budget (38 instances) | **error: the two columns** |
+| **infra_missing (groups A, D)** | **11** | **error**: no record; 6 heap crash (A), 5 Slurm 1 h wall kill (D) | **error: the two columns** (A: fixed; workstation records, §9.6) |
+| cost_mismatch, invalid_submission, infra_error, max_gens | 0 | — | — |
+
+The EvalMaxSAT side has its own non-timeout failures, already fixed by the
+prereg (§2 there): 17 memouts and 8 crashes, out of the primary population
+(they enter only sensitivity 7, PAR2). No other categories exist.
+
+### 9.2 What the two error groups are
+
+- **Glucose timeout (group B).** For instances with hard clauses
+  (`impl: hard`), every population member must first be a model of the hard
+  clauses, found by Glucose (PySAT Glucose4) under random preferred phases.
+  On 38 instances (107 runs) Glucose found no model at all within the
+  1,800 s budget, so the evolutionary search never started. The record says
+  `status=ok stop_reason=glucose_timeout`, CPU ≈ 1,800 s, cost of the
+  all-False assignment. It is the solver failing at its own start-up step,
+  not an infrastructure fault; the same seed would fail the same way.
+- **Slurm timeout (group D).** The task's Slurm wall limit is 1 h (1,800 s
+  budget + 300 s grace + reading the file). 5 runs (4 instances, 34–49 MB
+  PRBAC files and one 1.2 GB planning-bnn) were still running at 1 h, so
+  Slurm killed them before the shard runner wrote a record. Their sibling
+  seeds either hit the time cap or wrote a late watchdog record (wall up to
+  3,310 s instead of 2,100 s), so these 5 runs would almost surely have been
+  failures. The overrun past budget + grace is a deadline-enforcement fault on
+  big instances (the same as group C), still open.
+
+### 9.3 Decision: both stay errors, handled by the two columns
+
+Per the user, groups B and D are **legitimate errors**. They are **not
+rerun** and are **not** turned into pre-registered failures; the two
+treatments of §8 handle them:
+
+- **`fail` column:** each such run counts as a memetic failure at the budget
+  (effort B in ERT, 2B in PAR2);
+- **`exclude` column:** an instance with any such run leaves every analysis.
+
+Code (strong tree):
+- `scripts/m2_results.py`: new class **`glucose_timeout`** (before, it fell
+  through to `infra_error` as an unknown stop_reason). It is in the new
+  `ERROR_CLASSES`, not in `PENDING_CLASSES` (never listed for a rerun) and
+  not in `FINAL_FAILURES` (ERT and PAR2 stay blank, so `mse26_rho.py` treats
+  the instance as incomplete).
+- `scripts/mse26_rho_errors.py --errors fail` turns `PENDING_CLASSES +
+  ERROR_CLASSES` runs into failures; `--errors exclude` is `mse26_rho.py` as is.
+- Group D stays `infra_missing`; it is simply not resubmitted.
+- The ρ numbers of §8 and `MSE26_RHO_PRELIM_RESULTS.md` do not change with
+  this (checked: both treatments recomputed, the same as before, §9.5).
+- Tests: `tests/test_m2_results.py::test_glucose_timeout_is_a_final_error`.
+
+### 9.4 Group A, the heap crash: cause and fix
+
+**Cause [verified].** Not the C core (`ls_core.c` reviewed, and an
+AddressSanitizer build of it ran clean). The crash is in PySAT's Glucose4:
+
+- The 2 instances (kbtree, 280 variables, 364 hard clauses) have **945 unit
+  soft clauses on 280 variables**, so many unit soft literals repeat.
+- `hard.moves.keep_sat: ks2` (auto_hparams R4 for hard instances) calls
+  Glucose with the target literal **plus every satisfied unit soft literal**
+  as assumptions: here up to ~945 assumptions, with repeats, for 280 variables.
+- Glucose 4.1 opens one decision level per assumption, including an empty
+  level for an assumption that is already true, and indexes per-level arrays
+  sized by the variable count. With more levels than variables it writes past
+  them and corrupts the heap. The process aborts later, at some free
+  (`free(): invalid next size` / `double free or corruption`), at a random
+  time: 134–1,801 s on the cluster.
+- Local reproduction: the 3c task with a 10 s budget aborts 3 of 3 times
+  (backtrace: `HardSAT.close` → `Glucose4.delete`). A 20-line PySAT script
+  with repeated assumptions segfaults in `solve_limited`; the same calls with
+  each literal once run clean.
+- The instances were fetched from the MSE 2026 Zenodo zip by HTTP range reads
+  (sha256 = the sidecar's), into `results/heapcrash_repro/` (not committed).
+
+**Fix.** `src/evo/hard.py` `HardSAT.model` passes each assumption literal
+once, in first-occurrence order (`dict.fromkeys`). It is the same set of
+constraints, so the answer (SAT / UNSAT, the model's constraints) is
+unchanged; a call without repeats is exactly the old call. Test:
+`tests/test_keep_sat.py::test_model_passes_each_assumption_once`.
+
+**Scope of the change.** Only calls with repeated assumptions differ (fewer
+empty decision levels, so Glucose's search can take another path). In 3c
+these are the keep_sat calls on instances with duplicate unit soft clauses.
+The completed 3c records are kept as they are: each record's cost and hard
+violations are re-derived from its assignment by the runner, so a run that
+finished has a valid result even if Glucose overran its arrays without
+crashing. Only the 6 group A tasks get new records, from the fixed code (§9.6).
+
+**Verification [verified].** 10 s budget, both instances × seeds 1–3, twice:
+12 / 12 clean (before: 3 / 3 aborted). Full 1,800 s runs of the 6 tasks
+locally: 6 / 6 clean (§9.5). Full suite: 644 passed / 16 skipped.
+
+**No cluster rerun (user, 2026-11-01).** The 6 group A records come from the
+workstation runs of §9.5, which reached a result on every task (§9.6). A flat
+upload for a cluster rerun was prepared and mock-tested (`tmp/upload_mse26fix/`,
+`arrange_mse26fix.sh`; 3 tree files) and is **not used**. The cluster tree
+still has the pre-fix `src/evo/hard.py`: any later cluster batch with
+`impl: hard` and keep_sat needs this fix uploaded first.
+
+### 9.5 Checks [verified]
+
+- **The 6 group A tasks, fixed code, full budget, on the workstation** (not
+  the cluster clock; outputs `results/heapcrash_repro/fixed1800/`, not
+  committed): all 6 exit 0 with a record, hard-feasible.
+
+  | instance | seed 1 | seed 2 | seed 3 |
+  |---|---|---|---|
+  | 27770a63… (opt 128) | time_cap, cost 129 | **target at 462.6 s** | time_cap, cost 129 |
+  | d1a8db71… (opt 126) | time_cap, cost 127 | **target at 708.1 s** | time_cap, cost 127 |
+
+  Process CPU to the target (`cpu_to_target_s`, ρ's clock): 428.1 s and
+  669.1 s. These records enter ρ (§9.6).
+- **ρ under the new classifier:** `mse26_rho_errors.py --errors fail` and
+  `--errors exclude` recomputed: `instances.csv` byte-identical to
+  `results/mse26_rho_{fail,exclude}/`, every number in `summary.json` the
+  same; the only difference is the label of 5 runs in the `exclude`
+  incomplete-instance list (`infra_error` → `glucose_timeout`).
+
+
+### 9.6 The 6 group A records in ρ (workstation, no cluster rerun; user 2026-11-01)
+
+> "I do not want rerun on cluster, if you have the optimum memetic workstation results on all missing, they are enough" (user, 2026-11-01)
+
+The 6 workstation records of §9.5 were copied into
+`results/mse26_memetic/tasks/` (2,851 shards now). The provenance, with the
+sha256 of each record and of the fixed `hard.py`, is in
+`results/mse26_memetic/provenance/workstation_groupA_20261101.txt`. They pass
+`m2_results.py`'s manifest check (job id, seed, config, instance sha256,
+budget, grace, clock). Caveats: they were run on the workstation, not the
+cluster nodes, so their CPU seconds are from another machine. Their
+`git_sha` field reads `1003fec` plus the uncommitted fix (committed after).
+Pending now: only the 5 group D runs (8a 28, 664, 748, 750; 64 50), which stay
+errors (§9.3).
+
+**EvalMaxSAT on these 2 instances (published 2026 run).**
+
+| instance | EvalMaxSAT | memetic (seeds 1–3) | ERT y | cell |
+|---|---|---|---:|---|
+| 27770a63… (opt 128) | **timeout** (not proved in 3,600 s) | 1 / 3 (seed 2, 428.1 s CPU) | 4,028 s | memetic only |
+| d1a8db71… (opt 126) | **proved**, 3,131.7 s CPU (in the window) | 1 / 3 (seed 2, 669.1 s CPU) | 4,269 s | both solved |
+
+**ρ with the 6 records.** `mse26_rho_errors.py`, both columns, outputs
+`results/mse26_rho_fixA_{fail,exclude}/` (not committed); the earlier outputs
+`results/mse26_rho_{fail,exclude}/` and `MSE26_RHO_PRELIM_RESULTS.md` are
+left as they were.
+
+| analysis | `fail` before → with A | `exclude` before → with A |
+|---|---|---|
+| **primary ERT** | +0.639 → **+0.637 [+0.588, +0.680]**, N 922 | +0.635 → **+0.634 [+0.583, +0.677]**, N 878 → 880 |
+| ∞ x / y / both | 43 / 263 / 87 → 44 / 262 / 86 | 43 / 225 / 83 → 44 / 225 / 83 |
+| 1 window, uncensored | +0.212 → +0.223 [+0.078, +0.362], N 183 → 184 | +0.200 → +0.211 [+0.063, +0.351], N 181 → 182 |
+| 4 budget 900 s | +0.640 → +0.638 | +0.636 → +0.635 |
+| 5 family-stratified | +0.639 → +0.637 [+0.600, +0.672] | +0.635 → +0.634 [+0.596, +0.669] |
+| 6 partial on size | +0.571 → +0.569 | +0.572 → +0.574 |
+| 7 PAR2, all proven | +0.636 → +0.635, N 947 | +0.634 → +0.634, N 903 → 905 |
+
+Memetic-only instances: 43 → 44. Every conclusion is unchanged. D1 (seeds
+4–5) is not triggered in either column.

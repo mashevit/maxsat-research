@@ -14,6 +14,16 @@ evidence (not pre-registered; N-2026-10-29-b).
 (not pre-registered; N-2026-11-01-a; paragraph "On orthogonality":
 N-2026-11-01-b).
 
+**Error policy (user, 2026-11-01; N-2026-11-01-c; `MSE26_3C_RUN.md` §9).** The
+Glucose timeouts (group B: no hard-feasible start within the budget, 107 runs,
+38 instances) and the Slurm wall kills (group D, 5 runs) are **legitimate
+errors**: not rerun, decided only by the two columns (`fail`: a failure at the
+budget; `exclude`: the instance out). The heap crash (group A, 6 runs on 2
+kbtree instances) was a Glucose bug triggered by repeated assumptions; it is
+fixed (`src/evo/hard.py`); the 6 tasks were run on the workstation with the fix
+(no cluster rerun, user). Every number in this document stays as computed (6 runs
+missing); ρ with the 6 records: `MSE26_3C_RUN.md` §9.6.
+
 **What is computed.** The pre-registered analysis (`MSE26_RHO_PREREG.md`,
 BINDING r4, text of `f8a3354`), unchanged, run by `scripts/mse26_rho.py`
 (commit `0e96589`) through the wrapper `scripts/mse26_rho_errors.py`

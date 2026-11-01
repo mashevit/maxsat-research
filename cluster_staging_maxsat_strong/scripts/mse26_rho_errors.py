@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Run the pre-registered ρ analysis (mse26_rho.py, unchanged) under two treatments of
 the 3c runs that ended in an error (MSE26_3C_RUN.md §7: heap crash, glucose_timeout,
-Slurm wall kill; m2_results classes infra_missing / infra_error / invalid_submission).
+Slurm wall kill; m2_results classes infra_missing / infra_error / invalid_submission
+and, since 2026-11-01, glucose_timeout, which m2_results.ERROR_CLASSES names apart).
 
   --errors exclude   as mse26_rho.py: an instance with any such run is incomplete and
                      leaves every analysis (the run-level default of the pre-registration)
   --errors fail      each such run, or a missing seed, counts as a memetic failure at the
                      budget (effort B in ERT, 2B in PAR2), like budget_exhausted
 
-User request 2026-10-29, before the fixes and reruns of §7.
+User request 2026-10-29, before the fixes and reruns of §7. User 2026-11-01: the
+glucose timeouts (group B) and the Slurm wall kills (group D) stay errors handled by
+these two treatments (no rerun of D); only the heap crash (A) is fixed and rerun.
 
     python3 scripts/mse26_rho_errors.py --errors fail    --outdir results/mse26_memetic/tasks
     python3 scripts/mse26_rho_errors.py --errors exclude --outdir results/mse26_memetic/tasks
@@ -33,7 +36,7 @@ def errors_as_failures(load_runs):
         for by_seed in runs.values():
             for s in seeds:
                 r = by_seed.get(s)
-                if r is None or r["cls"] in rho.m2.PENDING_CLASSES:
+                if r is None or r["cls"] in rho.m2.PENDING_CLASSES + rho.m2.ERROR_CLASSES:
                     by_seed[s] = dict(FAILED)
         return runs
     return wrapped

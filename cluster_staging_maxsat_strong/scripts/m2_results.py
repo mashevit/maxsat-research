@@ -14,6 +14,14 @@ Every task gets exactly one class:
                          (hit during the generation that straddles the budget;
                          NOT a success)
     budget_exhausted     status ok, stop_reason time_cap
+    glucose_timeout      status ok, stop_reason glucose_timeout: impl hard found no
+                         hard-feasible start (no Glucose model) within the budget
+                         (MSE26_3C_RUN.md §7 group B). Final (never resubmitted),
+                         but an ERROR, not a pre-registered failure: ERT/PAR2 stay
+                         blank, so mse26_rho.py drops the instance and
+                         mse26_rho_errors.py --errors fail charges the budget (user
+                         2026-11-01: errors go to the two columns). Added 2026-11-01;
+                         before, it fell through to infra_error (unknown stop_reason)
     watchdog             status timeout: the unchanged SIGALRM watchdog fired at
                          budget + grace (960 s). The target was not reached by
                          then (a target hit stops the run first), so for the
@@ -34,7 +42,7 @@ Every task gets exactly one class:
                          unreadable one
 
 RESUME. `pending` lists only infra_missing, infra_error and
-invalid_submission. watchdog, budget_exhausted, target_after_budget,
+invalid_submission. watchdog, budget_exhausted, glucose_timeout, target_after_budget,
 cost_mismatch and max_gens are outcomes of the solver run itself and are never
 resubmitted automatically; a watchdog row is investigated first (host, cpu/wall)
 and resubmitted by hand only if it is shown to be an infrastructure fault.
@@ -66,7 +74,10 @@ from typing import Any, Dict, List, Optional
 BUDGET_S = 900.0
 GRACE_S = 60.0
 PENDING_CLASSES = ("infra_missing", "infra_error", "invalid_submission")
-CLASSES = ("success", "target_after_budget", "budget_exhausted", "watchdog", "max_gens",
+# Final but errors (not rerun, not a pre-registered failure): the two error treatments
+# of mse26_rho_errors.py decide them (fail: charged the budget; exclude: instance out).
+ERROR_CLASSES = ("glucose_timeout",)
+CLASSES = ("success", "target_after_budget", "budget_exhausted", "glucose_timeout", "watchdog", "max_gens",
            "cost_mismatch", "invalid_submission", "infra_error", "infra_missing")
 GROUPS = ("lower_ext", "tier2", "upper_ext")
 
@@ -174,6 +185,8 @@ def classify(t: Dict[str, str], r: Optional[dict]) -> (str, str):
         return "target_after_budget", f"{key}={ttt}"
     if sr == "time_cap":
         return "budget_exhausted", ""
+    if sr == "glucose_timeout":
+        return "glucose_timeout", ""
     if sr == "max_gens":
         return "max_gens", ""
     return "infra_error", f"unknown stop_reason={sr!r}"
@@ -268,7 +281,8 @@ def ert(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
     success_ttt_s (cpu_to_target_s on the process clock), every final failure
     (budget exhausted, target after the budget, watchdog, max_gens) is charged
     its budget_s. No success: "inf". Any run still missing, failed by
-    infrastructure, invalid or a cost mismatch: "" (incomplete, not computed).
+    infrastructure, invalid, a cost mismatch or an ERROR_CLASSES run (glucose_timeout):
+    "" (incomplete, not computed).
     """
     if any(r["cls"] not in ("success",) + FINAL_FAILURES for r in rs):
         return {"ert_s": "", "ert_runs": len(rs), "ert_complete": False}

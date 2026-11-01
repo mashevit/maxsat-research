@@ -89,6 +89,22 @@ def test_process_clock_grace_and_clock_are_checked():
     assert cls == "invalid_submission" and note.startswith("budget_clock")
 
 
+def test_glucose_timeout_is_a_final_error():
+    """MSE26_3C_RUN.md §7 group B (user 2026-11-01): no hard-feasible start within the
+    budget gets its own class, is never pending (not rerun), and is an error, not a
+    pre-registered failure: ERT/PAR2 stay blank (the two error treatments decide it)."""
+    cls, _ = m2_results.classify(_process_task(), _process_rec(stop_reason="glucose_timeout",
+                                                              time_to_target_s=None, cpu_to_target_s=None))
+    assert cls == "glucose_timeout"
+    assert cls in m2_results.ERROR_CLASSES
+    assert cls not in m2_results.FINAL_FAILURES and cls not in m2_results.PENDING_CLASSES
+    assert m2_results.classify(_process_task(), _process_rec(stop_reason="bogus"))[0] == "infra_error"
+    row = lambda c, ttt=None: {"cls": c, "success_ttt_s": ttt, "budget_s": "1800"}
+    e = m2_results.ert([row("success", 100.0), row("glucose_timeout"), row("success", 200.0)])
+    assert e["ert_s"] == "" and e["ert_complete"] is False
+    assert m2_results.par2([row("glucose_timeout")] * 3)["par2_s"] == ""
+
+
 def test_ert():
     """ERT = (successes' TTT + budget per final failure) / successes; inf with none; blank if incomplete."""
     def row(cls, ttt=None):

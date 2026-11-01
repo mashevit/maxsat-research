@@ -183,8 +183,16 @@ class HardSAT:
         if remaining is not None:
             timer = threading.Timer(remaining, s.interrupt)
             timer.start()
+        # Each assumption literal once, first-occurrence order (2026-11-01, MSE26_3C_RUN.md
+        # §9): Glucose 4.1 opens a decision level per assumption, a repeated one included,
+        # and indexes per-level arrays sized by the variable count, so a list longer than
+        # n with repeats (keep_sat on many duplicate unit soft clauses: kbtree, 945 units
+        # on 280 variables) wrote past them and corrupted the heap (the 3c heap crashes).
+        # The same constraints, so the answer is unchanged; without repeats the call is
+        # exactly the old one.
+        assumptions = list(dict.fromkeys(assumptions))
         try:
-            ok = s.solve_limited(assumptions=list(assumptions), expect_interrupt=True)
+            ok = s.solve_limited(assumptions=assumptions, expect_interrupt=True)
         finally:
             if timer is not None:
                 timer.cancel()

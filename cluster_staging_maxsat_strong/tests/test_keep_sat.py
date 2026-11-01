@@ -157,3 +157,30 @@ def test_shard_refuses_bad_keep_sat_before_the_run(tmp_path):
     assert shard.main(["--instance", path, "--config", str(cp), "--seed", "1", "--budget-s", "20",
                        "--out", str(out)]) == 2
     assert not out.exists()
+
+
+def test_model_passes_each_assumption_once(tmp_path):
+    """MSE26_3C_RUN.md §9 (2026-11-01): HardSAT.model hands Glucose each assumption
+    literal once, in first-occurrence order. Repeats opened extra decision levels in
+    Glucose 4.1, past arrays sized by the variable count: the 3c heap crashes on the
+    kbtree instances (945 unit soft clauses on 280 variables, keep_sat ks2)."""
+    w, _ = unit_instance(tmp_path, 0, n=12, m_hard=10, m_soft=60)
+    sat = HardSAT(w)
+    seen = []
+    real = sat.s.solve_limited
+
+    def spy(assumptions=[], expect_interrupt=False):
+        seen.append(list(assumptions))
+        return real(assumptions=assumptions, expect_interrupt=expect_interrupt)
+
+    sat.s.solve_limited = spy
+    status, a = sat.model([False] * (w.n_vars + 1))
+    assert status == "sat"
+    lits = tuple(v if a[v] else -v for v in range(1, w.n_vars + 1))
+    rep = (lits[3], lits[1]) + lits * 5 + (lits[3],)
+    status2, b = sat.model(a, rep, time.time() + 10)
+    assert status2 == "sat" and b == a          # the same constraints: the model is a itself
+    assert seen[-1] == [lits[3], lits[1]] + [l for l in lits if l not in (lits[3], lits[1])]
+    status3, _ = sat.model(a, (lits[0], -lits[0], lits[0]), time.time() + 10)
+    assert status3 == "unsat" and seen[-1] == [lits[0], -lits[0]]
+    sat.close()
