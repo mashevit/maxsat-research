@@ -17,6 +17,58 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 00000000000000000000. Update 2026-11-01 evening (r22): read first — summary for the next session
+
+**Where we are:** everything is committed and pushed (HEAD `0d5b678`). r21
+(below) still holds; this section adds what came after it.
+
+**Added since r21 (all 2026-11-01):**
+- **Complementarity vs orthogonality note:**
+  [`../current2/RESEARCH_NOTES_COMPLEMENTARITY_VS_ORTHOGONALITY.md`](../current2/RESEARCH_NOTES_COMPLEMENTARITY_VS_ORTHOGONALITY.md)
+  (N-2026-11-01-e). The claim for the paper is complementarity: hardness is
+  correlated overall (+0.637), yet each solver solves what the other can't.
+  Never say "orthogonal". §5 compares E4 between the preliminary readout and
+  readout 3, and shows seed by seed how the Slurm-kill instances enter ρ.
+- **Who solved what, in percent** (readout 3,
+  [`../current2/MSE26_RHO_RESULTS_3.md`](../current2/MSE26_RHO_RESULTS_3.md)):
+  - **§4.1, all 922 instances** (`fail`): both 57.5 %, only EvalMaxSAT
+    28.4 %, only memetic 4.8 %, neither 9.3 % (N-f).
+  - **§4.2, EvalMaxSAT x > 30 s or timeout** (N 521): 35.3 / 39.7 / 8.4 /
+    16.5 %. §4.2 also says what this credits the memetic with: **not
+    strength** (weaker alone, 207 vs 44), but **complementarity**. It reaches
+    34 % of EvalMaxSAT's timeouts; above 30 s, coverage goes from 75.0 to
+    83.5 % and PAR2 from 2,290 to 1,727 s. Caveats: no proof, a stop at the
+    known target, different budgets (N-g).
+  - **§4.3, the same with "both failed" removed** (E4 population, N 435):
+    42.3 / 47.6 / 10.1 %, plus what "100 %" means (N-h).
+- **The memetic vs Aperture** (Technion, Nadel / Slonimski / Strichman; won
+  4 of 6 MSE 2026 anytime tracks):
+  [`../current2/MSE26_MEMETIC_VS_APERTURE.md`](../current2/MSE26_MEMETIC_VS_APERTURE.md)
+  (N-i).
+  - 135 shared instances with a proven optimum. At 1707 s the memetic beats
+    every Aperture variant on 7 (6 of them maximum-colorful-subtree) and
+    Aperture-KBG on 19.
+  - Aperture-KBG beats all 3 memetic seeds on 80, and the memetic is never
+    better than the best verified anytime result.
+  - The published anytime results are in `data/raw/mse_results/mse26/anytime/`;
+    the script is `cluster_staging_maxsat_strong/scripts/mse26_vs_aperture.py`.
+  - **This comparison is parked, not a next step.** It is listed in
+    [`../current2/PARKED_FOR_PROJECT_END.md`](../current2/PARKED_FOR_PROJECT_END.md)
+    with the monkey patch (in the solver code) and the lean tables. Raise all
+    three when the user asks whether they forgot something.
+
+**NEXT (unchanged from r21): start writing the research paper on the
+complementarity results.** Propose the outline first and get approval;
+then draft one section per turn. Inputs: r21's list, plus:
+- the complementarity note;
+- readout 3 §4.1–§4.3 (the "who solved what" tables and the honest framing:
+  "a useful portfolio partner for a strong exact solver on its hard tail", not
+  "a stronger solver");
+- for positioning only: the Aperture comparison (the memetic is weaker than
+  the anytime state of the art).
+
+---
+
 ## 0000000000000000000. Update 2026-11-01 (r21): read first — summary for the next session
 
 **Where we are (all committed and pushed, HEAD `c879315`):**
