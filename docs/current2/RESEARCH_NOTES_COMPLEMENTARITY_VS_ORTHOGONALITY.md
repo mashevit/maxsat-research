@@ -80,7 +80,83 @@ E4 = EvalMaxSAT above 30 s (timeouts included), at most one solver failing
   (−0.3, +0.3)), and ρ ≈ 0 rules out only a *monotone* link, not every kind of
   dependence.
 
-## 5. For the paper
+## 5. E4 in the preliminary readout and in readout 3
+
+> "add this E4 comparison to the complementarity doc … write in your own words exactly what happened … note also that N is bigger, and rho is closer to 0 to say more exact for complimentarity" (user, 2026-11-01)
+
+| | preliminary, `fail` | readout 3, `fail` | preliminary, `exclude` | readout 3, `exclude` |
+|---|---|---|---|---|
+| ρ [95 % CI] | +0.068 [−0.032, +0.167] | **+0.064 [−0.037, +0.161]** | +0.039 [−0.063, +0.142] | **+0.039 [−0.062, +0.141]** |
+| N | 434 | **435** | 395 | **400** |
+| only memetic (x = ∞) | 43 | 44 | 43 | 44 |
+| only EvalMaxSAT (y = ∞) | 208 | 207 | 171 | 173 |
+| both solved | 183 | 184 | 181 | 183 |
+| tied at the failure rank | 251 (57.8 %) | 251 (57.7 %) | 214 (54.2 %) | 217 (54.3 %) |
+| prereg label | at most weak | at most weak | at most weak | at most weak |
+
+### 5.1 What happened between the two readouts
+
+The preliminary readout was computed on batch 3c as it came back, with 118 runs
+that ended in an error. Readout 3 includes the cases that could be recovered:
+
+- **Recovered by a fix (group A, 2 instances, 6 runs).** All 3 seeds of two small
+  kbtree instances crashed inside the Glucose library (repeated assumptions
+  overran an internal array). After the fix the 6 runs were redone on the
+  workstation and gave real records:
+  - `27770a63` (EvalMaxSAT timeout): the memetic reached the optimum on seed 2.
+    Before, under `fail`, all 3 seeds counted as failures, so the instance was
+    both-∞ and outside E4. Now it is **memetic-only** (43 → 44).
+  - `d1a8db71` (EvalMaxSAT proved at 3,132 s): reached on seed 2. Before, under
+    `fail`, it was wrongly EvalMaxSAT-only; now it is **both solved**
+    (208 → 207, 183 → 184).
+- **Recovered by evidence (group D, 4 instances, 5 runs).** These runs were
+  killed at the 1 h Slurm limit without a record, long past their 1,800 s CPU
+  budget, so they cannot have reached the optimum in time: they now count as
+  failures (`slurm_wall_kill`). Under `fail` they were already failures, so
+  nothing changes there. Under `exclude` their instances were dropped before and
+  now enter: 3 are in E4 (`cf864e2f` both solved, because another seed reached
+  the optimum; `05347087` and `96d20fa0` EvalMaxSAT-only); the fourth
+  (`847b49a5`) has EvalMaxSAT at 3.4 s, below the 30 s bound.
+- **Not recovered (group B, 38 instances, 107 runs).** Glucose found no
+  hard-feasible start within the budget. These stay errors: `fail` counts them as
+  failures, `exclude` drops the 38 instances. 35 of them are in E4 under `fail`
+  (34 EvalMaxSAT-only, 1 both solved); 3 are both-∞ and outside it.
+
+So under `fail` E4 gains one instance and one instance moves to its correct cell;
+under `exclude` E4 gains 5 instances (395 → 400).
+
+### 5.2 How many seeds enter ERT and PAR2
+
+**Every instance in ρ uses all 3 seeds** in ERT and PAR2. No instance is computed
+on fewer seeds: a failed seed is charged the budget (ERT: +1,800 s; PAR2:
+3,600 s), and one success makes y finite. What differs is where the seed
+outcomes come from:
+
+| instances | seeds | where the outcome comes from |
+|---|---|---|
+| 2 (group A: `27770a63`, `d1a8db71`) | all 3 | workstation runs with the fix (another machine's CPU clock); 1 of 3 reached the optimum on each |
+| 4 (group D: `05347087`, `847b49a5`, `96d20fa0`, `cf864e2f`) | 5 seeds in all (1 each; 2 for `96d20fa0`) | no record: failure inferred from the Slurm kill; the other seeds are real records |
+| 38 (group B, `fail` only) | 107 seeds | real records (`glucose_timeout`, CPU ≈ budget), counted as failures; one of them, `6ca66e97` (planning-bnn), has 2 successes and stays reached |
+| all others | 3 | real cluster records |
+
+Under `exclude` the 38 group B instances are out, so every instance there has 3
+seeds with a record or a group D inferred failure.
+
+### 5.3 What the comparison says
+
+- **N is bigger** (435 vs 434; 400 vs 395) and the data is more complete: fewer
+  outcomes come from errors, and the one instance misplaced by the crash
+  (`d1a8db71`) is now in its correct cell.
+- **ρ is as close to 0 or closer:** `fail` +0.068 → +0.064, `exclude` +0.039 →
+  +0.039. **The upper CI bound is a little lower** (+0.167 → +0.161 and +0.142 →
+  +0.141), so readout 3 bounds the possible monotone association above 30 s a
+  bit more tightly.
+- The changes are small (≤ 0.006). The result is the same and now rests on more
+  complete data: above 30 s, with failures counted on either side, **ρ is around
+  0 and its 95 % interval includes 0**. This is complementarity seen as a rank
+  statistic, not orthogonality (§4).
+
+## 6. For the paper
 
 - **Claim complementarity:** the memetic reaches optima that EvalMaxSAT cannot
   prove, and adding it improves coverage (85.9 % → 90.7 %) and PAR2.
