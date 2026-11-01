@@ -470,11 +470,13 @@ applies.
 | E1 both solved, all x | +0.632 [+0.565, +0.689] | 529 | 0 / 0 / 0 | +0.629 [+0.564, +0.688] | 527 | 0 / 0 / 0 |
 | E2 not both ∞, all x | +0.590 [+0.535, +0.639] | 835 | 43 / 263 / 0 | +0.580 [+0.522, +0.631] | 795 | 43 / 225 / 0 |
 | E3 window (30, 3600] s, y may be ∞ | +0.248 [+0.148, +0.344] | 391 | 0 / 208 / 0 | +0.206 [+0.100, +0.305] | 352 | 0 / 171 / 0 |
-| E4 x > 30 s (∞ included), not both ∞ | +0.068 [−0.032, +0.167] | 434 | 43 / 208 / 0 | +0.039 [−0.063, +0.142] | 395 | 43 / 171 / 0 |
+| E4 x > 30 s (∞ included), not both ∞ | +0.068 [−0.032, +0.167] | 434 | 43 / 208 / 0; both finite 183 | +0.039 [−0.063, +0.142] | 395 | 43 / 171 / 0; both finite 181 |
 | ref: §3 sensitivity 1 (window, y finite) | +0.212 [+0.065, +0.351] | 183 | 0 / 0 / 0 | +0.200 [+0.052, +0.339] | 181 | 0 / 0 / 0 |
 
 The counts match §5: E1 = the "both" cell, E2 = 922 − 87 (`fail`), E3 = the
 391 / 352 window instances, E4 = E3 + the 43 memetic-only instances.
+E4's both-finite instances (183 / 181 = N − ∞ x − ∞ y) are exactly the ref
+subset.
 
 Under the §7 rule of the prereg, E1, E2 and E3 show a **positive
 association** (CI above 0) under both treatments. E4 is **at most weak
