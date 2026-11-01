@@ -96,6 +96,37 @@ group A fix): 17 families, 28 unweighted / 16 weighted; the memetic's ERT is
 below the fastest published proof on 19 of them. On the 530 instances both solve,
 the memetic is faster on 124 (≥ 10× on 39), EvalMaxSAT ≥ 10× faster on 173.
 
+### 4.1 Who solved what, in percent
+
+> "add explicitly in docs and give me pointer - how much percent only the memetic solved, how much percent only evalmaxsat solved, and how much both" (user, 2026-11-01)
+
+"Solved" means EvalMaxSAT **proved** the optimum in its published 2026 run, and the
+memetic **reached** it (≥ 1 of seeds 1–3, 1,800 s CPU budget). The memetic does not
+prove optimality. Counts come from `results/mse26_rho_r3_complementarity.txt`
+(`scripts/mse26_complementarity.py`). Percentages are computed from those counts,
+with 95 % Clopper–Pearson intervals.
+
+**Share of all instances.** Each column sums to 100 %.
+
+| | `fail` (N 922) | `exclude` (N 884) |
+|---|---|---|
+| **both** | 530 = **57.5 %** [54.2, 60.7] | 529 = **59.8 %** [56.5, 63.1] |
+| **only EvalMaxSAT** | 262 = **28.4 %** [25.5, 31.4] | 228 = **25.8 %** [22.9, 28.8] |
+| **only memetic** | 44 = **4.8 %** [3.5, 6.4] | 44 = **5.0 %** [3.6, 6.6] |
+| neither | 86 = 9.3 % [7.5, 11.4] | 83 = 9.4 % [7.5, 11.5] |
+
+**Share of the instances that at least one solver solved** (union: 836 `fail`, 801
+`exclude`).
+
+| | `fail` (836) | `exclude` (801) |
+|---|---|---|
+| both | 63.4 % | 66.0 % |
+| only EvalMaxSAT | 31.3 % | 28.5 % |
+| only memetic | 5.3 % | 5.5 % |
+
+One-line version (primary, `fail`): **both 57.5 %, only EvalMaxSAT 28.4 %, only
+the memetic 4.8 %, neither 9.3 %** of the 922 instances.
+
 ## 5. Exploratory subsets (not pre-registered; `scripts/mse26_rho_explore.py`; as §11 of readout 1)
 
 | subset | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |

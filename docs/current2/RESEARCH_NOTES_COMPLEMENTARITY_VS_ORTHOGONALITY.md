@@ -51,6 +51,9 @@ that running both beats running either one?
 **Complementary.** The memetic only *reaches* the optimum (no proof), and still:
 - **44 instances only the memetic reaches**, against **262 only EvalMaxSAT
   proves** (McNemar exact p ≈ 6 × 10⁻³⁹);
+- in percent of the 922 instances: **both 57.5 %, only EvalMaxSAT 28.4 %,
+  only the memetic 4.8 %, neither 9.3 %** (with CIs, the `exclude` column, and
+  shares of the union: `MSE26_RHO_RESULTS_3.md` §4.1);
 - coverage rises from **85.9 % to 90.7 %** (EvalMaxSAT alone → either solver);
 - mean PAR2 drops from **1,296 s to 978 s** (EvalMaxSAT → per-instance best of
   the two);
