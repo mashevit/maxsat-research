@@ -127,6 +127,72 @@ with 95 % Clopper–Pearson intervals.
 One-line version (primary, `fail`): **both 57.5 %, only EvalMaxSAT 28.4 %, only
 the memetic 4.8 %, neither 9.3 %** of the 922 instances.
 
+### 4.2 The same split above 30 s, and what it does and does not credit the memetic with
+
+> "how can this be achivement to memetic? give table like this only for above 30s interval" (user, 2026-11-01)
+
+**Subset.** "Above 30 s" means **x > 30 s, with EvalMaxSAT timeouts (x = ∞)
+included**: EvalMaxSAT needed more than 30 s or did not prove the optimum. Hardness
+is measured on the EvalMaxSAT side, as in E4 (§5). This subset is E4's population
+plus its both-∞ cell ("neither"). Computed from
+`results/mse26_rho_r3_<fail|exclude>/instances.csv`. 95 % Clopper–Pearson intervals.
+
+| x > 30 s | `fail` (N 521) | `exclude` (N 483) |
+|---|---|---|
+| **both** | 184 = **35.3 %** [31.2, 39.6] | 183 = **37.9 %** [33.5, 42.4] |
+| **only EvalMaxSAT** | 207 = **39.7 %** [35.5, 44.1] | 173 = **35.8 %** [31.5, 40.3] |
+| **only memetic** | 44 = **8.4 %** [6.2, 11.2] | 44 = **9.1 %** [6.7, 12.0] |
+| neither | 86 = 16.5 % [13.4, 20.0] | 83 = 17.2 % [13.9, 20.9] |
+| of the union (435 / 400): both / only EvalMaxSAT / only memetic | 42.3 / 47.6 / 10.1 % | 45.8 / 43.2 / 11.0 % |
+| McNemar exact (207 vs 44; 173 vs 44) | p = 1.8 × 10⁻²⁶ | p = 2.8 × 10⁻¹⁹ |
+
+By EvalMaxSAT band (`fail`):
+
+| EvalMaxSAT time | N | both | only EvalMaxSAT | only memetic | neither |
+|---|---|---|---|---|---|
+| ≤ 30 s (for contrast) | 401 | 86.3 % | 13.7 % | 0 | 0 |
+| (30, 300] s | 192 | 58.9 % | 41.1 % | 0 | 0 |
+| (300, 3600] s | 199 | 35.7 % | 64.3 % | 0 | 0 |
+| timeout (∞) | 130 | 0 | 0 | 33.8 % | 66.2 % |
+
+The zeros follow from the definition: wherever EvalMaxSAT proved the optimum, the
+cell is "both" or "only EvalMaxSAT"; wherever it timed out, it is "only memetic" or
+"neither".
+
+On the 184 instances above 30 s that both solve (`fail`), the memetic is faster on
+77 (≥ 10× faster on 35), EvalMaxSAT is ≥ 10× faster on 26. Mean PAR2 above 30 s
+(`fail`): EvalMaxSAT 2,290 s, memetic 4,575 s, per-instance best of the two 1,727 s.
+
+**What this credits the memetic with [inference].**
+
+- **Not "better than EvalMaxSAT".**
+  - As a single solver, the memetic is clearly weaker: overall 62.3 % vs 85.9 %.
+    Above 30 s, "only EvalMaxSAT" outnumbers "only memetic" about 4.7 : 1. Its
+    PAR2 is twice EvalMaxSAT's.
+  - Above 30 s, the memetic misses 41 % of what EvalMaxSAT proves in (30, 300] s,
+    and 64 % of what it proves in (300, 3600] s.
+- **The contribution is complementarity.**
+  1. It reaches **44 of the 130 instances EvalMaxSAT cannot prove (34 %)**,
+     spread over 17 families.
+  2. Adding it to EvalMaxSAT raises coverage from 85.9 % to 90.7 %. Above 30 s,
+     it raises coverage from 75.0 % (391 / 521) to 83.5 % (435 / 521).
+  3. Above 30 s, it cuts mean PAR2 from 2,290 s to 1,727 s.
+  4. On the hard instances both solve, it is ≥ 10× faster more often than
+     EvalMaxSAT is (35 vs 26).
+  - So the defensible claim is "a useful portfolio partner for a state-of-the-art
+    exact solver on its hard tail". It is not "a stronger solver".
+- **Caveats that limit even that claim.**
+  - The memetic *reaches* the published optimum and does not prove it.
+  - The memetic is stopped when it hits a known target value. A deployed anytime
+    solver would not know when to stop.
+  - The two solvers had different budgets and hardware. EvalMaxSAT: one published
+    run, 3,600 s CPU. Memetic: our cluster, 3 seeds × 1,800 s, scored by ERT.
+  - Each of the 44 memetic-only instances was proved by at least 1 (up to 19)
+    of the published 2026 solvers. On 19 of them, the memetic's ERT is below the
+    fastest published proof.
+  - Against the MSE virtual best solver, the coverage gain would be smaller than
+    against EvalMaxSAT alone. That comparison was not computed.
+
 ## 5. Exploratory subsets (not pre-registered; `scripts/mse26_rho_explore.py`; as §11 of readout 1)
 
 | subset | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |
