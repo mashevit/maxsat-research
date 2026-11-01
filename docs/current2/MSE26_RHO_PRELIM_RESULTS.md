@@ -509,14 +509,14 @@ monotone association** (CI inside (−0.3, +0.3) and containing 0).
 (`exclude`), inside (−0.3, +0.3). So above 30 s, with failures counted on
 either side, any monotone association between EvalMaxSAT proof time and
 memetic ERT is at most weak (ρ ≤ +0.17 at 95 %).
+- **So E4 mostly measures which solver fails rather than how hardness is
+  ordered.** E4 is exploratory and is defined by the outcome. Dropping the
+  both-∞ instances removes the concordant block, and 251 / 434 instances
+  (58 %, `fail`) or 214 / 395 (54 %, `exclude`) are tied at the top rank
+  on one axis.
 - This is **not** a claim that the two are orthogonal or independent
   (prereg §7: no such claim from a non-significant ρ). ρ ≈ 0 also rules
   out only a *monotone* link, not every kind of dependence.
-- E4 is exploratory and is defined by the outcome. Dropping the both-∞
-  instances removes the concordant block, and 251 / 434 instances (58 %,
-  `fail`) or 214 / 395 (54 %, `exclude`) are tied at the top rank on one
-  axis, so E4 mostly measures which solver
-  fails rather than how hardness is ordered.
 - The result rests on the 43 memetic-only instances. Without them (E3) the
   association is weakly positive (+0.25 / +0.21, CI above 0).
 - Overall: strong agreement at the coarse level (+0.64 overall), weak
