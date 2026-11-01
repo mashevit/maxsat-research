@@ -11,7 +11,8 @@ evidence (not pre-registered; N-2026-10-29-b).
 
 **§11 (added 2026-11-01):** exploratory subsets: both solved without the
 30 s bound, and one side allowed to fail, with and without the window
-(not pre-registered; N-2026-11-01-a).
+(not pre-registered; N-2026-11-01-a; paragraph "On orthogonality":
+N-2026-11-01-b).
 
 **What is computed.** The pre-registered analysis (`MSE26_RHO_PREREG.md`,
 BINDING r4, text of `f8a3354`), unchanged, run by `scripts/mse26_rho.py`
@@ -494,14 +495,33 @@ monotone association** (CI inside (−0.3, +0.3) and containing 0).
    of the window, which supports ordering (memetic reach falls with
    EvalMaxSAT time, §10). But they are tied at one y rank, so they carry
    little within-window information.
-4. **With failures on both sides above 30 s, the association vanishes**
+4. **With failures on both sides above 30 s, no association is detectable**
    (E4 ≈ +0.07 / +0.04, CI covers 0). The 43 memetic-only instances take
    the top x rank with a finite y. The 208 / 171 EvalMaxSAT-only instances
    take the top y rank with a finite x. These are the off-diagonal cells of
    §5, and they push ρ down. Removing the both-∞ block also removes the one
-   group that pushes ρ up. Above 30 s, "which solver fails" is close to
-   independent of "how hard it is for the other". This is the complementarity
-   of §10 measured as a rank statistic.
+   group that pushes ρ up. Above 30 s, "which solver fails" is at most
+   weakly associated with "how hard it is for the other". This is the
+   complementarity of §10 measured as a rank statistic.
+
+**On orthogonality (N-2026-11-01-b).** E4 is the only subset that meets the prereg §7
+"at most weak" criterion: CI [−0.03, +0.17] (`fail`) / [−0.06, +0.14]
+(`exclude`), inside (−0.3, +0.3). So above 30 s, with failures counted on
+either side, any monotone association between EvalMaxSAT proof time and
+memetic ERT is at most weak (ρ ≤ +0.17 at 95 %).
+- This is **not** a claim that the two are orthogonal or independent
+  (prereg §7: no such claim from a non-significant ρ). ρ ≈ 0 also rules
+  out only a *monotone* link, not every kind of dependence.
+- E4 is exploratory and is defined by the outcome. Dropping the both-∞
+  instances removes the concordant block, and 251 / 434 instances (58 %,
+  `fail`) or 214 / 395 (54 %, `exclude`) are tied at the top rank on one
+  axis, so E4 mostly measures which solver
+  fails rather than how hardness is ordered.
+- The result rests on the 43 memetic-only instances. Without them (E3) the
+  association is weakly positive (+0.25 / +0.21, CI above 0).
+- Overall: strong agreement at the coarse level (+0.64 overall), weak
+  agreement in the hard regime, and close to no association once the
+  instances only the memetic reaches are included.
 
 **Reproduce:** after the two `mse26_rho_errors.py` runs of §8:
 `$P scripts/mse26_rho_explore.py` (~45 s). Output:
