@@ -22,7 +22,8 @@ budget; `exclude`: the instance out). The heap crash (group A, 6 runs on 2
 kbtree instances) was a Glucose bug triggered by repeated assumptions; it is
 fixed (`src/evo/hard.py`); the 6 tasks were run on the workstation with the fix
 (no cluster rerun, user). Every number in this document stays as computed (6 runs
-missing); ρ with the 6 records: `MSE26_3C_RUN.md` §9.6.
+missing); ρ with the 6 records: `MSE26_3C_RUN.md` §9.6. **Current readout (Slurm
+kills reclassified as failures): [`MSE26_RHO_RESULTS_3.md`](MSE26_RHO_RESULTS_3.md).**
 
 **What is computed.** The pre-registered analysis (`MSE26_RHO_PREREG.md`,
 BINDING r4, text of `f8a3354`), unchanged, run by `scripts/mse26_rho.py`

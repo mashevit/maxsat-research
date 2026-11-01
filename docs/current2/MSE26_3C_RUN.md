@@ -220,6 +220,7 @@ From `m2_results.py pending --summary` per part (classifier of §9.3), with the
 | watchdog (group C) | 11 | overran budget + 300 s grace; the watchdog record says no target | failure, charged B (prereg) |
 | **glucose_timeout (group B)** | **107** | **error**: `impl: hard` found no hard-feasible start in the budget (38 instances) | **error: the two columns** |
 | **infra_missing (groups A, D)** | **11** | **error**: no record; 6 heap crash (A), 5 Slurm 1 h wall kill (D) | **error: the two columns** (A: fixed; workstation records, §9.6) |
+| slurm_wall_kill (group D, since §9.7) | (5 of the 11) | no record; killed at 1 h wall, long past the CPU budget without a hit | **failure, charged B** (§9.7) |
 | cost_mismatch, invalid_submission, infra_error, max_gens | 0 | — | — |
 
 The EvalMaxSAT side has its own non-timeout failures, already fixed by the
@@ -247,7 +248,8 @@ prereg (§2 there): 17 memouts and 8 crashes, out of the primary population
 
 ### 9.3 Decision: both stay errors, handled by the two columns
 
-Per the user, groups B and D are **legitimate errors**. They are **not
+Per the user, groups B and D are **legitimate errors** (group D: superseded
+the same day by §9.7, now failures). They are **not
 rerun** and are **not** turned into pre-registered failures; the two
 treatments of §8 handle them:
 
@@ -375,3 +377,56 @@ left as they were.
 
 Memetic-only instances: 43 → 44. Every conclusion is unchanged. D1 (seeds
 4–5) is not triggered in either column.
+
+### 9.7 Group D reclassified as failures (user, 2026-11-01)
+
+> "reclassify them as failures, document it, commit and push, I think if one seed managed to come to optimum, you might count it. document this." (user, 2026-11-01)
+
+This replaces the group D part of §9.3: the 5 Slurm wall kills are no longer
+errors. They are **final failures charged the budget**, new class
+**`slurm_wall_kill`** in `m2_results.FINAL_FAILURES`. Group B
+(`glucose_timeout`) stays an error, handled by the two columns.
+
+**Evidence that none of the 5 reached the optimum within the budget.**
+- A target hit ends the run at once and writes the record (`--stop-at-oracle`).
+  The hit is checked after every polish call, so a hit at CPU t ≤ 1,800 s
+  ends the run near t.
+- All 5 were still running when Slurm killed them at 1 h of wall time. The
+  sibling seeds of the same instances used CPU ≈ wall (CPU/wall 0.98–0.99:
+  3,284 / 3,310 s, 2,972 / 3,001 s, 2,379 / 2,402 s), so the process was
+  computing, not waiting. By the kill each run had used far more than its
+  1,800 s CPU budget without a hit.
+- So each is a failure in the prereg's sense (no target within B), like the 11
+  watchdog runs of group C. What the overrun hides is only where the run
+  spent the time after the budget, not the outcome.
+
+**How it is applied.** No record is invented. `scripts/m2_reclass.tsv` lists
+the 5 job ids (8a tasks 28, 664, 748, 750; 64 task 50) with the reason;
+`m2_results.classify` returns `slurm_wall_kill` for a missing record only when
+its job id is on that list (any other missing record stays `infra_missing`).
+The class is final, not pending. Tests:
+`tests/test_m2_results.py::test_reclassified_slurm_wall_kill_is_a_final_failure`
+and `::test_the_3c_reclass_list`.
+
+**One seed at the optimum is enough to count the instance as reached.** ERT
+(prereg §3) is (sum of the 3 efforts) / (number of successes): a failed seed
+adds the budget B to the effort, a single success makes y finite. So an
+instance whose other seed reached the optimum counts as reached by the
+memetic, with the killed seed as a failure:
+
+| instance | EvalMaxSAT | seeds (killed seed in bold) | memetic ERT y |
+|---|---|---|---|
+| cf864e2f… (planning-bnn, 1.2 GB) | proved, 988.0 s | s1 time_cap, **s2 killed**, s3 target at 740.8 s | (1,800 + 1,800 + 740.8) / 1 = **4,340.8 s** |
+| 053470870… (PRBAC) | proved, 487.3 s | **s1 killed**, s2 and s3 watchdog | ∞ |
+| 847b49a5… (PRBAC) | proved, 3.4 s | **s1 killed**, s2 and s3 time_cap | ∞ |
+| 96d20fa0… (PRBAC) | proved, 569.8 s | **s1, s3 killed**, s2 watchdog | ∞ |
+
+Under `fail` nothing changes (these runs were already failures there). Under
+`exclude` the 4 instances now enter ρ. The readout with all of this is
+[`MSE26_RHO_RESULTS_3.md`](MSE26_RHO_RESULTS_3.md).
+
+**Still open:** the deadline overrun on big instances (groups C and D) is a
+code fault; pysat's Glucose interrupt was tested and works (an interrupt
+stops a pigeonhole solve within ~0.1 s, also one sent before the call), so
+the stall is in another step that cannot be interrupted. Not investigated
+further (no cluster batch is pending).

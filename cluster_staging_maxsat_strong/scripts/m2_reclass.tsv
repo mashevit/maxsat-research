@@ -1,0 +1,10 @@
+# Runs with no record that are reclassified as FINAL failures by evidence (m2_results.py RECLASS).
+# job_id	class	reason
+# User 2026-11-01 (MSE26_3C_RUN.md §9.7): batch 3c group D, killed by the 1 h Slurm wall before the record.
+# Still running at 1 h wall with CPU ~ wall (sibling records: CPU/wall 0.98-0.99), so past the 1,800 s
+# CPU budget without a target hit (a hit ends the run and writes the record at once).
+m26_053470870a4d81334fe6808ce9a13396_s1	slurm_wall_kill	3c 8a task 28, sacct TIMEOUT 1 h, no record
+m26_847b49a575479517678415c83d608cfc_s1	slurm_wall_kill	3c 8a task 664, sacct TIMEOUT 1 h, no record
+m26_96d20fa07eb997b0ee928b38d456a69f_s1	slurm_wall_kill	3c 8a task 748, sacct TIMEOUT 1 h, no record
+m26_96d20fa07eb997b0ee928b38d456a69f_s3	slurm_wall_kill	3c 8a task 750, sacct TIMEOUT 1 h, no record
+m26_cf864e2fdefdf69da501c22904df63a2_s2	slurm_wall_kill	3c 64 task 50, sacct TIMEOUT 1 h, no record

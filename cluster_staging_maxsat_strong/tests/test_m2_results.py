@@ -8,6 +8,7 @@ import csv
 import json
 import os
 import sys
+import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "scripts"))
@@ -103,6 +104,29 @@ def test_glucose_timeout_is_a_final_error():
     e = m2_results.ert([row("success", 100.0), row("glucose_timeout"), row("success", 200.0)])
     assert e["ert_s"] == "" and e["ert_complete"] is False
     assert m2_results.par2([row("glucose_timeout")] * 3)["par2_s"] == ""
+
+
+def test_reclassified_slurm_wall_kill_is_a_final_failure(tmp_path, monkeypatch):
+    """MSE26_3C_RUN.md §9.7: a run with no record whose job id is in m2_reclass.tsv is a
+    final failure (charged the budget, not pending); any other missing run stays infra_missing."""
+    p = tmp_path / "reclass.tsv"
+    p.write_text("# comment\nm26_x_s1\tslurm_wall_kill\tkilled at 1 h\n")
+    monkeypatch.setattr(m2_results, "RECLASS", m2_results.load_reclass(str(p)))
+    assert m2_results.classify(_process_task(), None) == ("slurm_wall_kill", "killed at 1 h")
+    assert m2_results.classify(_process_task(job_id="m26_x_s2"), None)[0] == "infra_missing"
+    assert "slurm_wall_kill" in m2_results.FINAL_FAILURES and "slurm_wall_kill" not in m2_results.PENDING_CLASSES
+    row = lambda c, ttt=None: {"cls": c, "success_ttt_s": ttt, "budget_s": "1800"}
+    assert m2_results.ert([row("slurm_wall_kill"), row("success", 740.0), row("budget_exhausted")])["ert_s"] == 4340.0
+    bad = tmp_path / "bad.tsv"
+    bad.write_text("m26_x_s1\tsuccess\tno\n")
+    with pytest.raises(ValueError):
+        m2_results.load_reclass(str(bad))
+
+
+def test_the_3c_reclass_list():
+    """The shipped list: exactly the 5 group D runs of batch 3c."""
+    rc = m2_results.load_reclass()
+    assert len(rc) == 5 and {c for c, _ in rc.values()} == {"slurm_wall_kill"}
 
 
 def test_ert():

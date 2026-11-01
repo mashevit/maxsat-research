@@ -14,6 +14,8 @@ For reference, sensitivity 1 of the prereg = window and y finite.
 
     python3 scripts/mse26_rho_explore.py            # both treatments
 Output: results/mse26_rho_explore/{summary.json,report.md}.
+MSE26_RHO_TAG=<tag> reads results/mse26_rho_<tag><errors>/ and writes
+results/mse26_rho_explore_<tag>/ (2026-11-01: tag r3_ = MSE26_RHO_RESULTS_3.md).
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mse26_rho as rho  # noqa: E402
 
 LOW = 30.0
+TAG = os.environ.get("MSE26_RHO_TAG", "")
 SUBSETS = [
     ("E1", "both solved, all x", lambda x, y: math.isfinite(x) and math.isfinite(y)),
     ("E2", "not both ∞, all x", lambda x, y: math.isfinite(x) or math.isfinite(y)),
@@ -45,7 +48,7 @@ def cell(r) -> str:
 
 
 def load(mode: str):
-    path = os.path.join(rho.ROOT, "results", f"mse26_rho_{mode}", "instances.csv")
+    path = os.path.join(rho.ROOT, "results", f"mse26_rho_{TAG}{mode}", "instances.csv")
     with open(path, newline="") as f:
         return [(float(r["x"]), float(r["y"])) for r in csv.DictReader(f)
                 if r["primary"] == "True" and r["complete"] == "True"]
@@ -61,7 +64,7 @@ def main() -> int:
             r = rho.rho_ci([x for x, _ in sel], [y for _, y in sel])
             r["interpretation"] = rho.interpret(r)
             res[mode][key] = r
-    out = os.path.join(rho.ROOT, "results", "mse26_rho_explore")
+    out = os.path.join(rho.ROOT, "results", "mse26_rho_explore" + (f"_{TAG.rstrip('_')}" if TAG else ""))
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "summary.json"), "w") as f:
         json.dump(rho.jsonable(res), f, indent=1)

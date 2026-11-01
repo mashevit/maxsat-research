@@ -1,0 +1,140 @@
+# ρ on MSE 2026: third readout (batch 3c after the error fixes, 2026-11-01)
+
+> "reclassify them as failures, document it, commit and push, I think if one seed managed to come to optimum, you might count it. document this. rerun rho and write it in third conclusion file" (user, 2026-11-01)
+
+**Status.** The third set of ρ numbers for batch 3c. It replaces the earlier two as
+the current readout; they stay as records:
+
+| # | where | runs in | errored runs |
+|---|---|---|---|
+| 1 | [`MSE26_RHO_PRELIM_RESULTS.md`](MSE26_RHO_PRELIM_RESULTS.md) (2026-10-29) | 2,845 records | 118: heap crash 6 (A), glucose_timeout 107 (B), Slurm kill 5 (D) |
+| 2 | [`MSE26_3C_RUN.md`](MSE26_3C_RUN.md) §9.6 (2026-11-01) | + 6 workstation records for A | 112: B 107, D 5 |
+| **3** | **this document** | **as 2, with D reclassified as failures** | **107: B only** |
+
+Method: the pre-registered analysis ([`MSE26_RHO_PREREG.md`](MSE26_RHO_PREREG.md),
+`scripts/mse26_rho.py`, unchanged): ρ = Spearman with midranks (∞ ties share one
+midrank), 95 % BCa bootstrap over instances, B = 10,000, seed 20261029.
+x = EvalMaxSAT CPU seconds in its published 2026 run (timeout = ∞); y = memetic
+ERT over seeds 1–3, budget 1,800 s of process CPU (no success = ∞).
+
+## 1. What changed since readout 1
+
+- **Group A (heap crash, 6 runs, 2 kbtree instances):** a PySAT Glucose4 overrun on
+  repeated assumptions, fixed in `src/evo/hard.py`; the 6 tasks were run on the
+  workstation with the fix (no cluster rerun, user). `MSE26_3C_RUN.md` §9.4–9.6.
+- **Group D (Slurm 1 h wall kill, 5 runs, 4 instances):** reclassified as **final
+  failures charged the budget** (class `slurm_wall_kill`, list
+  `scripts/m2_reclass.tsv`). All 5 were still running at 1 h of wall time with
+  CPU ≈ wall, so far past the 1,800 s CPU budget, and a target hit would have
+  ended the run and written the record at once. `MSE26_3C_RUN.md` §9.7.
+- **One seed at the optimum counts.** ERT = (sum of the 3 efforts) / (successes):
+  a failed seed adds 1,800 s, one success makes y finite. cf864e2f (planning-bnn,
+  EvalMaxSAT proved at 988 s) had seed 3 at the optimum in 740.8 s and seed 2
+  killed: y = (1,800 + 1,800 + 740.8) / 1 = 4,340.8 s, so it counts as reached.
+- **Group B (`glucose_timeout`, 107 runs, 38 instances)** stays an error (user):
+  `fail` charges the budget, `exclude` drops the instance.
+
+So `fail` is identical to readout 2 (it already counted D as failures), and
+`exclude` gains the 4 group D instances (N 880 → 884).
+
+## 2. Population
+
+| | `fail` | `exclude` |
+|---|---:|---:|
+| instances with a published optimum | 947 | 947 |
+| primary (EvalMaxSAT proved or timed out; 17 memouts and 8 crashes out) | 922 | 922 |
+| complete and in the analysis | **922** | **884** |
+| dropped (an instance with a `glucose_timeout` run) | 0 | 38 |
+
+## 3. Primary and sensitivity analyses
+
+| analysis | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |
+|---|---|---:|---|---|---:|---|
+| **primary: ERT, pooled** | **+0.637 [+0.588, +0.680]** | 922 | 44 / 262 / 86 | **+0.632 [+0.584, +0.677]** | 884 | 44 / 228 / 83 |
+| 1 window (30, 3600] s, both uncensored | +0.223 [+0.078, +0.362] | 184 | 0 / 0 / 0 | +0.218 [+0.070, +0.360] | 183 | 0 / 0 / 0 |
+| 2 x = EvalMaxSAT wall time | +0.637 [+0.588, +0.680] | 922 | 44 / 262 / 86 | +0.632 [+0.584, +0.677] | 884 | 44 / 228 / 83 |
+| 3 flip-level effort | +0.637 [+0.588, +0.680] | 922 | 44 / 262 / 86 | +0.632 [+0.584, +0.677] | 884 | 44 / 228 / 83 |
+| 4 memetic budget 900 s | +0.638 [+0.590, +0.682] | 922 | 39 / 289 / 91 | +0.634 [+0.585, +0.678] | 884 | 39 / 254 / 88 |
+| 5 family-stratified bootstrap | +0.637 [+0.600, +0.672] | 922 | 44 / 262 / 86 | +0.632 [+0.594, +0.667] | 884 | 44 / 228 / 83 |
+| 6 partial ρ on log n_vars, log n_clauses | +0.569 [+0.517, +0.618] | 922 | 44 / 262 / 86 | +0.572 [+0.519, +0.619] | 884 | 44 / 228 / 83 |
+| 7 PAR2, all proven-optimum instances | +0.635 [+0.588, +0.677] | 947 | — | +0.632 [+0.584, +0.675] | 909 | — |
+
+Prereg §7: every row is a **positive association** (CI above 0) under both
+treatments. D1 (seeds 4–5) is **not triggered** (primary half-width 0.046 /
+0.047 < 0.15).
+
+**Per track (primary):**
+
+| track | `fail` | N | `exclude` | N |
+|---|---|---:|---|---:|
+| unweighted | +0.618 [+0.542, +0.681] | 464 | +0.618 [+0.543, +0.683] | 460 |
+| weighted | +0.659 [+0.595, +0.715] | 458 | +0.650 [+0.582, +0.709] | 424 |
+
+**Against readout 1:** primary +0.639 → +0.637 (`fail`), +0.635 → +0.632
+(`exclude`); window +0.212 → +0.223 / +0.200 → +0.218. Every change is inside
+±0.02, far inside the CIs.
+
+## 4. Complementarity (primary population; `scripts/mse26_complementarity.py`)
+
+| | `fail` (N 922) | `exclude` (N 884) |
+|---|---|---|
+| EvalMaxSAT proved | 792 (85.9 %) | 757 (85.6 %) |
+| memetic reached (≥ 1 seed) | 574 (62.3 %) | 573 (64.8 %) |
+| union | 836 (90.7 %) | 801 (90.6 %) |
+| both / only EvalMaxSAT / **only memetic** / neither | 530 / 262 / **44** / 86 | 529 / 228 / **44** / 83 |
+| only memetic / N | 4.8 % [3.5, 6.4] | 5.0 % [3.6, 6.6] |
+| only memetic / EvalMaxSAT timeouts | 44 / 130 = 33.8 % [25.8, 42.7] | 44 / 127 = 34.6 % [26.4, 43.6] |
+| McNemar exact (only EvalMaxSAT vs only memetic) | p = 6.3 × 10⁻³⁹ | p = 4.1 × 10⁻³¹ |
+| mean PAR2: EvalMaxSAT → best of the two | 1,296 s → 978 s | 1,273 s → 941 s |
+
+Memetic reach by EvalMaxSAT time band (`fail`): (0, 1] s 97.1 %, (1, 30] 78.3 %,
+(30, 300] 58.9 %, (300, 3600] 35.7 %; Cochran–Armitage z = −13.3, p = 2.8 × 10⁻⁴⁰
+(`exclude`: 97.1 / 78.3 / 61.1 / 40.9 %, p = 7.5 × 10⁻³³).
+
+The 44 memetic-only instances (43 in readout 1, plus 27770a63, kbtree, from the
+group A fix): 17 families, 28 unweighted / 16 weighted; the memetic's ERT is
+below the fastest published proof on 19 of them. On the 530 instances both solve,
+the memetic is faster on 124 (≥ 10× on 39), EvalMaxSAT ≥ 10× faster on 173.
+
+## 5. Exploratory subsets (not pre-registered; `scripts/mse26_rho_explore.py`; as §11 of readout 1)
+
+| subset | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |
+|---|---|---:|---|---|---:|---|
+| E1 both solved, all x | +0.634 [+0.567, +0.690] | 530 | 0 / 0 / 0 | +0.632 [+0.564, +0.688] | 529 | 0 / 0 / 0 |
+| E2 not both ∞, all x | +0.588 [+0.534, +0.637] | 836 | 44 / 262 / 0 | +0.578 [+0.520, +0.630] | 801 | 44 / 228 / 0 |
+| E3 window (30, 3600] s, y may be ∞ | +0.244 [+0.144, +0.340] | 391 | 0 / 207 / 0 | +0.206 [+0.103, +0.310] | 356 | 0 / 173 / 0 |
+| E4 x > 30 s (∞ included), not both ∞ | +0.064 [−0.037, +0.161] | 435 | 44 / 207 / 0 | +0.039 [−0.062, +0.141] | 400 | 44 / 173 / 0 |
+| ref = §3 sensitivity 1 | +0.223 [+0.078, +0.362] | 184 | 0 / 0 / 0 | +0.218 [+0.070, +0.360] | 183 | 0 / 0 / 0 |
+
+E4 both-finite instances: 184 / 183 (= N − ∞ x − ∞ y = the ref subset).
+
+## 6. Conclusions [inference, on these numbers]
+
+1. **The pre-registered result holds after the fixes:** EvalMaxSAT proof time and
+   memetic time to the optimum are positively associated, ρ ≈ +0.63–0.64, under
+   both error treatments and every sensitivity analysis (+0.57 after partialling
+   out instance size).
+2. **In the hard regime the association is weak:** the window (30, 3600] s with
+   both solved gives +0.22 (CI above 0). The drop comes from the 30 s lower bound,
+   not from censoring (E1, both solved without the bound, is +0.63).
+3. **Complementarity:** the memetic reaches the optimum on 44 instances that
+   EvalMaxSAT does not prove (a third of its timeouts); EvalMaxSAT proves 262 /
+   228 that the memetic does not reach. Memetic reach falls steadily with
+   EvalMaxSAT time. Combining the two lifts coverage from 85.9 % to 90.7 %.
+4. **Above 30 s with either side allowed to fail (E4)** the association is at
+   most weak (CI inside (−0.3, +0.3) and containing 0). E4 is outcome-defined and
+   mostly measures which solver fails, not how hardness is ordered; it is not an
+   orthogonality claim (prereg §7).
+5. **The error handling does not drive any conclusion:** `fail` and `exclude`
+   agree within 0.01 on the primary and within 0.04 everywhere.
+
+## 7. Reproduce
+
+From `cluster_staging_maxsat_strong/`, after the 3c copy back plus the 6 group A
+records (`results/mse26_memetic/provenance/workstation_groupA_20261101.txt`):
+`bash scripts/run_rho_r3.sh` (~10 min). It runs `mse26_rho_errors.py --errors
+{fail,exclude}` into `results/mse26_rho_r3_{fail,exclude}/`, then
+`MSE26_RHO_TAG=r3_ mse26_rho_explore.py` (→ `results/mse26_rho_explore_r3/`) and
+`MSE26_RHO_TAG=r3_ mse26_complementarity.py` (→
+`results/mse26_rho_r3_complementarity.txt`). Outputs are not committed.
+Classification: `scripts/m2_results.py` with `scripts/m2_reclass.tsv`.

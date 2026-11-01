@@ -40,6 +40,11 @@ Every task gets exactly one class:
     infra_error          status error / parse_error / missing_instance / other
     infra_missing        no shard (Slurm kill, node failure, never ran) or an
                          unreadable one
+    slurm_wall_kill      no shard, but the job id is listed in scripts/m2_reclass.tsv:
+                         killed at the Slurm wall long after the CPU budget with no
+                         target hit (a hit ends the run and writes the record), so a
+                         FINAL failure charged the budget (user 2026-11-01,
+                         MSE26_3C_RUN.md §9.7). Only an explicit list, never inferred
 
 RESUME. `pending` lists only infra_missing, infra_error and
 invalid_submission. watchdog, budget_exhausted, glucose_timeout, target_after_budget,
@@ -77,7 +82,8 @@ PENDING_CLASSES = ("infra_missing", "infra_error", "invalid_submission")
 # Final but errors (not rerun, not a pre-registered failure): the two error treatments
 # of mse26_rho_errors.py decide them (fail: charged the budget; exclude: instance out).
 ERROR_CLASSES = ("glucose_timeout",)
-CLASSES = ("success", "target_after_budget", "budget_exhausted", "glucose_timeout", "watchdog", "max_gens",
+CLASSES = ("success", "target_after_budget", "budget_exhausted", "glucose_timeout", "watchdog",
+           "slurm_wall_kill", "max_gens",
            "cost_mismatch", "invalid_submission", "infra_error", "infra_missing")
 GROUPS = ("lower_ext", "tier2", "upper_ext")
 
@@ -157,8 +163,33 @@ def mismatch(t: Dict[str, str], r: dict) -> Optional[str]:
     return None
 
 
+RECLASS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "m2_reclass.tsv")
+RECLASS_ALLOWED = ("slurm_wall_kill",)
+
+
+def load_reclass(path: str = RECLASS_FILE) -> Dict[str, tuple]:
+    """{job_id: (class, reason)} from the reclassification list ('#' lines are comments)."""
+    out: Dict[str, tuple] = {}
+    if not os.path.isfile(path):
+        return out
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip() or line.startswith("#"):
+                continue
+            job_id, cls, reason = (line.rstrip("\n").split("\t") + ["", ""])[:3]
+            if cls not in RECLASS_ALLOWED:
+                raise ValueError(f"{path}: class {cls!r} not in {RECLASS_ALLOWED}")
+            out[job_id] = (cls, reason)
+    return out
+
+
+RECLASS = load_reclass()
+
+
 def classify(t: Dict[str, str], r: Optional[dict]) -> (str, str):
     if r is None:
+        if t.get("job_id") in RECLASS:
+            return RECLASS[t["job_id"]]
         return "infra_missing", ""
     status = r.get("status")
     # A missing instance / parse error leaves sha null; report it as infra, not
@@ -271,7 +302,7 @@ def med_ttt(vals: List[Optional[float]]) -> str:
     return f"{m:.1f}" if math.isfinite(m) else f">{BUDGET_S:g}"
 
 
-FINAL_FAILURES = ("budget_exhausted", "target_after_budget", "watchdog", "max_gens")
+FINAL_FAILURES = ("budget_exhausted", "target_after_budget", "watchdog", "slurm_wall_kill", "max_gens")
 
 
 def ert(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -279,7 +310,7 @@ def ert(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     ERT = (sum of efforts) / (number of successes): a success contributes its
     success_ttt_s (cpu_to_target_s on the process clock), every final failure
-    (budget exhausted, target after the budget, watchdog, max_gens) is charged
+    (budget exhausted, target after the budget, watchdog, slurm_wall_kill, max_gens) is charged
     its budget_s. No success: "inf". Any run still missing, failed by
     infrastructure, invalid, a cost mismatch or an ERROR_CLASSES run (glucose_timeout):
     "" (incomplete, not computed).

@@ -11,6 +11,7 @@ docs/current2/MSE26_RHO_PRELIM_RESULTS.md section 10:
   per-instance best of the two, and the published solvers on the memetic-only cell.
 
     python3 scripts/mse26_complementarity.py     # after both mse26_rho_errors.py runs
+    MSE26_RHO_TAG=<tag> reads results/mse26_rho_<tag><errors>/ instead (2026-11-01).
 """
 import csv
 import math
@@ -49,7 +50,7 @@ def par2(v, limit=rho.X_LIMIT):
 
 
 def report(mode, pop, pub):
-    with open(os.path.join(ROOT, "results", f"mse26_rho_{mode}", "instances.csv"), newline="") as f:
+    with open(os.path.join(ROOT, "results", f"mse26_rho_{os.environ.get('MSE26_RHO_TAG', '')}{mode}", "instances.csv"), newline="") as f:
         rows = [r for r in csv.DictReader(f) if r["primary"] == "True" and r["complete"] == "True"]
     for r in rows:
         r["x"], r["y"], r["s"] = float(r["x"]), float(r["y"]), int(r["successes"])
