@@ -193,6 +193,56 @@ On the 184 instances above 30 s that both solve (`fail`), the memetic is faster 
   - Against the MSE virtual best solver, the coverage gain would be smaller than
     against EvalMaxSAT alone. That comparison was not computed.
 
+### 4.3 Above 30 s, not both failed (E4's population), and where the 100 % is
+
+> "give me similar table with above 30 s where both , actually explain me why in this row where we i think didnt want both solvers to fail, why there isnt in this table a 100 percent cell, what is 100 percent means?" (user, 2026-11-01)
+
+**Subset.** x > 30 s (timeouts included), with the instances where *both* failed
+removed. This is exactly E4's population (§5). Each column is 100 % of its N.
+95 % Clopper–Pearson intervals.
+
+| x > 30 s, not both failed | `fail` | `exclude` |
+|---|---|---|
+| **both** | 184 = **42.3 %** [37.6, 47.1] | 183 = **45.8 %** [40.8, 50.8] |
+| **only EvalMaxSAT** | 207 = **47.6 %** [42.8, 52.4] | 173 = **43.2 %** [38.3, 48.3] |
+| **only memetic** | 44 = **10.1 %** [7.4, 13.3] | 44 = **11.0 %** [8.1, 14.5] |
+| **total = 100 %** | **435** | **400** |
+
+By EvalMaxSAT band (`fail`). Each row sums to 100 %.
+
+| EvalMaxSAT time | N (= 100 %) | both | only EvalMaxSAT | only memetic |
+|---|---|---|---|---|
+| (30, 300] s | 192 | 58.9 % | 41.1 % | 0 |
+| (300, 3600] s | 199 | 35.7 % | 64.3 % | 0 |
+| timeout (∞) | 44 | 0 | 0 | **100 %** |
+
+**What "100 %" means.**
+- The 100 % is the **denominator**: all instances in the subset.
+  - In §4.2 that is every instance with x > 30 s (521). There the four cells sum
+    to 100 %, and "neither" is one of them (16.5 %).
+  - Here "neither" is removed, so 100 % = the 435 instances that at least one
+    solver solved. The three remaining cells sum to 100 %.
+- In §4.2, the 100 % appears only as N in the column header; it is not printed as
+  a cell. The "of the union" row of §4.2 is this table squeezed into one row. Its
+  three numbers (42.3 / 47.6 / 10.1 %) sum to 100 %.
+- Dropping "both failed" does **not** make any single cell 100 % overall. It only
+  removes the "neither" cell. Every instance left is still in one of three cells:
+  both, only EvalMaxSAT, or only memetic.
+
+**The one 100 % cell is the timeout row, and it holds by construction.**
+- When EvalMaxSAT times out, an instance can only be "only memetic" or "neither".
+- Once "neither" is removed, the 44 remaining timeout instances are all "only
+  memetic".
+- So that 100 % restates the subset's definition. It is not a finding.
+- The finding is the 44 / 130 = 33.8 % of §4.2: the share of EvalMaxSAT timeouts
+  the memetic reaches.
+
+**Where a 100 % "both" would come from.**
+- If the subset were "both solved" (the 184 instances of the window analysis, §3),
+  "both" would be 100 % and the other cells empty.
+- That subset says nothing about who solves what. It is used only for comparing
+  runtimes on the same instances (ρ in the window, speed-ups).
+
 ## 5. Exploratory subsets (not pre-registered; `scripts/mse26_rho_explore.py`; as §11 of readout 1)
 
 | subset | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |
