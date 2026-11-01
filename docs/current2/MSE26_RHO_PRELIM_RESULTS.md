@@ -9,6 +9,10 @@ one stays as the record of the state on 2026-10-29.
 **§10 (added later on 2026-10-29):** the complementarity conclusion with
 evidence (not pre-registered; N-2026-10-29-b).
 
+**§11 (added 2026-11-01):** exploratory subsets: both solved without the
+30 s bound, and one side allowed to fail, with and without the window
+(not pre-registered; N-2026-11-01-a).
+
 **What is computed.** The pre-registered analysis (`MSE26_RHO_PREREG.md`,
 BINDING r4, text of `f8a3354`), unchanged, run by `scripts/mse26_rho.py`
 (commit `0e96589`) through the wrapper `scripts/mse26_rho_errors.py`
@@ -431,3 +435,74 @@ errors sit mostly among the EvalMaxSAT-hard instances.
 
 **Reproduce:** after the two `mse26_rho_errors.py` runs of §8:
 `$P scripts/mse26_complementarity.py` (a few seconds).
+
+## 11. Exploratory subsets: both solved without the 30 s bound; one side may fail (added 2026-11-01)
+
+**Not pre-registered (exploratory; N-2026-11-01-a).** User, 2026-11-01:
+"do similar statistics where both EVALMAXSAT and memetic have results, but
+evalmaxsat is not restricted above 30s. moreover, do statistics where not
+both fail - either one of them might fail, do it with window, for
+evalmaxsat and without it".
+
+**Method.** The same method as §3, with no changes. x and y are the
+per-instance values in `results/mse26_rho_{fail,exclude}/instances.csv`
+(primary and complete rows). ρ = Spearman with midranks, so all ∞ values
+on one axis share one top midrank. 95 % BCa, B = 10,000, seed 20261029.
+Only the subset changes:
+
+| subset | x (EvalMaxSAT CPU s) | y (memetic ERT) | dropped |
+|---|---|---|---|
+| E1 both solved, all x | finite (≤ 3,600, no lower bound) | finite | every instance with an ∞ |
+| E2 not both ∞, all x | finite or ∞ | finite or ∞ | only the both-∞ instances |
+| E3 window, y may be ∞ | (30, 3600], so finite | finite or ∞ | — |
+| E4 x > 30 s, not both ∞ | (30, 3600] or ∞ | finite or ∞ | the both-∞ instances |
+| ref = §3 sensitivity 1 | (30, 3600] | finite | — |
+
+E3 is the window exactly as defined, so only the memetic can fail there.
+EvalMaxSAT timeouts are above 3,600 s and fall outside it. E4 keeps the
+EvalMaxSAT failures as well by leaving the window open at the top. It is
+the subset where either solver may fail and the 30 s lower bound still
+applies.
+
+| subset | `fail`: ρ [95 % CI] | N | ∞ x / y / both | `exclude`: ρ [95 % CI] | N | ∞ x / y / both |
+|---|---|---:|---|---|---:|---|
+| E1 both solved, all x | +0.632 [+0.565, +0.689] | 529 | 0 / 0 / 0 | +0.629 [+0.564, +0.688] | 527 | 0 / 0 / 0 |
+| E2 not both ∞, all x | +0.590 [+0.535, +0.639] | 835 | 43 / 263 / 0 | +0.580 [+0.522, +0.631] | 795 | 43 / 225 / 0 |
+| E3 window (30, 3600] s, y may be ∞ | +0.248 [+0.148, +0.344] | 391 | 0 / 208 / 0 | +0.206 [+0.100, +0.305] | 352 | 0 / 171 / 0 |
+| E4 x > 30 s (∞ included), not both ∞ | +0.068 [−0.032, +0.167] | 434 | 43 / 208 / 0 | +0.039 [−0.063, +0.142] | 395 | 43 / 171 / 0 |
+| ref: §3 sensitivity 1 (window, y finite) | +0.212 [+0.065, +0.351] | 183 | 0 / 0 / 0 | +0.200 [+0.052, +0.339] | 181 | 0 / 0 / 0 |
+
+The counts match §5: E1 = the "both" cell, E2 = 922 − 87 (`fail`), E3 = the
+391 / 352 window instances, E4 = E3 + the 43 memetic-only instances.
+
+Under the §7 rule of the prereg, E1, E2 and E3 show a **positive
+association** (CI above 0) under both treatments. E4 is **at most weak
+monotone association** (CI inside (−0.3, +0.3) and containing 0).
+
+**[inference] What the subsets show.**
+1. **The 30 s lower bound causes the drop, not the censoring.** With both
+   solved and no lower bound (E1), ρ is +0.63, the same as the primary
+   (+0.64). The only difference between E1 and ref is the cut at 30 s, and
+   ρ falls to +0.21. So the agreement comes from the EvalMaxSAT-easy
+   instances (≤ 30 s), which the memetic also reaches fast.
+2. **Dropping the both-∞ instances costs little without the window** (E2
+   +0.59 vs primary +0.64). The 87 both-∞ instances share one top rank on
+   both axes, so they are perfectly concordant with each other and push ρ
+   up a little.
+3. **In the window, counting memetic failures barely changes ρ** (E3
+   +0.25 / +0.21 vs ref +0.21 / +0.20). Failures cluster at the hard end
+   of the window, which supports ordering (memetic reach falls with
+   EvalMaxSAT time, §10). But they are tied at one y rank, so they carry
+   little within-window information.
+4. **With failures on both sides above 30 s, the association vanishes**
+   (E4 ≈ +0.07 / +0.04, CI covers 0). The 43 memetic-only instances take
+   the top x rank with a finite y. The 208 / 171 EvalMaxSAT-only instances
+   take the top y rank with a finite x. These are the off-diagonal cells of
+   §5, and they push ρ down. Removing the both-∞ block also removes the one
+   group that pushes ρ up. Above 30 s, "which solver fails" is close to
+   independent of "how hard it is for the other". This is the complementarity
+   of §10 measured as a rank statistic.
+
+**Reproduce:** after the two `mse26_rho_errors.py` runs of §8:
+`$P scripts/mse26_rho_explore.py` (~45 s). Output:
+`results/mse26_rho_explore/{summary.json,report.md}` (not committed).
