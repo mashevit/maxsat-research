@@ -180,6 +180,25 @@ are the divisor:
   because Glucose timeouts stay errors.
 - PAR2 likewise averages all 3 seeds (a failed or errored seed counts 3,600 s).
 
+**How the 4 enter ρ: the 3 never reached vs the 1 reached.** There are 4
+Slurm-kill instances; "5" counts the killed runs (`96d20fa0` lost 2 seeds). All 4
+are in ρ in readout 3, in both columns; they differ only in how they enter:
+
+| instance | seeds | y (memetic) | how it enters ρ | in E4? |
+|---|---|---|---|---|
+| `05347087` | s1 killed, s2 + s3 watchdog failures | ∞ | memetic failure: top y rank, tied with the other failures; cell "only EvalMaxSAT" | yes |
+| `96d20fa0` | s1 + s3 killed, s2 watchdog failure | ∞ | same | yes |
+| `847b49a5` | s1 killed, s2 + s3 budget used up | ∞ | same | no (EvalMaxSAT 3.4 s < 30 s) |
+| **`cf864e2f`** | s1 budget used up, s2 killed, **s3 reached** | **4,340.8 s** | **reached**: a finite y, ranked by its value; cell "both solved" | yes |
+
+- The 3 without a success count as instances the memetic could not solve; all 3
+  were proved by EvalMaxSAT, so they add to "only EvalMaxSAT".
+- `cf864e2f` counts as solved by both: its ERT includes all 3 seeds (two failures
+  charged 1,800 s each plus the 740.8 s success), so y is large but finite.
+- `6ca66e97` is **not** a Slurm-kill instance: its s3 is a Glucose timeout and s1,
+  s2 reached the optimum. It is in ρ under `fail` (y = 2,162.8 s, reached) and
+  dropped under `exclude`, because Glucose timeouts stay errors.
+
 ### 5.3 What the comparison says
 
 - **N is bigger** (435 vs 434; 400 vs 395) and the data is more complete: fewer
