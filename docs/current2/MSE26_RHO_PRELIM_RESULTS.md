@@ -478,6 +478,21 @@ The counts match §5: E1 = the "both" cell, E2 = 922 − 87 (`fail`), E3 = the
 E4's both-finite instances (183 / 181 = N − ∞ x − ∞ y) are exactly the ref
 subset.
 
+**Why `fail` has 2 more both-finite instances (183 vs 181; also E1 529 vs
+527).** `fail` counts an errored run as a failure at the budget and keeps the
+instance, so y stays finite if another seed succeeded. `exclude` drops any
+instance with an errored run (§1). Exactly 2 instances differ this way, both
+planning-bnn, unweighted, in the window:
+
+| EvalMaxSAT x | memetic successes (`fail`) | ERT y (`fail`) | `exclude` |
+|---:|---:|---:|---|
+| 794.8 s | 2 / 3 | 2,163 s | removed (incomplete) |
+| 988.0 s | 1 / 3 | 4,341 s | removed (incomplete) |
+
+Their errored seeds are from group B (`glucose_timeout`) or D (Slurm wall
+kill). Group A fails all 3 seeds (y = ∞), and group C is a failure under
+both treatments, so neither can cause the difference.
+
 Under the §7 rule of the prereg, E1, E2 and E3 show a **positive
 association** (CI above 0) under both treatments. E4 is **at most weak
 monotone association** (CI inside (−0.3, +0.3) and containing 0).
