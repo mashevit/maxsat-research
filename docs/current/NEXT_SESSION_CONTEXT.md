@@ -17,6 +17,42 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000000000000000. Update 2026-11-01 (r21): read first — summary for the next session
+
+**Where we are (all committed and pushed, HEAD `c879315`):**
+- **Batch 3c is done and read.** Current ρ readout:
+  [`../current2/MSE26_RHO_RESULTS_3.md`](../current2/MSE26_RHO_RESULTS_3.md)
+  (readout 3). Primary ERT ρ **+0.637 [+0.588, +0.680]** N 922 (`fail`) /
+  **+0.632 [+0.584, +0.677]** N 884 (`exclude`); all 7 sensitivities positive;
+  window (30, 3600] both solved +0.223 / +0.218; D1 (seeds 4–5) not triggered.
+- **Complementarity (the headline):** the memetic only *reaches* the optimum
+  (no proof), and still: 44 instances only the memetic reaches vs 262 / 228
+  only EvalMaxSAT proves; coverage 85.9 % → 90.7 %; memetic reach falls with
+  EvalMaxSAT time (97 → 78 → 59 → 36 %).
+- **ρ ≈ 0 with the interval including 0 when not both fail above 30 s (E4,
+  exploratory):** preliminary readout (`MSE26_RHO_PRELIM_RESULTS.md` §11)
+  **+0.068 [−0.032, +0.167]** N 434 (`fail`) / **+0.039 [−0.063, +0.142]**
+  N 395 (`exclude`); readout 3: +0.064 [−0.037, +0.161] / +0.039
+  [−0.062, +0.141]. Wording by prereg §7: "at most weak monotone
+  association", not "orthogonal"; E4 is outcome-defined (it mostly measures
+  which solver fails).
+- **Errors (`../current2/MSE26_3C_RUN.md` §9):** heap crash = Glucose overrun on
+  repeated assumptions, FIXED in `src/evo/hard.py` (6 runs redone on the
+  workstation, no cluster rerun); Slurm kills reclassified as failures
+  (`scripts/m2_reclass.tsv`); Glucose timeouts stay errors (two columns).
+  The cluster tree still has the pre-fix `hard.py`.
+
+**NEXT (user, 2026-11-01): start writing a research paper about the
+complementarity results.** Inputs: readout 3, prelim §10 (complementarity
+conclusion + evidence) and §11 (exploratory subsets, E4), the prereg, the
+prior-work note (`../current2/RESEARCH_NOTES_ANYTIME_VS_EXACT_PRIOR_WORK.md`),
+RESEARCH_NOTES N-2026-10-29-b, N-2026-11-01-a/b/d. Plan the outline first
+and get approval before drafting (one section per turn).
+
+**Open, not urgent:** the deadline overrun on big instances (3c groups C and D).
+
+---
+
 ## 000000000000000000. Update 2026-10-28 evening (r20): read first — summary for the next session
 
 **Where we are (all committed and pushed at the end of 2026-10-28):**
