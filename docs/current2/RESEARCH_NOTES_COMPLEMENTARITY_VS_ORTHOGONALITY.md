@@ -142,6 +142,44 @@ outcomes come from:
 Under `exclude` the 38 group B instances are out, so every instance there has 3
 seeds with a record or a group D inferred failure.
 
+### 5.4 The Slurm-kill instances seed by seed, and where they are in ρ
+
+"4 Slurm kills, 5 seeds" means 4 instances with 5 killed runs: one instance had
+2 seeds killed, the other three had 1 each. Only the killed seeds have no
+record; every other seed is a normal cluster record.
+
+| instance | EvalMaxSAT x | killed seed(s) | the other seeds | memetic y |
+|---|---|---|---|---|
+| `96d20fa0` (PRBAC) | 569.8 s | **s1, s3** | s2 watchdog failure | ∞ |
+| `05347087` (PRBAC) | 487.3 s | **s1** | s2, s3 watchdog failures | ∞ |
+| `847b49a5` (PRBAC) | 3.4 s | **s1** | s2, s3 budget used up | ∞ |
+| `cf864e2f` (planning-bnn) | 988.0 s | **s2** | s1 budget used up, **s3 reached at 740.8 s** | 4,340.8 s |
+
+**Where these 4 instances are in ρ:**
+
+| readout | `fail` | `exclude` |
+|---|---|---|
+| preliminary | all 4 in ρ (killed seeds counted as failures) | **none of the 4 in ρ** (an instance with a missing run was dropped) |
+| readout 3 | all 4 in ρ (unchanged) | **all 4 in ρ** (killed seeds are now final failures) |
+
+In the primary ρ all 4 count. In E4 (EvalMaxSAT above 30 s) 3 of them count;
+`847b49a5` is in the primary ρ but outside E4, because EvalMaxSAT proved it in
+3.4 s.
+
+**An instance where the optimum was reached on one seed and other seeds failed
+or errored keeps all 3 seeds in ρ.** ERT adds the effort of every seed, so each
+failed or errored seed is charged the 1,800 s budget, and the successes alone
+are the divisor:
+
+- `cf864e2f` (killed s2, failed s1, success s3): y = (1,800 + 1,800 + 740.8) / 1
+  = **4,340.8 s**, so the instance counts as reached, in both columns of
+  readout 3 (it was dropped from `exclude` in the preliminary readout).
+- `6ca66e97` (planning-bnn, a Glucose timeout on s3, successes on s1 at 913.6 s
+  and s2 at 1,612.1 s): under `fail` y = (913.6 + 1,612.1 + 1,800) / 2 =
+  **2,162.8 s**, reached. Under `exclude` it is dropped in both readouts,
+  because Glucose timeouts stay errors.
+- PAR2 likewise averages all 3 seeds (a failed or errored seed counts 3,600 s).
+
 ### 5.3 What the comparison says
 
 - **N is bigger** (435 vs 434; 400 vs 395) and the data is more complete: fewer
