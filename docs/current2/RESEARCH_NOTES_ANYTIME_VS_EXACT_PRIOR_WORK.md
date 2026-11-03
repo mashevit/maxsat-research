@@ -4,6 +4,11 @@
 **Status:** literature check by web search plus reading the full text of
 the papers marked [read]. Not a full survey: the MaxSAT Evaluation reports
 were not read.
+**Updated 2026-11-03:** venues and DOIs of §2.1–2.2 verified (Crossref and
+the DOI resolver); §2.2 expanded from a second full reading; BibTeX in §5.
+
+> "yes update the note, in Smyth, Hoos & Stützle (2003) what they studied?"
+> (user, 2026-11-03)
 
 > "check if something like I want to do check orthogonality of anytime to
 > exact sover - anytime : custom memetic, local search, exact RC2 or
@@ -35,8 +40,10 @@ were not read.
 
 ### 2.1 Hoos & Stützle, "Systematic vs. Local Search for SAT" [read]
 
-Read from UBC Technical Report TR-99-06. The published version is in
-KI-99 (LNAI 1701) [unverified: venue from memory].
+Read from UBC Technical Report TR-99-06. The published version is
+KI-99: Advances in Artificial Intelligence, LNAI 1701, pp. 289–293,
+Springer 1999, doi 10.1007/3-540-48238-5_25 [verified 2026-11-03,
+Crossref].
 
 - **Instances:** test set uf100-430, 1000 satisfiable Random-3-SAT
   instances (100 variables, 430 clauses).
@@ -80,8 +87,44 @@ KI-99 (LNAI 1701) [unverified: venue from memory].
 
 ### 2.2 Smyth, Hoos & Stützle, "Iterated Robust Tabu Search for MAX-SAT" [read]
 
-Published in Canadian AI 2003, LNCS 2671, doi 10.1007/3-540-44886-1_12
-[venue from the search result].
+Published in Advances in Artificial Intelligence (Canadian AI 2003),
+LNCS 2671, pp. 129–144, Springer 2003, doi 10.1007/3-540-44886-1_12
+[title, authors, pages, DOI verified 2026-11-03 via the DOI resolver;
+LNCS 2671 from the search result].
+
+- **What the paper is about:** an algorithm paper. It proposes IRoTS, an
+  iterated local search for weighted and unweighted MAX-SAT. Robust Tabu
+  Search (Taillard's RoTS, adapted to MAX-SAT) is used both as the local
+  search and as the perturbation. The question is whether IRoTS beats the
+  state of the art in local search, not how local search relates to exact
+  solvers.
+- **Competitors:** local searches only: GLS and GLS2 (Mills & Tsang), ILS-YI
+  with 1- and 2-flip neighbourhoods (Yagiura & Ibaraki), plain RoTS. No
+  exact solver is a competitor.
+- **Instances:**
+  - wjnh (44 random weighted instances, some satisfiable) and bor (random
+    weighted and unweighted Max-2/3-SAT, n 50–150);
+  - 12 new sets of 100 Random 3-SAT instances, n 50–200, in the
+    over-constrained region: unweighted with m/n 5–10 (rnd100-500u …
+    rnd100-1000u), and weighted with truncated-normal weights, mean 5n,
+    σ = n or 5n (rnd50-w50 … rnd200-w1000);
+  - structured: YI-GCP (graph colouring), YI-SCP (set cover), LGCMP (level
+    graph crossing minimisation).
+- **Measure:** 100 runs per algorithm and instance until the target cost;
+  search cost = median of the run-time distribution (steps and CPU s).
+  1 GHz Pentium III.
+- **Results:**
+  - IRoTS beats GLS2 on the random sets, by up to ~18× in median CPU time
+    on the most over-constrained unweighted set; the advantage grows with
+    m/n and with weight variance;
+  - on par with GLS on wjnh;
+  - on structured sets GLS wins (graph colouring, set cover), IRoTS wins on
+    crossing minimisation;
+  - IRoTS run-time distributions are close to exponential; GLS/GLS2 show
+    stagnation (fat right tails).
+- **Structured instances: no oracle.** The target there is the 90th
+  percentile of the quality reached by the worst algorithm in 10 s, so the
+  optimum is not passed on these sets.
 
 - **How the oracle is passed:**
 
@@ -186,3 +229,35 @@ instances hard.
   - [Gomes et al., Handbook of KR, satisfiability chapter](https://www.cs.cornell.edu/gomes/pdf/2008_gomes_knowledge_satisfiability.pdf)
   - [Kroc et al., hybrid MaxSAT (IJCAI 2009)](https://www.cs.cornell.edu/~kroc/pub/hybridMaxsatIJCAI09.pdf)
   - [Alòs et al., Exploiting Configurations of MaxSAT Solvers (CP 2023)](https://arxiv.org/html/2306.07635)
+
+## 5. BibTeX (added 2026-11-03)
+
+Checked against Crossref and the DOI resolver (title, authors, pages, DOI).
+The series volume numbers (LNAI 1701, LNCS 2671) were not in those records.
+
+```bibtex
+@inproceedings{hoos1999systematic,
+  author    = {Hoos, Holger H. and St{\"u}tzle, Thomas},
+  title     = {Systematic vs. Local Search for {SAT}},
+  booktitle = {KI-99: Advances in Artificial Intelligence},
+  series    = {Lecture Notes in Artificial Intelligence},
+  volume    = {1701},
+  pages     = {289--293},
+  publisher = {Springer},
+  year      = {1999},
+  doi       = {10.1007/3-540-48238-5_25}
+}
+
+@inproceedings{smyth2003irots,
+  author    = {Smyth, Kevin and Hoos, Holger H. and St{\"u}tzle, Thomas},
+  title     = {Iterated Robust Tabu Search for {MAX-SAT}},
+  booktitle = {Advances in Artificial Intelligence: 16th Conference of the
+               Canadian Society for Computational Studies of Intelligence (AI 2003)},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {2671},
+  pages     = {129--144},
+  publisher = {Springer},
+  year      = {2003},
+  doi       = {10.1007/3-540-44886-1_12}
+}
+```
