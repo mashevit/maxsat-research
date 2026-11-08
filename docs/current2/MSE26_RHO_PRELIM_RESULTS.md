@@ -1,5 +1,11 @@
 # ρ on MSE 2026: preliminary statistics (batch 3c, before the error fixes)
 
+> **Assessment 2026-11-08 (user; N-2026-11-08-a):** the MSE 2026 analysis is
+> regarded as a **negative result**: it does not establish the intended research
+> contribution. §10 ("partly complementary") is a description of one pair of solvers, not evidence of a contribution. The numbers below are unchanged and may be reported; the
+> complementarity interpretation they were given is withdrawn. See
+> [`RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md`](RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md).
+
 **Created:** 2026-10-29. **Status: preliminary.** These numbers are from batch 3c
 as it came back, *before* the fixes and reruns listed in `MSE26_3C_RUN.md` §7
 (heap crash on 2 small instances, `glucose_timeout` classifier, 5 Slurm wall
@@ -355,6 +361,8 @@ removed).
    - The 43 do not depend on the error treatment.
    - Against all the published 2026 solvers, the memetic adds speed on some
      instances, not instances that no solver handled (10.4, point 6).
+   - *Correction 2026-11-08 (N-2026-11-08-a): the counts stand; "complementary"
+     here does not mean a demonstrated contribution. See the assessment note.*
 
 ### 10.2 How "EvalMaxSAT 85.9 %" and "EvalMaxSAT or memetic 90.6 %" fit together
 

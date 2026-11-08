@@ -17,6 +17,31 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 000000000000000000000. Update 2026-11-08 (r23): read first — the r22 paper plan is superseded
+
+> "we regard the latest analysis as a negative result—a failure to establish the
+> intended research contribution." (user, 2026-11-08)
+
+- **The MSE 2026 complementarity analysis is a negative result** (user
+  decision). It does not establish the intended contribution. The numbers in
+  r22 and readout 3 stand. The interpretation does not: "a useful portfolio
+  partner for a strong exact solver on its hard tail", the 44 memetic-only
+  instances, and the low ρ in the selected hard subsets (window, E4) are **not**
+  evidence of research success.
+- **r22's "next: start the complementarity paper" is superseded.** Do not draft
+  that paper or propose it again. The next step is the user's decision: ask.
+- A contribution claim would need value beyond an existing solver and beyond
+  local search with restarts, at comparable budgets, without the oracle stop,
+  with expected-success counts, and with reaching kept apart from proving. These
+  are criteria only; nothing is scheduled.
+- Read first: `docs/current2/RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md`
+  (N-2026-11-08-a), including its wording rules (§6). Dated corrections were
+  added to `MSE26_RHO_RESULTS_3.md`, `MSE26_RHO_PRELIM_RESULTS.md`, the
+  complementarity note, the VBS-precedents note and the affected
+  `RESEARCH_NOTES.md` entries.
+
+---
+
 ## 00000000000000000000. Update 2026-11-01 evening (r22): read first — summary for the next session
 
 **Where we are:** everything is committed and pushed (HEAD `0d5b678`). r21

@@ -14,6 +14,12 @@ here.
 > "in Smyth, Hoos & Stützle (2003) what they studied? is our research novel in
 > some way?" (user, 2026-11-03)
 
+> **Assessment 2026-11-08 (user; N-2026-11-08-a):** the MSE 2026 analysis is
+> regarded as a **negative result**: it does not establish the intended research
+> contribution. The literature findings here stand; "novel measurement" is not a demonstrated contribution. The numbers below are unchanged and may be reported; the
+> complementarity interpretation they were given is withdrawn. See
+> [`RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md`](RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md).
+
 ## 1. Summary
 
 - **Not found:** a MaxSAT study that, on the same instances,

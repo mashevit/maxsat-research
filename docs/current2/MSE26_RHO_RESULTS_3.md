@@ -2,6 +2,12 @@
 
 > "reclassify them as failures, document it, commit and push, I think if one seed managed to come to optimum, you might count it. document this. rerun rho and write it in third conclusion file" (user, 2026-11-01)
 
+> **Assessment 2026-11-08 (user; N-2026-11-08-a):** the MSE 2026 analysis is
+> regarded as a **negative result**: it does not establish the intended research
+> contribution. The 44 memetic-only instances, the coverage gain and the low ρ in the selected hard subsets (window, E4) are not evidence of a contribution. The numbers below are unchanged and may be reported; the
+> complementarity interpretation they were given is withdrawn. See
+> [`RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md`](RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md).
+
 **Status.** The third set of ρ numbers for batch 3c. It replaces the earlier two as
 the current readout; they stay as records:
 
@@ -181,6 +187,11 @@ On the 184 instances above 30 s that both solve (`fail`), the memetic is faster 
      EvalMaxSAT is (35 vs 26).
   - So the defensible claim is "a useful portfolio partner for a state-of-the-art
     exact solver on its hard tail". It is not "a stronger solver".
+  - **Correction 2026-11-08 (N-2026-11-08-a):** this claim is **withdrawn**. The
+    points above describe one pair of solvers; no baseline (another published
+    solver, or local search with restarts, under a comparable budget) was
+    compared, and every memetic-only instance was proved by a published solver.
+    The findings are insufficient to support the intended contribution.
 - **Caveats that limit even that claim.**
   - The memetic *reaches* the published optimum and does not prove it.
   - The memetic is stopped when it hits a known target value. A deployed anytime
@@ -268,6 +279,9 @@ E4 both-finite instances: 184 / 183 (= N − ∞ x − ∞ y = the ref subset).
    EvalMaxSAT does not prove (a third of its timeouts); EvalMaxSAT proves 262 /
    228 that the memetic does not reach. Memetic reach falls steadily with
    EvalMaxSAT time. Combining the two lifts coverage from 85.9 % to 90.7 %.
+   *Correction 2026-11-08 (N-2026-11-08-a): the numbers stand; they are not
+   evidence of a distinctive or useful contribution (no comparable-budget
+   baseline; reaching ≠ proving).*
 4. **Above 30 s with either side allowed to fail (E4)** the association is at
    most weak (CI inside (−0.3, +0.3) and containing 0). E4 is outcome-defined and
    mostly measures which solver fails, not how hardness is ordered; it is not an

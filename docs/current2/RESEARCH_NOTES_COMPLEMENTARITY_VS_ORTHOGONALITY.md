@@ -5,6 +5,12 @@
 
 > "what is difference between orthogonality and complimentarity?" / "write this somewhere i can fetch and reach, maybe in its own complementaririty research doc" (user, 2026-11-01)
 
+> **Assessment 2026-11-08 (user; N-2026-11-08-a):** the MSE 2026 analysis is
+> regarded as a **negative result**: it does not establish the intended research
+> contribution. The definitions in §1–§2 remain valid; the conclusion "complementary, so claim complementarity in the paper" (§3–§4) is not supported. The numbers below are unchanged and may be reported; the
+> complementarity interpretation they were given is withdrawn. See
+> [`RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md`](RESEARCH_ASSESSMENT_NEGATIVE_RESULT_2026-11-08.md).
+
 Numbers are from the current readout,
 [`MSE26_RHO_RESULTS_3.md`](MSE26_RHO_RESULTS_3.md) (readout 3), `fail` column unless
 stated. The preliminary values are in
