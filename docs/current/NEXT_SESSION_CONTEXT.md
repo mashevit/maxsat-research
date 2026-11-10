@@ -17,6 +17,25 @@ alias, so every cluster step is a command the user runs on the login node.
 
 ---
 
+## 0000000000000000000000. Update 2026-11-10 (r24): kernel 2 plan at α 1.2 (plan only, awaiting go)
+
+- **User direction (2026-11-10):** statistics of how much 1/2, 2/2 and later
+  1/3 eliminations help on top of today's kernel, on random Max-2-SAT at
+  α 1.2 only ("the purpose is not general").
+- **Read:** `docs/current2/KERNEL2_LOW_DEGREE_ELIMINATION_PLAN.md` (r2). Its
+  Appendix A records every check and measurement of 2026-11-10. The explainer
+  `docs/current2/EXACT_VARIABLE_ELIMINATION_EXPLAINED.md` is user text,
+  verbatim; do not edit it. Notes: N-2026-11-10-a, -b.
+- **Key facts:**
+  - at α 1.2, 79–84 % of the K0 kernel variables are 1/2;
+  - 1/2 alone removes 36–38 % of them; with 2/2 and 1/3, 48–50 %;
+  - today's kernel already runs to a fixpoint, and cascades remove 35–37 % of
+    the occurring variables (plan §2.1).
+- **Next:** M1 (build `preprocess: kernel2`) only after the user's go and
+  answers to D1–D5. Nothing is built in `src/`. Diagnostics are
+  `cluster_staging_maxsat_strong/scripts/diag_kernel2_*.py` and
+  `diag_kernel_cascade.py`.
+
 ## 000000000000000000000. Update 2026-11-08 (r23): read first — the r22 paper plan is superseded
 
 > "we regard the latest analysis as a negative result—a failure to establish the
